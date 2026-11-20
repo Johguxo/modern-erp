@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Bandeja de solicitudes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F6F9}
+a{color:#0B5CD5}a:hover{color:#0846A3}
+</style>
+</helmet>
+<div style="display: flex; flex-wrap: wrap; min-height: 820px; font-family: Inter, system-ui, sans-serif; color: #0F172A; background: #F4F6F9">
+  <nav aria-label="Menú principal" style="flex: 1 1 220px; max-width: 248px; background: #0F172A; color: #CBD5E1; padding: 24px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 24px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+      <span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #FFFFFF">LinkUs</span>
+    </div>
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #1E293B; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Bandeja</a>
+    <a href="NuevoSOF.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #CBD5E1; text-decoration: none; font-size: 14px">Nueva solicitud</a>
+    <a href="Cotizaciones.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #CBD5E1; text-decoration: none; font-size: 14px">Cotizaciones</a>
+    <a href="Tablero.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #CBD5E1; text-decoration: none; font-size: 14px">Tablero</a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #CBD5E1; text-decoration: none; font-size: 14px">Catálogo</a>
+    <div style="margin-top: auto; padding: 16px 12px 0; border-top: 1px solid #1E293B; font-size: 13px; color: #94A3B8">Genrent · Lima</div>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+      <div>
+        <p style="margin: 0 0 4px; font-size: 13px; color: #475569">Hola, Ruby · Gerencia local</p>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600">Bandeja de solicitudes</h1>
+      </div>
+      <a href="NuevoSOF.dc.html" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 10px; background: #0B5CD5; color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 600">+ Nueva solicitud</a>
+    </header>
+
+    <section aria-label="Resumen" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px">
+        <p style="margin: 0; font-size: 13px; color: #475569">Esperan mi aprobación</p>
+        <p style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 600; color: #B45309">4</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px">
+        <p style="margin: 0; font-size: 13px; color: #475569">En aprobación</p>
+        <p style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 600; color: #0B5CD5">7</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px">
+        <p style="margin: 0; font-size: 13px; color: #475569">Aprobadas esta semana</p>
+        <p style="margin: 8px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 600; color: #15803D">12</p>
+      </div>
+    </section>
+
+    <section aria-label="Solicitudes" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px; border-bottom: 1px solid #E2E8F0">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button type="button" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+        </sc-for>
+      </div>
+      <div style="overflow-x: auto">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px">
+          <thead>
+            <tr style="text-align: left; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">
+              <th style="padding: 12px 20px; font-weight: 600">N°</th>
+              <th style="padding: 12px 8px; font-weight: 600">Tipo</th>
+              <th style="padding: 12px 8px; font-weight: 600">Solicitante</th>
+              <th style="padding: 12px 8px; font-weight: 600">Equipo / área</th>
+              <th style="padding: 12px 8px; font-weight: 600">Monto est.</th>
+              <th style="padding: 12px 8px; font-weight: 600">Estado</th>
+              <th style="padding: 12px 20px; font-weight: 600">Actualizado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+              <tr style="border-top: 1px solid #EEF2F6">
+                <td style="padding: 14px 20px; font-weight: 600"><a href="DetalleSOF.dc.html" style="text-decoration: none">{{r.id}}</a></td>
+                <td style="padding: 14px 8px">{{r.tipo}}</td>
+                <td style="padding: 14px 8px">{{r.solicitante}}</td>
+                <td style="padding: 14px 8px; color: #334155">{{r.equipo}}</td>
+                <td style="padding: 14px 8px">{{r.monto}}</td>
+                <td style="padding: 14px 8px"><span style="{{r.pill}}">{{r.estado}}</span></td>
+                <td style="padding: 14px 20px; color: #475569">{{r.fecha}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <p style="margin: 0; font-size: 12px; color: #64748B">Prototipo · datos de ejemplo</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 'todas' }; }
+  renderVals() {
+    const pills = {
+      pend: 'display:inline-block;padding:4px 10px;border-radius:999px;background:#FEF3C7;color:#92400E;font-size:12px;font-weight:600',
+      apro: 'display:inline-block;padding:4px 10px;border-radius:999px;background:#DBEAFE;color:#1E40AF;font-size:12px;font-weight:600',
+      ok: 'display:inline-block;padding:4px 10px;border-radius:999px;background:#DCFCE7;color:#166534;font-size:12px;font-weight:600',
+      hk: 'display:inline-block;padding:4px 10px;border-radius:999px;background:#EDE9FE;color:#5B21B6;font-size:12px;font-weight:600'
+    };
+    const all = [
+      { id: 'SOF-0142', tipo: 'SOF', solicitante: 'Carlos M.', equipo: 'GEN-045 · Motor principal', monto: 'S/ 1,860', estado: 'Espera mi aprobación', pill: pills.pend, fecha: 'Hoy 09:12', k: 'mia' },
+      { id: 'PR-0388', tipo: 'PR', solicitante: 'Ana T.', equipo: 'Mantenimiento', monto: 'S/ 12,400', estado: 'Espera Hong Kong', pill: pills.hk, fecha: 'Hoy 08:40', k: 'apro' },
+      { id: 'SOF-0141', tipo: 'SOF', solicitante: 'Luis R.', equipo: 'GEN-112 · Alternador', monto: 'S/ 640', estado: 'En almacén', pill: pills.apro, fecha: 'Ayer 17:05', k: 'apro' },
+      { id: 'PD-0097', tipo: 'PD', solicitante: 'Ana T.', equipo: 'Operaciones', monto: 'S/ 3,250', estado: 'Espera mi aprobación', pill: pills.pend, fecha: 'Ayer 15:30', k: 'mia' },
+      { id: 'PR-0386', tipo: 'PR', solicitante: 'Jhony P.', equipo: 'Almacén central', monto: 'S/ 7,980', estado: 'Aprobada', pill: pills.ok, fecha: 'Ayer 11:02', k: 'ok' },
+      { id: 'SOF-0139', tipo: 'SOF', solicitante: 'Carlos M.', equipo: 'GEN-031 · Tablero', monto: 'S/ 410', estado: 'Aprobada', pill: pills.ok, fecha: '12 nov', k: 'ok' }
+    ];
+    const defs = [['todas', 'Todas'], ['mia', 'Esperan mi aprobación'], ['apro', 'En aprobación'], ['ok', 'Aprobadas']];
+    const tabs = defs.map(([k, label]) => ({
+      label,
+      pick: () => this.setState({ tab: k }),
+      style: this.state.tab === k
+        ? 'min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #0B5CD5;background:#EFF6FF;color:#0B5CD5;font:600 14px Inter,sans-serif;cursor:pointer'
+        : 'min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #CBD5E1;background:#FFFFFF;color:#334155;font:500 14px Inter,sans-serif;cursor:pointer'
+    }));
+    const rows = this.state.tab === 'todas' ? all : all.filter(r => r.k === this.state.tab);
+    return { tabs, rows };
+  }
+}
+</script>
+</body>
+</html>

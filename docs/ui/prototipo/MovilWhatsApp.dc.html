@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Notificación por WhatsApp</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B5CD5}a:hover{color:#0846A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #ECE7DF; font-family: Inter, system-ui, sans-serif; color: #111B21; display: flex; flex-direction: column">
+  <header style="background: #1F5C4F; color: #FFFFFF; padding: 18px 16px; display: flex; align-items: center; gap: 12px">
+    <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 999px; background: #0F172A; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    </div>
+    <div>
+      <p style="margin: 0; font-size: 16px; font-weight: 600">LinkUs · Genrent</p>
+      <p style="margin: 2px 0 0; font-size: 12px; color: #D1E7E0">Cuenta de empresa verificada</p>
+    </div>
+  </header>
+  <main style="flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.45">
+    <p style="align-self: center; margin: 0 0 4px; padding: 4px 10px; border-radius: 8px; background: #FFFFFF; font-size: 12px; color: #54656F">Hoy</p>
+
+    <div style="align-self: flex-start; max-width: 300px; background: #FFFFFF; border-radius: 0 10px 10px 10px; padding: 10px 12px">
+      <p style="margin: 0">Tu solicitud <strong>PR-0388</strong> fue aprobada por Hong Kong. Se generó la orden de compra <strong>OC-0215</strong>.</p>
+      <p style="margin: 4px 0 0; font-size: 11px; color: #54656F; text-align: right">08:52</p>
+    </div>
+
+    <div style="align-self: flex-start; max-width: 300px; background: #FFFFFF; border-radius: 0 10px 10px 10px; overflow: hidden">
+      <div style="padding: 10px 12px">
+        <p style="margin: 0">Hola Ruby, la solicitud <strong>SOF-0142</strong> espera tu aprobación.</p>
+        <p style="margin: 6px 0 0">Mantenimiento de 500 horas · GEN-045<br>Total: <strong>S/ 1,860.00</strong> · 4 ítems<br>Almacén ya confirmó stock.</p>
+        <p style="margin: 4px 0 0; font-size: 11px; color: #54656F; text-align: right">09:41</p>
+      </div>
+      <button type="button" onClick="{{approve}}" style="display: block; width: 100%; min-height: 44px; border: none; border-top: 1px solid #E9EDEF; background: #FFFFFF; color: #027EB5; font: 600 14px Inter, sans-serif; cursor: pointer">Aprobar</button>
+      <a href="MovilAprobar.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 44px; border-top: 1px solid #E9EDEF; color: #027EB5; text-decoration: none; font-size: 14px; font-weight: 600">Ver detalle</a>
+    </div>
+
+    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+      <div style="align-self: flex-end; max-width: 260px; background: #D9FDD3; border-radius: 10px 0 10px 10px; padding: 10px 12px">
+        <p style="margin: 0">Aprobar</p>
+        <p style="margin: 4px 0 0; font-size: 11px; color: #54656F; text-align: right">09:43</p>
+      </div>
+      <div style="align-self: flex-start; max-width: 300px; background: #FFFFFF; border-radius: 0 10px 10px 10px; padding: 10px 12px">
+        <p style="margin: 0">Listo. <strong>SOF-0142</strong> aprobada. Carlos y almacén ya fueron avisados.</p>
+        <p style="margin: 4px 0 0; font-size: 11px; color: #54656F; text-align: right">09:43</p>
+      </div>
+    </sc-if>
+  </main>
+  <p style="margin: 0; padding: 12px; text-align: center; font-size: 11px; color: #54656F; background: #F0F2F5">Prototipo · datos de ejemplo</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { done: false }; }
+  renderVals() {
+    return { done: this.state.done, approve: () => this.setState({ done: true }) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aprobación desde el celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0B5CD5}a:hover{color:#0846A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F6F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column">
+  <header style="background: #0F172A; color: #FFFFFF; padding: 20px 20px 18px; display: flex; align-items: center; gap: 10px">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+    <span style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700">LinkUs</span>
+    <span style="margin-left: auto; font-size: 13px; color: #94A3B8">Ruby</span>
+  </header>
+  <main style="flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+    <div>
+      <p style="margin: 0; font-size: 13px; color: #475569">Espera tu aprobación</p>
+      <h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 600">SOF-0142</h1>
+      <p style="margin: 4px 0 0; font-size: 14px; color: #334155">Mantenimiento de 500 horas · GEN-045</p>
+    </div>
+    <section aria-label="Resumen" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; font-size: 14px">
+      <div style="display: flex; justify-content: space-between"><span style="color: #475569">Solicitante</span><span>Carlos M.</span></div>
+      <div style="display: flex; justify-content: space-between"><span style="color: #475569">Almacén</span><span style="color: #15803D; font-weight: 600">Aprobado · stock ok</span></div>
+      <div style="display: flex; justify-content: space-between"><span style="color: #475569">Total</span><strong>S/ 1,860.00</strong></div>
+    </section>
+    <section aria-label="Ítems" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 6px 16px; font-size: 14px">
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEF2F6"><span>Filtro de aceite × 2</span><span>S/ 170.00</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEF2F6"><span>Aceite 15W-40 × 8</span><span>S/ 496.00</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #EEF2F6"><span>Correa del alternador × 1</span><span>S/ 540.00</span></div>
+      <div style="display: flex; justify-content: space-between; padding: 10px 0"><span>Kit de empaquetaduras × 1</span><span>S/ 654.00</span></div>
+    </section>
+    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="padding: 16px; border-radius: 14px; background: #DCFCE7; color: #14532D; font-size: 15px; font-weight: 600; text-align: center">Aprobado. Carlos y almacén ya fueron avisados.</div>
+    </sc-if>
+  </main>
+  <sc-if value="{{pending}}" hint-placeholder-val="{{ true }}">
+    <div style="padding: 16px 20px 28px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <button type="button" style="min-height: 52px; border-radius: 12px; border: 1px solid #FCA5A5; background: #FFFFFF; color: #B91C1C; font: 600 16px Inter, sans-serif; cursor: pointer">Rechazar</button>
+      <button type="button" onClick="{{approve}}" style="min-height: 52px; border-radius: 12px; border: none; background: #15803D; color: #FFFFFF; font: 600 16px Inter, sans-serif; cursor: pointer">Aprobar</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { done: false }; }
+  renderVals() {
+    return { done: this.state.done, pending: !this.state.done, approve: () => this.setState({ done: true }) };
+  }
+}
+</script>
+</body>
+</html>

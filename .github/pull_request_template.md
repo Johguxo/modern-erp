@@ -2,6 +2,8 @@
 
 ## Historia
 
+Closes #<!-- número del issue de la historia -->
+
 <!-- ID y enlace a la historia en docs/backlog/ -->
 
 ## Qué se hizo y por qué

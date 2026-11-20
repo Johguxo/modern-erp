@@ -9,7 +9,7 @@ Referencia: `docs/arquitectura/adr-002-identidad-roles-planes.md`, `docs/dominio
 - [ ] Servicio `Entitlements`: `canAddUser(tenantId)`, `hasFeature(tenantId, feature)`, `isReadOnly(tenantId)`, considerando `overrides`.
 - [ ] Seed de planes.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#8](https://github.com/Johguxo/modern-erp/issues/8)
 
 ### E1-H2 · Login con correo y contraseña
 **Como** usuario **quiero** entrar con mi correo y contraseña **para** usar la plataforma de mi empresa.
@@ -22,7 +22,7 @@ Estado: pendiente
 - [ ] Mensajes de error en español sin revelar si el correo existe.
 - [ ] E2E: login correcto, contraseña errónea, cierre de sesión.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
 
 ### E1-H3 · Invitaciones y gestión de usuarios
 **Como** admin del cliente **quiero** invitar usuarios y asignarles roles **para** que usen la plataforma.
@@ -35,7 +35,7 @@ Estado: pendiente
 - [ ] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
 - [ ] Cada acción queda en `audit_events`.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/10)
 
 ### E1-H4 · Consola mínima de SuperAdmin
 **Como** SuperAdmin de LinkUs **quiero** crear un cliente con su plan y su primer admin **para** activar nuevas empresas sin tocar la base de datos.
@@ -47,7 +47,7 @@ Estado: pendiente
 - [ ] `/admin/clientes/[id]`: cambiar plan, estado de suscripción y ajustes.
 - [ ] Solo accesible para usuarios en `platform_admins`; auditoría de cada acción.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#11](https://github.com/Johguxo/modern-erp/issues/11)
 
 ### E1-H5 · Configuración de la empresa
 **Criterios de aceptación**
@@ -55,4 +55,4 @@ Estado: pendiente
 - [ ] El logo y el color se aplican en el menú lateral.
 - [ ] Cambiar el siguiente número no puede dejarlo por debajo del último usado.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#12](https://github.com/Johguxo/modern-erp/issues/12)

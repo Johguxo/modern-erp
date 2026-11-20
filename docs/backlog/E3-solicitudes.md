@@ -10,7 +10,7 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md`, `docs/ui/mapa-pantallas.md
 - [ ] Numeración al enviar con bloqueo de fila (prueba de concurrencia: 20 envíos simultáneos → 20 números distintos y consecutivos).
 - [ ] Bloqueo optimista con `version`.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#16](https://github.com/Johguxo/modern-erp/issues/16)
 
 ### E3-H2 · Nuevo SOF y borradores (pantalla 2)
 **Como** solicitante **quiero** armar un SOF eligiendo repuestos del catálogo **para** no escribir códigos ni precios a mano.
@@ -24,7 +24,7 @@ Estado: pendiente
 - [ ] Funciona en el celular (390 px).
 - [ ] E2E: crear borrador, editarlo y enviarlo.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#17](https://github.com/Johguxo/modern-erp/issues/17)
 
 ### E3-H3 · Bandeja (pantalla 1)
 **Como** usuario **quiero** ver mis solicitudes y las que esperan mi aprobación **para** saber qué me toca hacer.
@@ -37,7 +37,7 @@ Estado: pendiente
 - [ ] Pastillas de estado con texto (design tokens).
 - [ ] Rendimiento: < 1 s con 5,000 solicitudes en el seed de carga.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#18](https://github.com/Johguxo/modern-erp/issues/18)
 
 ### E3-H4 · Detalle del SOF (pantalla 3, lectura)
 **Criterios de aceptación**
@@ -45,11 +45,11 @@ Estado: pendiente
 - [ ] 404 si no existe o es de otro tenant o el usuario no tiene visibilidad.
 - [ ] Los botones de acción se muestran según estado y permisos (la lógica de acciones llega en E4 y E6).
 
-Estado: pendiente
+Estado: pendiente · Issue: [#19](https://github.com/Johguxo/modern-erp/issues/19)
 
 ### E3-H5 · Anular
 **Criterios de aceptación**
 - [ ] El solicitante anula sus borradores o documentos `in_approval`/`changes_requested`; el admin también los `approved` no entregados.
 - [ ] Comentario obligatorio; evento `cancelled`; los pasos pendientes se cierran.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#20](https://github.com/Johguxo/modern-erp/issues/20)

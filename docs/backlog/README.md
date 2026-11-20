@@ -21,6 +21,39 @@ Las épicas se hacen en orden; dentro de cada épica, las historias también, sa
 
 Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curso`, `en revisión`, `hecha`. Claude Code la actualiza en el mismo PR que implementa la historia.
 
+## Seguimiento en GitHub
+
+- **Issues:** cada historia tiene un issue con la etiqueta `historia` (enlazado en su línea `Estado:`). El issue dice **quién la tiene** (assignee) y su avance; los criterios y notas técnicas viven solo aquí, en `docs/backlog/`.
+- **Milestones:** uno por épica (`E0 · Fundaciones del proyecto`, …), con el porcentaje de issues cerrados.
+- **Project `modern-erp`** ([tablero #3](https://github.com/users/Johguxo/projects/3)): columnas `Todo` → `In Progress` → `In Review` → `Done`.
+
+| Momento | Issue / project | Línea `Estado:` (en el PR) |
+|---|---|---|
+| Nadie la tomó | sin asignar · `Todo` | `pendiente` |
+| Alguien la toma (`/historia`) | asignado · `In Progress` | `en curso` |
+| PR abierto contra `develop` (`Closes #N`) | `In Review` | `en revisión` |
+| PR integrado en `develop` | cerrado automáticamente · `Done` | `en revisión` |
+| Release a `main` | — | `hecha` (PR posterior al release) |
+
+**Tomar una historia:** asígnate el issue antes de crear la rama; si ya tiene assignee, es de otra persona. **Historia nueva:** agrégala aquí con la plantilla y crea su issue (`gh issue create --label historia --milestone "<épica>"`), luego enlázalo en su línea `Estado:`.
+
+Mover una tarjeta desde la terminal (IDs fijos del tablero #3):
+
+```bash
+ITEM=$(gh project item-list 3 --owner Johguxo --format json --limit 200 --jq '.items[] | select(.content.number==<N>) | .id')
+gh project item-edit --id "$ITEM" --project-id PVT_kwHOAjZWH84BsbVo \
+  --field-id PVTSSF_lAHOAjZWH84BsbVozhqpkCA --single-select-option-id <opción>
+```
+
+| Columna | `<opción>` |
+|---|---|
+| Todo | `334872f7` |
+| In Progress | `28dcdd10` |
+| In Review | `46b57aad` |
+| Done | `be8008de` |
+
+Una historia nueva entra al tablero con `gh project item-add 3 --owner Johguxo --url <url del issue>` (o sola, si está activo el workflow *Auto-add* del project).
+
 ## Definición de "hecha" (para toda historia)
 
 - [ ] Cumple todos sus criterios de aceptación.
@@ -45,7 +78,7 @@ Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curs
 **Notas técnicas**
 - ...
 
-Estado: pendiente
+Estado: pendiente · Issue: #<n>
 ```
 
 ## Fuera del MVP (no crear historias todavía)

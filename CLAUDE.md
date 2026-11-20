@@ -67,11 +67,11 @@ Son guías generales. **Si chocan con `docs/`, mandan los docs del proyecto.**
 
 ## Cómo trabajar una historia
 1. Usa `/historia <ID>` (por ejemplo, `/historia E0-H1`).
-2. Una rama por historia, creada desde `develop`: `feat/<id>-<slug>` (por ejemplo, `feat/e3-h2-nuevo-sof`).
+2. Toma su issue de GitHub (asígnatelo; si ya tiene assignee, es de otra persona). Una rama por historia, creada desde `develop`: `feat/<id>-<slug>` (por ejemplo, `feat/e3-h2-nuevo-sof`).
 3. Primero el plan (subagente `arquitecto`), luego implementación con pruebas, luego revisión (subagente `revisor`).
 4. Cumple la **Definición de hecha** de `docs/backlog/README.md`.
 5. Actualiza la línea `Estado:` de la historia y el estado de la épica en `docs/backlog/README.md`.
-6. Commits con Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`) y PR a `develop` con `gh pr create --base develop`.
+6. Commits con Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`) y PR a `develop` con `gh pr create --base develop`, con `Closes #N` del issue de la historia.
 
 ## Convenciones de código
 - Archivos en `kebab-case`; componentes React en `PascalCase`.

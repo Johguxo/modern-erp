@@ -6,7 +6,7 @@
 - [ ] Usuarios de prueba por rol con contraseñas de `SEED_DEFAULT_PASSWORD`; nunca se ejecuta en producción salvo con `--allow-production`.
 - [ ] Opción `--load` que genera 5,000 solicitudes para probar rendimiento.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#31](https://github.com/Johguxo/modern-erp/issues/31)
 
 ### E7-H2 · Suite E2E de la demo
 **Criterios de aceptación**
@@ -14,7 +14,7 @@ Estado: pendiente
 - [ ] Prueba de aislamiento: un usuario de "Empresa prueba" no ve nada de Genrent (lista y URL directa → 404).
 - [ ] Revisión de accesibilidad básica con `@axe-core/playwright` en las pantallas 1–3 sin errores graves.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#32](https://github.com/Johguxo/modern-erp/issues/32)
 
 ### E7-H3 · Despliegue en Railway
 **Criterios de aceptación**
@@ -25,7 +25,7 @@ Estado: pendiente
 - [ ] Respaldo diario de la base confirmado en Supabase.
 - [ ] `docs/setup/operacion.md` con cómo desplegar, revertir y crear un cliente nuevo.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#33](https://github.com/Johguxo/modern-erp/issues/33)
 
 ### E7-H4 · Puesta en marcha con Genrent
 **Criterios de aceptación**
@@ -33,4 +33,4 @@ Estado: pendiente
 - [ ] Política de aprobación configurada según sus respuestas.
 - [ ] Guía de uso de 1 página por rol (solicitante, almacén, aprobador, admin).
 
-Estado: pendiente
+Estado: pendiente · Issue: [#34](https://github.com/Johguxo/modern-erp/issues/34)

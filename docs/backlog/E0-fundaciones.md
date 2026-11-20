@@ -12,7 +12,7 @@ Objetivo: un repositorio que compila, prueba y despliega, con la estructura de A
 - [ ] ESLint + Prettier configurados, con la **regla de imports prohibidos** de ADR-003 (`no-restricted-imports` por carpeta) y una prueba que demuestre que falla al violarla.
 - [ ] `src/env.ts` valida variables con Zod y falla al arrancar si falta alguna; `.env.example` completo.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#3](https://github.com/Johguxo/modern-erp/issues/3)
 
 ### E0-H2 · Base de datos local y Drizzle
 **Criterios de aceptación**
@@ -21,7 +21,7 @@ Estado: pendiente
 - [ ] Migración inicial: extensiones (`pgcrypto`, `pg_trgm`), rol `app_user` y helper `withTenant(ctx, fn)` que abre una transacción con `set local app.tenant_id`.
 - [ ] Prueba de integración que verifica que `app_user` sin `app.tenant_id` no ve filas de una tabla con RLS.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#4](https://github.com/Johguxo/modern-erp/issues/4)
 
 ### E0-H3 · Núcleo compartido
 **Criterios de aceptación**
@@ -31,7 +31,7 @@ Estado: pendiente
 - [ ] Helper de server actions `action(contract, permission, handler)` que valida la entrada con Zod, arma el `ctx`, revisa el permiso y traduce errores. Igual para route handlers en `api/v1`.
 - [ ] Logger estructurado (pino) con `requestId`.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#5](https://github.com/Johguxo/modern-erp/issues/5)
 
 ### E0-H4 · Sistema visual y layouts
 **Criterios de aceptación**
@@ -42,7 +42,7 @@ Estado: pendiente
 - [ ] Componentes base: `StatusBadge` (texto + color), `EmptyState`, `ErrorState`, `PageHeader`, `DataTable` (TanStack), `MoneyText` (formato es-PE), `DateText` (zona del tenant).
 - [ ] Archivo de mensajes `src/ui/messages/es-PE.ts`.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#6](https://github.com/Johguxo/modern-erp/issues/6)
 
 ### E0-H5 · CI y worker
 **Criterios de aceptación**
@@ -50,4 +50,4 @@ Estado: pendiente
 - [ ] `src/worker.ts` arranca pg-boss, registra colas vacías y se apaga limpio con SIGTERM.
 - [ ] Adaptador `JobQueue` sobre pg-boss con una prueba de encolar y procesar.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#7](https://github.com/Johguxo/modern-erp/issues/7)

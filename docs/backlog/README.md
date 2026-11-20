@@ -25,7 +25,7 @@ Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curs
 
 - **Issues:** cada historia tiene un issue con la etiqueta `historia` (enlazado en su línea `Estado:`). El issue dice **quién la tiene** (assignee) y su avance; los criterios y notas técnicas viven solo aquí, en `docs/backlog/`.
 - **Milestones:** uno por épica (`E0 · Fundaciones del proyecto`, …), con el porcentaje de issues cerrados.
-- **Project `modern-erp`** (tablero): columnas `Todo` → `In Progress` → `In Review` → `Done`.
+- **Project `modern-erp`** ([tablero #3](https://github.com/users/Johguxo/projects/3)): columnas `Todo` → `In Progress` → `In Review` → `Done`.
 
 | Momento | Issue / project | Línea `Estado:` (en el PR) |
 |---|---|---|
@@ -37,7 +37,22 @@ Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curs
 
 **Tomar una historia:** asígnate el issue antes de crear la rama; si ya tiene assignee, es de otra persona. **Historia nueva:** agrégala aquí con la plantilla y crea su issue (`gh issue create --label historia --milestone "<épica>"`), luego enlázalo en su línea `Estado:`.
 
-Para mover un ítem del project desde la terminal: `gh project item-list <n> --owner Johguxo --format json` (id del ítem), `gh project field-list <n> --owner Johguxo --format json` (id del campo Status y de sus opciones) y `gh project item-edit --id <ítem> --project-id <project> --field-id <status> --single-select-option-id <opción>`.
+Mover una tarjeta desde la terminal (IDs fijos del tablero #3):
+
+```bash
+ITEM=$(gh project item-list 3 --owner Johguxo --format json --limit 200 --jq '.items[] | select(.content.number==<N>) | .id')
+gh project item-edit --id "$ITEM" --project-id PVT_kwHOAjZWH84BsbVo \
+  --field-id PVTSSF_lAHOAjZWH84BsbVozhqpkCA --single-select-option-id <opción>
+```
+
+| Columna | `<opción>` |
+|---|---|
+| Todo | `334872f7` |
+| In Progress | `28dcdd10` |
+| In Review | `46b57aad` |
+| Done | `be8008de` |
+
+Una historia nueva entra al tablero con `gh project item-add 3 --owner Johguxo --url <url del issue>` (o sola, si está activo el workflow *Auto-add* del project).
 
 ## Definición de "hecha" (para toda historia)
 

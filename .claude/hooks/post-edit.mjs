@@ -21,6 +21,9 @@ if (rel.startsWith('..') || rel.startsWith('node_modules') || rel.startsWith('do
 if (!existsSync(path.join(projectDir, 'node_modules'))) process.exit(0);
 
 // pnpm exec funciona igual en macOS, Linux y Windows.
+// En Windows se ejecuta con shell, que parte los argumentos por espacios: por eso se pasa la
+// ruta relativa al proyecto (sin espacios) y no la absoluta, que puede tenerlos.
+const target = rel.split(path.sep).join('/');
 const run = (bin, args) =>
   execFileSync('pnpm', ['exec', bin, ...args], {
     cwd: projectDir,
@@ -37,7 +40,7 @@ const isFormattable = isCode || /\.(json|css|md)$/.test(filePath);
 
 try {
   if (isFormattable && hasBin('prettier')) {
-    run('prettier', ['--write', '--log-level', 'warn', filePath]);
+    run('prettier', ['--write', '--log-level', 'warn', target]);
   }
 } catch {
   // Un error de formato no bloquea.
@@ -45,7 +48,7 @@ try {
 
 if (isCode && hasBin('eslint')) {
   try {
-    run('eslint', ['--fix', '--max-warnings=0', filePath]);
+    run('eslint', ['--fix', '--max-warnings=0', target]);
   } catch (err) {
     const out = `${err.stdout ?? ''}${err.stderr ?? ''}`.trim();
     process.stderr.write(`ESLint encontró problemas en ${rel}. Corrígelos antes de seguir:\n${out}\n`);

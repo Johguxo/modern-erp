@@ -1,4 +1,4 @@
-// E0-H1 · El worker falla al arrancar si falta una variable obligatoria (src/env.ts se valida al importar).
+// E0-H1 · El worker falla al arrancar si falta una variable obligatoria (llama a getEnv() al iniciar).
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 

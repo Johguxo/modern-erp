@@ -74,5 +74,14 @@ export function parseSeedEnv(source: EnvSource = process.env): SeedEnv {
   return parseWith(seedEnvSchema, source);
 }
 
-/** Se valida al importar: si falta una variable obligatoria, el proceso no arranca. */
-export const env: Env = parseEnv(process.env);
+let cached: Env | undefined;
+
+/**
+ * Entorno validado, perezoso y memoizado. No se valida al importar para que `next build` compile
+ * sin .env.local aunque una página importe este archivo (directa o indirectamente). La validación
+ * temprana al arrancar la hacen src/instrumentation-node.ts (web) y src/worker.ts.
+ */
+export function getEnv(): Env {
+  cached ??= parseEnv(process.env);
+  return cached;
+}

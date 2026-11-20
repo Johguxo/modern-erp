@@ -82,6 +82,7 @@ Después sigue con `/historia E0-H2`, `E0-H3`, etc. Usa `/estado` para ver el av
 | `.claude/commands/adr.md` | `/adr <tema>`: propone una nueva decisión de arquitectura |
 | `.claude/commands/release.md` | `/release`: abre el PR `develop` → `main` con el resumen de historias (solo el líder) |
 | `.github/pull_request_template.md` | Plantilla de PR con la Definición de hecha |
+| `.claude/skills/` + `skills-lock.json` | Skills públicas copiadas al repo y fijadas a un commit: `codebase-design` (mattpocock), `frontend-design` (anthropics), `web-design-guidelines` (vercel-labs), `supabase-postgres-best-practices` (supabase). Llegan con el clone, sin instalar nada. Precedencia frente a los docs: `CLAUDE.md` §Skills externas |
 | Plugin `modern-web-guidance@googlechrome` | Skills públicas de Google Chrome con buenas prácticas web actuales. Declarado en `.claude/settings.json` (`extraKnownMarketplaces` + `enabledPlugins`): al abrir el repo y confiar en la carpeta, Claude Code ofrece instalarlo. Para agregar otro plugin solo a este proyecto: `claude plugin install <plugin>@<marketplace> --scope project` |
 
 ## 7. Protección de ramas en GitHub

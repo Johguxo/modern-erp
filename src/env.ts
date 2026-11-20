@@ -11,7 +11,10 @@ const optional = <T extends z.ZodType>(schema: T) =>
 
 const postgresUrl = z
   .url()
-  .refine((value) => /^postgres(ql)?:\/\//.test(value), 'debe empezar con postgres:// o postgresql://');
+  .refine(
+    (value) => /^postgres(ql)?:\/\//.test(value),
+    'debe empezar con postgres:// o postgresql://',
+  );
 
 /** Variables que la app necesita para arrancar (web y worker). */
 export const envSchema = z.object({

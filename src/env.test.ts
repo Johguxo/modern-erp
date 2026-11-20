@@ -104,9 +104,7 @@ describe('falla al arrancar si falta alguna variable', () => {
 
 describe('variables del seed', () => {
   it('parseSeedEnv sin variables falla y nombra las faltantes', () => {
-    expect(() => parseSeedEnv({})).toThrow(
-      /SEED_SUPERADMIN_EMAIL[\s\S]*SEED_DEFAULT_PASSWORD/,
-    );
+    expect(() => parseSeedEnv({})).toThrow(/SEED_SUPERADMIN_EMAIL[\s\S]*SEED_DEFAULT_PASSWORD/);
   });
 
   it('parseSeedEnv con variables válidas pasa', () => {

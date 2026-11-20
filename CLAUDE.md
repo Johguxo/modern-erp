@@ -48,6 +48,15 @@ pnpm lint | pnpm typecheck | pnpm test | pnpm test:int | pnpm test:e2e | pnpm bu
 10. **Fuera de alcance:** no implementes lo que el PRD deja fuera del MVP, pero no cierres el diseño a ello (usa los campos reservados que ya existen).
 11. **Secretos:** nunca leas ni escribas `.env.local` ni `.env.production`; usa `.env.example` como referencia.
 
+## Skills externas (`.claude/skills/`, fijadas en `skills-lock.json`)
+Son guías generales. **Si chocan con `docs/`, mandan los docs del proyecto.**
+- **`frontend-design`:** en pantallas con prototipo manda la fidelidad a `docs/ui/prototipo/` y a `docs/ui/design-tokens.md`: no inventes paleta, fuentes ni layout. En pantallas sin prototipo (configuración, `/admin`), usa el lenguaje visual de la bandeja y los tokens existentes. Su libertad estética solo aplica a piezas nuevas sin referencia y con aprobación.
+- **`supabase-postgres-best-practices`:** úsala para índices, consultas, locks y RLS, pero el modelo multi-cliente es el de `docs/dominio/modelo-datos.md` (rol `app_user` + `set local app.tenant_id`), no `auth.uid()`. Las migraciones van con drizzle-kit en `src/db/migrations`.
+- **`web-design-guidelines`:** para revisar UI (accesibilidad, UX). Descarga sus reglas de GitHub en cada uso.
+- **`codebase-design`:** vocabulario para diseñar módulos (módulo, interfaz, seam, adapter), coherente con ADR-001: los puertos de `src/shared/ports` son seams y los adaptadores viven en `infrastructure/`. Su "design it twice" lanza subagentes en paralelo: solo si se pide.
+- **Plugin `modern-web-guidance`** (en `.claude/settings.json`): buenas prácticas web actuales.
+- **Agregar o actualizar** skills siempre en una rama, revisando el diff del `SKILL.md` antes del PR: `npx skills add <repo> --skill <nombre> -a claude-code --copy -y` o `npx skills update -p`.
+
 ## Ramas y PRs (Git flow simplificado)
 - **`main`:** lo que está en producción. Solo recibe PRs desde `develop` (release), que abre y aprueba el líder del proyecto con `/release`.
 - **`develop`:** rama de integración. Todo el trabajo del equipo entra aquí primero.

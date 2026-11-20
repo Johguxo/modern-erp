@@ -42,6 +42,8 @@ export const TOOLING_ONLY_KEYS = ['SUPABASE_PROJECT_REF', 'SUPABASE_ACCESS_TOKEN
 
 export type Env = z.infer<typeof envSchema>;
 export type SeedEnv = z.infer<typeof seedEnvSchema>;
+/** Origen de las variables: process.env o un objeto equivalente (pruebas). */
+export type EnvSource = Readonly<Record<string, string | undefined>>;
 
 function formatIssues(error: z.ZodError): string {
   // Solo nombres y motivos: nunca valores, para no filtrar secretos en logs.
@@ -53,7 +55,7 @@ function formatIssues(error: z.ZodError): string {
   return `Variables de entorno inválidas o faltantes:\n${lines.join('\n')}\nRevisa .env.example.`;
 }
 
-function parseWith<T extends z.ZodType>(schema: T, source: NodeJS.ProcessEnv): z.infer<T> {
+function parseWith<T extends z.ZodType>(schema: T, source: EnvSource): z.infer<T> {
   const result = schema.safeParse(source);
   if (!result.success) {
     throw new Error(formatIssues(result.error));
@@ -61,11 +63,11 @@ function parseWith<T extends z.ZodType>(schema: T, source: NodeJS.ProcessEnv): z
   return result.data;
 }
 
-export function parseEnv(source: NodeJS.ProcessEnv): Env {
+export function parseEnv(source: EnvSource): Env {
   return parseWith(envSchema, source);
 }
 
-export function parseSeedEnv(source: NodeJS.ProcessEnv = process.env): SeedEnv {
+export function parseSeedEnv(source: EnvSource = process.env): SeedEnv {
   return parseWith(seedEnvSchema, source);
 }
 

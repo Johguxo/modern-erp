@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { defineConfig } from 'vitest/config';
 
-import { TEST_ENV } from './tests/setup/test-env';
+import { TEST_ENV } from './tests/setup/test-env.mts';
 
 const alias = { '@': path.resolve(import.meta.dirname, 'src') };
 

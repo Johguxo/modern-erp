@@ -6,7 +6,7 @@
 - [ ] Se genera en el worker al quedar `approved` (y se regenera si hay correcciones), se guarda con `FileStorage` y se registra en `files`.
 - [ ] "Descargar PDF" en la pantalla 3 entrega una URL firmada de corta duración; para borradores genera una vista previa al vuelo con marca "BORRADOR".
 
-Estado: pendiente
+Estado: pendiente · Issue: [#25](https://github.com/Johguxo/modern-erp/issues/25)
 
 ### E5-H2 · Correos de aprobación
 **Criterios de aceptación**
@@ -16,11 +16,11 @@ Estado: pendiente
 - [ ] Respeta `tenant_settings.notification_channels`.
 - [ ] En desarrollo, los correos se capturan localmente (Inbucket de Supabase o un `Mailer` de consola).
 
-Estado: pendiente
+Estado: pendiente · Issue: [#26](https://github.com/Johguxo/modern-erp/issues/26)
 
 ### E5-H3 · Recordatorios
 **Criterios de aceptación**
 - [ ] Job programado cada hora (`approvals.reminders`): pasos `pending` con más de `reminder_hours` (por defecto 24) reciben un recordatorio, como máximo uno cada 24 h.
 - [ ] Evento `reminder_sent` en la línea de tiempo.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#27](https://github.com/Johguxo/modern-erp/issues/27)

@@ -8,7 +8,7 @@ Puede ir en paralelo con E5.
 - [ ] Caso de uso `recordMovement` que inserta el movimiento y actualiza el saldo en la misma transacción (prueba de concurrencia).
 - [ ] `searchProducts` (E2) muestra el stock del almacén por defecto.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#28](https://github.com/Johguxo/modern-erp/issues/28)
 
 ### E6-H2 · Stock inicial desde Excel
 **Criterios de aceptación**
@@ -16,7 +16,7 @@ Estado: pendiente
 - [ ] Crea movimientos `initial`; si el producto no existe, la fila se marca con error.
 - [ ] Tabla de stock actual con búsqueda.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#29](https://github.com/Johguxo/modern-erp/issues/29)
 
 ### E6-H3 · Registrar entrega
 **Como** almacén **quiero** registrar la entrega de un SOF aprobado **para** que el stock se descuente solo.
@@ -27,4 +27,4 @@ Estado: pendiente
 - [ ] Si algún saldo queda negativo, se permite (configuración por defecto) y el evento guarda la advertencia; la interfaz la muestra antes de confirmar.
 - [ ] E2E del flujo completo: crear → aprobar → entregar → ver el stock reducido.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#30](https://github.com/Johguxo/modern-erp/issues/30)

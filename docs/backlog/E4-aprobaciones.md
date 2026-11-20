@@ -9,7 +9,7 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md` §2–§4 y §8.
 - [ ] Validación: al menos un paso; cada paso con al menos un aprobador; un rol sin usuarios muestra advertencia.
 - [ ] `previewRoute(docType, total)` devuelve los pasos y aprobadores que aplicarían.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/21)
 
 ### E4-H2 · Instancia y decisión
 **Como** aprobador **quiero** aprobar, rechazar o pedir cambios **para** que la solicitud avance sin correos sueltos.
@@ -23,14 +23,14 @@ Estado: pendiente
 - [ ] Botones en la pantalla 3 y contador en la bandeja.
 - [ ] Eventos en `approval_events` y registro en `audit_events`.
 
-Estado: pendiente
+Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
 
 ### E4-H3 · Línea de tiempo
 **Criterios de aceptación**
 - [ ] `getTimeline(requestId)` combina eventos y pasos futuros en una lista ordenada para la interfaz.
 - [ ] Panel de la pantalla 3 igual al prototipo: hechos en verde con check, pendiente en ámbar, futuros en gris; cada ítem con quién y cuándo (zona del tenant).
 
-Estado: pendiente
+Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/23)
 
 ### E4-H4 · Corrección de una línea sin reiniciar
 **Como** almacén **quiero** corregir una línea mal registrada **para** no obligar a todos a firmar de nuevo.
@@ -43,4 +43,4 @@ Estado: pendiente
 - [ ] Evento `line_corrected` con antes/después; aviso informativo a quienes ya aprobaron.
 - [ ] Pruebas unitarias de las tres ramas de la regla y una E2E del caso del prototipo (cambiar `GEN-046` por `GEN-045`).
 
-Estado: pendiente
+Estado: pendiente · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)

@@ -21,6 +21,24 @@ Las épicas se hacen en orden; dentro de cada épica, las historias también, sa
 
 Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curso`, `en revisión`, `hecha`. Claude Code la actualiza en el mismo PR que implementa la historia.
 
+## Seguimiento en GitHub
+
+- **Issues:** cada historia tiene un issue con la etiqueta `historia` (enlazado en su línea `Estado:`). El issue dice **quién la tiene** (assignee) y su avance; los criterios y notas técnicas viven solo aquí, en `docs/backlog/`.
+- **Milestones:** uno por épica (`E0 · Fundaciones del proyecto`, …), con el porcentaje de issues cerrados.
+- **Project `modern-erp`** (tablero): columnas `Todo` → `In Progress` → `In Review` → `Done`.
+
+| Momento | Issue / project | Línea `Estado:` (en el PR) |
+|---|---|---|
+| Nadie la tomó | sin asignar · `Todo` | `pendiente` |
+| Alguien la toma (`/historia`) | asignado · `In Progress` | `en curso` |
+| PR abierto contra `develop` (`Closes #N`) | `In Review` | `en revisión` |
+| PR integrado en `develop` | cerrado automáticamente · `Done` | `en revisión` |
+| Release a `main` | — | `hecha` (PR posterior al release) |
+
+**Tomar una historia:** asígnate el issue antes de crear la rama; si ya tiene assignee, es de otra persona. **Historia nueva:** agrégala aquí con la plantilla y crea su issue (`gh issue create --label historia --milestone "<épica>"`), luego enlázalo en su línea `Estado:`.
+
+Para mover un ítem del project desde la terminal: `gh project item-list <n> --owner Johguxo --format json` (id del ítem), `gh project field-list <n> --owner Johguxo --format json` (id del campo Status y de sus opciones) y `gh project item-edit --id <ítem> --project-id <project> --field-id <status> --single-select-option-id <opción>`.
+
 ## Definición de "hecha" (para toda historia)
 
 - [ ] Cumple todos sus criterios de aceptación.
@@ -45,7 +63,7 @@ Al pie de cada historia hay una línea `Estado:`. Valores: `pendiente`, `en curs
 **Notas técnicas**
 - ...
 
-Estado: pendiente
+Estado: pendiente · Issue: #<n>
 ```
 
 ## Fuera del MVP (no crear historias todavía)

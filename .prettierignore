@@ -1,0 +1,14 @@
+docs/
+.claude/
+.github/
+CLAUDE.md
+README.md
+skills-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.next/
+coverage/
+playwright-report/
+test-results/
+src/db/migrations/
+.mcp.json

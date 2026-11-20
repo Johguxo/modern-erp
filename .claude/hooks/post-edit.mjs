@@ -21,6 +21,11 @@ if (rel.startsWith('..') || rel.startsWith('node_modules') || rel.startsWith('do
 if (!existsSync(path.join(projectDir, 'node_modules'))) process.exit(0);
 
 // pnpm exec funciona igual en macOS, Linux y Windows.
+// En Windows se ejecuta con shell (pnpm es un .cmd), que no entrecomilla los argumentos: una ruta
+// con espacios, paréntesis (grupos de rutas como `(app)`) o `&` se partiría. Por eso la ruta va
+// entre comillas; un nombre de archivo de Windows no puede contener `"`.
+const relPosix = rel.split(path.sep).join('/');
+const target = process.platform === 'win32' ? `"${relPosix}"` : relPosix;
 const run = (bin, args) =>
   execFileSync('pnpm', ['exec', bin, ...args], {
     cwd: projectDir,
@@ -37,7 +42,7 @@ const isFormattable = isCode || /\.(json|css|md)$/.test(filePath);
 
 try {
   if (isFormattable && hasBin('prettier')) {
-    run('prettier', ['--write', '--log-level', 'warn', filePath]);
+    run('prettier', ['--write', '--log-level', 'warn', target]);
   }
 } catch {
   // Un error de formato no bloquea.
@@ -45,7 +50,7 @@ try {
 
 if (isCode && hasBin('eslint')) {
   try {
-    run('eslint', ['--fix', '--max-warnings=0', filePath]);
+    run('eslint', ['--fix', '--max-warnings=0', target]);
   } catch (err) {
     const out = `${err.stdout ?? ''}${err.stderr ?? ''}`.trim();
     process.stderr.write(`ESLint encontró problemas en ${rel}. Corrígelos antes de seguir:\n${out}\n`);

@@ -64,6 +64,7 @@ describe('createEntitlements delega en el repositorio y en las reglas del domini
       allowed: false,
       limit: 10,
       used: 10,
+      reason: 'limit_reached',
     });
     expect(repo.calls).toEqual([TENANT_A]);
   });
@@ -73,8 +74,10 @@ describe('createEntitlements delega en el repositorio y en las reglas del domini
 
     await expect(entitlements.canAddUser(TENANT_B)).resolves.toEqual({
       allowed: false,
-      limit: null,
+      // El límite real (override de 40) aunque esté bloqueado: no se confunde con "ilimitado".
+      limit: 40,
       used: 3,
+      reason: 'read_only',
     });
   });
 

@@ -16,13 +16,7 @@ import {
   boolean,
 } from 'drizzle-orm/pg-core';
 
-import {
-  appendOnlyPolicies,
-  appUser,
-  currentTenantId,
-  currentUserId,
-  tenantIsolation,
-} from './rls';
+import { appUser, currentTenantId, currentUserId, tenantIsolation } from './rls';
 
 const id = () => uuid().primaryKey().defaultRandom();
 const createdAt = () => timestamp({ withTimezone: true }).notNull().defaultNow();
@@ -301,6 +295,17 @@ export const auditEvents = pgTable(
       'audit_events_actor_type_check',
       sql`${t.actorType} in ('user','platform_admin','system','external')`,
     ),
-    ...appendOnlyPolicies(t.tenantId, 'audit'),
+    // Solo insert y select; el actor, si viene, es el usuario de la transacción (no se puede
+    // registrar a nombre de otro). Los eventos de plataforma (tenant null) van por getDbAdmin.
+    pgPolicy('audit_read', {
+      for: 'select',
+      to: appUser,
+      using: sql`${t.tenantId} = ${currentTenantId}`,
+    }),
+    pgPolicy('audit_insert', {
+      for: 'insert',
+      to: appUser,
+      withCheck: sql`${t.tenantId} = ${currentTenantId} and (${t.actorUserId} is null or ${t.actorUserId} = ${currentUserId})`,
+    }),
   ],
 );

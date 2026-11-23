@@ -100,7 +100,12 @@ describe('createEntitlementsFor con getDbAdmin() y con withTenant', () => {
     await fx.invitation(tenant);
     const e = createEntitlementsFor(getDbAdmin());
 
-    await expect(e.canAddUser(tenant)).resolves.toEqual({ allowed: false, limit: 2, used: 2 });
+    await expect(e.canAddUser(tenant)).resolves.toEqual({
+      allowed: false,
+      limit: 2,
+      used: 2,
+      reason: 'limit_reached',
+    });
     await expect(e.hasFeature(tenant, 'whatsapp')).resolves.toBe(true);
     await expect(e.hasFeature(tenant, 'dashboard')).resolves.toBe(false);
   });

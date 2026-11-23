@@ -10,8 +10,9 @@ afterAll(async () => {
 });
 
 // Las tablas sonda de otras pruebas de integración (`_rls_probe_*`, `_grants_probe_*`, ...) empiezan
-// con "_" y viven solo mientras corre su archivo: se excluyen para no depender del orden.
-const NOT_PROBE = sql`c.relname not like '\\_%'`;
+// con "_" y contienen "probe"; viven solo mientras corre su archivo y se excluyen para no depender
+// del orden. Convención: toda tabla temporal de pruebas se llama `_<algo>_probe_<sufijo>`.
+const NOT_PROBE = sql`c.relname not like '\\_%probe%'`;
 
 describe('cobertura de RLS en public', () => {
   it('toda tabla de public tiene row level security activo', async () => {
@@ -53,7 +54,7 @@ describe('cobertura de RLS en public', () => {
     }>(sql`
       select tablename, policyname, roles::text as roles
       from pg_policies
-      where schemaname = 'public' and tablename not like '\\_%'`);
+      where schemaname = 'public' and tablename not like '\\_%probe%'`);
 
     expect(rows.length).toBeGreaterThan(0);
     const offenders = rows.filter((r) => r.roles !== '{app_user}');

@@ -67,10 +67,11 @@ describe('matriz de grants de app_user (tabla "Tablas, RLS y grants" del plan)',
       plans: ['SELECT'],
       tenants: ['SELECT'],
       subscriptions: ['SELECT'],
-      tenant_settings: ['SELECT', 'UPDATE'],
+      // UPDATE va por columnas (ver la prueba siguiente), no sobre la tabla entera.
+      tenant_settings: ['SELECT'],
       users: ['SELECT'],
-      memberships: ['SELECT', 'UPDATE'],
-      invitations: ['INSERT', 'SELECT', 'UPDATE'],
+      memberships: ['SELECT'],
+      invitations: ['INSERT', 'SELECT'],
       platform_admins: [],
       audit_events: ['INSERT', 'SELECT'],
     };
@@ -86,6 +87,59 @@ describe('matriz de grants de app_user (tabla "Tablas, RLS y grants" del plan)',
     );
     for (const row of rows) actual[row.tbl]?.push(row.privilege);
     expect(actual).toEqual(expected);
+  });
+
+  it('UPDATE solo en las columnas que la web necesita', async () => {
+    const expected: Record<string, string[]> = {
+      invitations: ['expires_at', 'invited_by', 'roles', 'token_hash', 'updated_at'],
+      memberships: ['roles', 'status', 'updated_at'],
+      tenant_settings: [
+        'brand',
+        'currency',
+        'email_domains',
+        'integrations',
+        'inventory',
+        'locale',
+        'login_methods',
+        'notification_channels',
+        'role_labels',
+        'timezone',
+        'updated_at',
+      ],
+    };
+    const rows = await getDbAdmin().execute<{ tbl: string; col: string }>(sql`
+      select table_name as tbl, column_name as col
+      from information_schema.column_privileges
+      where grantee = 'app_user' and privilege_type = 'UPDATE' and table_schema = 'public'
+        and table_name in ('invitations', 'memberships', 'tenant_settings')
+      order by table_name, column_name`);
+    const actual: Record<string, string[]> = {};
+    for (const row of rows) (actual[row.tbl] ??= []).push(row.col);
+    expect(actual).toEqual(expected);
+  });
+
+  it('no puede reasignar una membresía a otro usuario (user_id) → 42501', async () => {
+    await expectDenied(() =>
+      withTenant(scope(), (tx) =>
+        tx.update(memberships).set({ userId: other }).where(eq(memberships.id, membershipOther)),
+      ),
+    );
+  });
+
+  it('no puede marcar una invitación como aceptada ni moverla de empresa → 42501', async () => {
+    await expectDenied(() =>
+      withTenant(scope(), (tx) =>
+        tx
+          .update(invitations)
+          .set({ acceptedAt: new Date() })
+          .where(eq(invitations.id, invitationA)),
+      ),
+    );
+    await expectDenied(() =>
+      withTenant(scope(), (tx) =>
+        tx.update(invitations).set({ tenantId: newId() }).where(eq(invitations.id, invitationA)),
+      ),
+    );
   });
 });
 
@@ -325,6 +379,24 @@ describe('audit_events: solo insert y select', () => {
           actorType: 'platform_admin',
           action: 'grants.platform',
           entityType: 'tenant',
+        }),
+      ),
+    );
+
+    expect(error.code).toBe('42501');
+    expect(error.message).toMatch(/row-level security/);
+  });
+
+  it('no se puede registrar un evento a nombre de otro usuario → 42501', async () => {
+    const error = await capturePgError(() =>
+      withTenant(scope(), (tx) =>
+        tx.insert(auditEvents).values({
+          tenantId: A,
+          actorUserId: other,
+          actorType: 'user',
+          action: 'grants.spoof',
+          entityType: 'tenant',
+          entityId: A,
         }),
       ),
     );

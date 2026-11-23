@@ -1,0 +1,1 @@
+ALTER POLICY "audit_insert" ON "audit_events" TO app_user WITH CHECK ("audit_events"."tenant_id" = (select app.current_tenant_id()) and ("audit_events"."actor_user_id" is null or "audit_events"."actor_user_id" = (select app.current_user_id())));

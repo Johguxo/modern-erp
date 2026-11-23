@@ -64,21 +64,26 @@ export function isReadOnly(snapshot: EntitlementSnapshot): boolean {
 
 export interface UserCapacity {
   readonly allowed: boolean;
-  /** null = ilimitado */
+  /** Límite del plan; null = ilimitado (o sin suscripción vigente). */
   readonly limit: number | null;
   readonly used: number;
+  /** Por qué no se puede, para el mensaje: límite alcanzado, solo lectura o sin suscripción. */
+  readonly reason?: 'limit_reached' | 'read_only' | 'no_subscription';
 }
 
 export function userCapacity(snapshot: EntitlementSnapshot): UserCapacity {
-  if (!snapshot.subscription || isReadOnly(snapshot)) {
-    return { allowed: false, limit: null, used: snapshot.seatsUsed };
+  const used = snapshot.seatsUsed;
+  if (!snapshot.subscription) {
+    return { allowed: false, limit: null, used, reason: 'no_subscription' };
   }
   const { maxUsers } = effectiveLimits(snapshot.subscription.plan, snapshot.subscription.overrides);
-  return {
-    allowed: maxUsers === null || snapshot.seatsUsed < maxUsers,
-    limit: maxUsers,
-    used: snapshot.seatsUsed,
-  };
+  if (isReadOnly(snapshot)) {
+    return { allowed: false, limit: maxUsers, used, reason: 'read_only' };
+  }
+  if (maxUsers !== null && used >= maxUsers) {
+    return { allowed: false, limit: maxUsers, used, reason: 'limit_reached' };
+  }
+  return { allowed: true, limit: maxUsers, used };
 }
 
 export function hasFeature(snapshot: EntitlementSnapshot, feature: PlanFeature): boolean {

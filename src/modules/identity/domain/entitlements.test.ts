@@ -139,6 +139,7 @@ describe('userCapacity: si se puede agregar un usuario', () => {
       allowed: false,
       limit: 10,
       used: 10,
+      reason: 'limit_reached',
     });
   });
 
@@ -180,6 +181,7 @@ describe('userCapacity: si se puede agregar un usuario', () => {
       allowed: false,
       limit: null,
       used: 2,
+      reason: 'no_subscription',
     });
   });
 

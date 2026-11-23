@@ -1,5 +1,7 @@
 // Repositorio de Entitlements. Funciona con la transacción de withTenant (RLS) o con getDbAdmin()
 // (resolver de sesión); en ambos casos filtra por tenantId de forma explícita (primera defensa).
+// MVP: ends_at no se evalúa (el SuperAdmin cambia el estado a mano; ADR-002 §3). En E1-H3, llamar
+// dentro de la transacción de invitar para que las consultas formen una foto consistente.
 import { and, count, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';

@@ -93,11 +93,17 @@ export async function runPipeline<C extends Contract>(
     }
 
     const shared: SharedDeps = { clock: deps.clock, ids: deps.ids, logger };
-    const output = await deps.runInTenant(ctx, (tx) =>
-      handler({ ctx, input: parsed.data as z.output<C['inputSchema']>, tx, shared }),
-    );
-    // Descarta campos de más y verifica la forma de la salida.
-    const data = contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
+    const data = await deps.runInTenant(ctx, async (tx) => {
+      const output = await handler({
+        ctx,
+        input: parsed.data as z.output<C['inputSchema']>,
+        tx,
+        shared,
+      });
+      // Dentro de la transacción: si la salida no cumple el contrato (bug), se revierte y el
+      // usuario puede reintentar sin duplicar datos. También descarta campos de más.
+      return contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
+    });
     return { ok: true, data };
   } catch (error) {
     const actionError = toActionError(error, requestId, logger);

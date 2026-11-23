@@ -2,6 +2,8 @@
 //   export const submitRequestAction = action(submitRequestContract, 'requests.create',
 //     ({ ctx, input, tx, shared }) => submitRequest(ctx, input, createRequestsDeps(tx, shared)));
 // La acción devuelve ActionResult: nunca lanza al cliente (salvo redirect/notFound de Next).
+// No llames a redirect() ni notFound() dentro del handler: corren dentro de la transacción y la
+// revierten. Devuelve el resultado y redirige en el cliente (o en la página) según `ok`.
 import { headers } from 'next/headers';
 import type { z } from 'zod';
 
@@ -29,7 +31,7 @@ export function createAction(deps: () => PipelineDeps) {
       const resolved = deps();
       const requestId = resolveRequestId(requestHeaders.get(REQUEST_ID_HEADER), resolved.ids);
       return runPipeline(resolved, contract, permission, handler, {
-        name: options.name ?? handler.name ?? 'action',
+        name: options.name || handler.name || 'action',
         headers: requestHeaders,
         requestId,
         rawInput: input,

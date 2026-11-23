@@ -2,7 +2,7 @@
 // Nunca expone Error.message ni detalles técnicos; los errores inesperados se registran completos.
 import { unstable_rethrow } from 'next/navigation';
 
-import { isDomainError, ValidationError, type ErrorCode } from '@/shared/errors';
+import { isDomainError, type ErrorCode, type FieldErrors } from '@/shared/errors';
 import type { Logger } from '@/shared/ports/logger';
 import type { ActionError } from '@/shared/result';
 import { messages } from '@/ui/messages/es-PE';
@@ -29,7 +29,11 @@ export function toActionError(error: unknown, requestId: string, logger: Logger)
     return {
       code: error.code,
       message: messageFor(error.code, error.reason, error.params),
-      fieldErrors: error instanceof ValidationError ? error.fieldErrors : undefined,
+      // Por código y no por instanceof (misma razón que la marca de DomainError).
+      fieldErrors:
+        error.code === 'VALIDATION' && 'fieldErrors' in error
+          ? (error.fieldErrors as FieldErrors)
+          : undefined,
       requestId,
     };
   }

@@ -47,6 +47,25 @@ describe('mensajes de Zod en es-PE tras configureZodMessages()', () => {
     expect(firstMessage(z.string().max(5), 'abcdef')).toBe('Debe tener como máximo 5 caracteres.');
   });
 
+  it('límites estrictos de número: positive, gt y lt', () => {
+    expect(firstMessage(z.number().positive(), 0)).toBe('Debe ser mayor que 0.');
+    expect(firstMessage(z.number().gt(5), 5)).toBe('Debe ser mayor que 5.');
+    expect(firstMessage(z.number().lt(10), 10)).toBe('Debe ser menor que 10.');
+  });
+
+  it('arreglos: al menos un elemento, mínimo y máximo', () => {
+    expect(firstMessage(z.array(z.string()).min(1), [])).toBe(v.atLeastOneItem);
+    expect(firstMessage(z.array(z.string()).min(3), ['a'])).toBe('Agrega al menos 3 elementos.');
+    expect(firstMessage(z.array(z.string()).max(1), ['a', 'b'])).toBe(
+      'Puedes agregar como máximo 1 elementos.',
+    );
+  });
+
+  it('fecha fuera de rango → genérico (no un timestamp)', () => {
+    const message = firstMessage(z.date().min(new Date('2026-01-01')), new Date('2025-01-01'));
+    expect(message).toBe(v.invalid);
+  });
+
   it('email y uuid → formato no válido', () => {
     expect(firstMessage(z.email(), 'no-es-correo')).toBe(v.invalidFormat);
     expect(firstMessage(z.uuid(), '123')).toBe(v.invalidFormat);

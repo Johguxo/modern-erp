@@ -16,5 +16,7 @@ ADR-001 dice que `src/app` solo valida, arma el `ctx` y llama al caso de uso. Fa
 8. **Montos** en las salidas: como `string` decimal (las server actions no serializan `Decimal`).
 
 ## Consecuencias
+- No se llama a `redirect()` ni `notFound()` dentro del handler: corren dentro de la transacción y la revierten. El handler devuelve el resultado, y el cliente o la página redirigen según `ok`. La salida se valida dentro de la transacción, así que un error de contrato también revierte.
+- `z.config` es global al proceso: los esquemas sin mensaje propio (incluido `env.ts`) muestran el texto en es-PE. En el cliente se activa con `configureZodMessages()` en el primer formulario (E1-H2).
 - Sin el `CtxResolver` de E1-H2, toda acción responde `UNAUTHENTICATED`.
 - Quedan para más adelante: el modo solo lectura (E1, con `Entitlements`), los permisos "uno de varios", la IP y el navegador para `audit_events` (E1-H3) y un actor `system` para los jobs sin usuario (E0-H5 o E4).

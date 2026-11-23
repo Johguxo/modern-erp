@@ -25,7 +25,12 @@ async function readInput(request: Request): Promise<{ ok: true; value: unknown }
   if (SAFE_METHODS.has(request.method)) {
     return { ok: true, value: Object.fromEntries(new URL(request.url).searchParams) };
   }
-  const text = await request.text();
+  let text: string;
+  try {
+    text = await request.text();
+  } catch {
+    return { ok: false };
+  }
   if (text.trim() === '') return { ok: true, value: {} };
   try {
     return { ok: true, value: JSON.parse(text) as unknown };

@@ -273,6 +273,29 @@ describe('runPipeline', () => {
     expect(logger.entries.some((e) => e.level === 'error')).toBe(true);
   });
 
+  it('la salida se valida dentro de la transacción (un fallo revierte)', async () => {
+    const { deps } = setup();
+    let insideTransaction = false;
+    let parsedInside = false;
+    const runInTenant: PipelineDeps['runInTenant'] = async (_ctx, fn) => {
+      insideTransaction = true;
+      try {
+        return await fn({} as DbTransaction);
+      } catch (error) {
+        parsedInside = insideTransaction;
+        throw error;
+      } finally {
+        insideTransaction = false;
+      }
+    };
+    const handler = (() => Promise.resolve({ id: 42 })) as unknown as Handler<C>;
+
+    const result = await run({ ...deps, runInTenant }, handler);
+
+    expect(!result.ok && result.error.code).toBe('INTERNAL');
+    expect(parsedInside).toBe(true);
+  });
+
   it("registra 'action finished' con outcome OK y con el código de error", async () => {
     const ok = setup();
     await run(ok.deps, () => Promise.resolve({ id: '1', title: 't' }));

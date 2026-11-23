@@ -16,9 +16,20 @@ export const esPeErrorMap: z.core.$ZodErrorMap = (issue) => {
       if (issue.origin === 'string') {
         return issue.minimum === 1 ? v.required : v.tooShort(issue.minimum);
       }
-      return v.tooSmall(issue.minimum);
+      if (issue.origin === 'array' || issue.origin === 'set') {
+        return Number(issue.minimum) <= 1 ? v.atLeastOneItem : v.minItems(issue.minimum);
+      }
+      if (issue.origin === 'number' || issue.origin === 'int' || issue.origin === 'bigint') {
+        return issue.inclusive === false ? v.greaterThan(issue.minimum) : v.tooSmall(issue.minimum);
+      }
+      return v.invalid;
     case 'too_big':
-      return issue.origin === 'string' ? v.tooLong(issue.maximum) : v.tooBig(issue.maximum);
+      if (issue.origin === 'string') return v.tooLong(issue.maximum);
+      if (issue.origin === 'array' || issue.origin === 'set') return v.maxItems(issue.maximum);
+      if (issue.origin === 'number' || issue.origin === 'int' || issue.origin === 'bigint') {
+        return issue.inclusive === false ? v.lessThan(issue.maximum) : v.tooBig(issue.maximum);
+      }
+      return v.invalid;
     case 'invalid_format':
       return v.invalidFormat;
     default:

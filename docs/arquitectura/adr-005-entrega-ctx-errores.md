@@ -1,6 +1,6 @@
 # ADR-005 – Entrega: ctx, errores y helpers action()/route()
 
-**Fecha:** 23 nov 2026 · **Estado:** propuesta
+**Fecha:** 23 nov 2026 · **Estado:** aceptada
 
 ## Contexto
 ADR-001 dice que `src/app` solo valida, arma el `ctx` y llama al caso de uso. Faltaba definir cómo: forma del `ctx`, errores, resultado de las server actions, transacción por request y logs.

@@ -3,8 +3,9 @@
 ### E2-H1 · Esquema y casos de uso del catálogo
 **Criterios de aceptación**
 - [ ] Tablas `warehouses`, `products`, `equipment`, `cost_centers`, `import_jobs` con RLS e índices (incluido `pg_trgm` en productos).
-- [ ] Casos de uso: listar con filtros y paginación, crear/editar, desactivar (no borrar), `searchProducts(q)` por código o nombre que devuelve también el stock del almacén por defecto.
+- [ ] Casos de uso: listar con filtros y paginación, crear/editar, desactivar (no borrar), `searchProducts(q)` por código o nombre (el stock del almacén por defecto se agrega en E6-H1).
 - [ ] Códigos únicos por tenant; error `ConflictError` con mensaje claro.
+- [ ] `platform.createTenant` (E1-H4) crea el almacén por defecto del nuevo cliente.
 - [ ] Pruebas de aislamiento entre tenants.
 
 Estado: pendiente · Issue: [#13](https://github.com/Johguxo/modern-erp/issues/13)

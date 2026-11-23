@@ -12,7 +12,7 @@
 | Tablas | TanStack Table | Bandeja y listas de admin |
 | Base de datos | PostgreSQL en Supabase | Supabase CLI para entorno local |
 | ORM y migraciones | Drizzle ORM + drizzle-kit | Migraciones versionadas en `src/db/migrations`; RLS en migraciones SQL |
-| Auth | Supabase Auth (correo y contraseña) vía `@supabase/ssr` | Solo dentro del adaptador `AuthProvider` y del middleware |
+| Auth | Supabase Auth (correo y contraseña) vía `@supabase/ssr` | Solo dentro del adaptador `AuthProvider` y de `src/proxy.ts` (el middleware de Next.js 16) |
 | Archivos | Supabase Storage | Solo dentro del adaptador `FileStorage` |
 | Jobs | pg-boss | Worker separado (`pnpm worker`) |
 | PDF | @react-pdf/renderer | Generado en el worker o en un route handler |

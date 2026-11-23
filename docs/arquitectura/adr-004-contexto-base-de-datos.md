@@ -28,5 +28,5 @@ ADR-001 exige filtrar por tenant en cada repositorio y deja RLS como segunda def
 - Toda tabla nueva lleva su política en la misma migración y una prueba de aislamiento entre dos tenants.
 - No se anidan `withTenant`/`withUser`; un request de escritura = una transacción.
 - `supabase db reset` borra lo migrado por drizzle-kit: por eso `pnpm db:reset` encadena `pnpm db:migrate`. La única fuente de migraciones es `src/db/migrations`.
-- Pendiente para E1: cómo resolver `users.id` a partir de `auth_user_id` al iniciar sesión, antes de conocer `app.user_id` (función `security definer` mínima o lectura acotada con `getDbAdmin()`).
+- Al iniciar sesión, `users.id` y las membresías se obtienen a partir de `auth_user_id` con **una lectura acotada con `getDbAdmin()`** dentro del `CtxResolver` (E1-H2), un caso puntual del §8. Se descartó una función `security definer`: es más simple y queda en un solo lugar del código.
 - En producción, `DATABASE_URL` va por el pooler en modo transacción (puerto 6543, usuario `app_user.<project_ref>`); `DATABASE_URL_ADMIN`, directo o en modo sesión (5432).

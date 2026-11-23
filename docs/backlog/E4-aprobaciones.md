@@ -8,6 +8,7 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md` §2–§4 y §8.
 - [ ] `/configuracion/aprobaciones`: ver y editar los pasos de la política del SOF (nombre, tipo de aprobador `users` o `role`, aprobadores, regla `any`/`all`, orden). Los campos de condiciones quedan ocultos pero el modelo los guarda.
 - [ ] Validación: al menos un paso; cada paso con al menos un aprobador; un rol sin usuarios muestra advertencia.
 - [ ] `previewRoute(docType, total)` devuelve los pasos y aprobadores que aplicarían.
+- [ ] `platform.createTenant` (E1-H4) crea la política "SOF estándar": paso 1 "Almacén" (rol `warehouse`) y paso 2 "Gerencia local" (rol `approver`); el admin del cliente la ajusta después.
 
 Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/21)
 

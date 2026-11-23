@@ -8,9 +8,15 @@ export const messages = {
     name: 'LinkUs',
     title: 'LinkUs · Plataforma de Compras y Almacén',
   },
+  common: {
+    close: 'Cerrar',
+    commandTitle: 'Buscar',
+    commandDescription: 'Escribe para buscar.',
+  },
   nav: {
     mainLabel: 'Menú principal',
     openMenu: 'Abrir menú',
+    closeMenu: 'Cerrar menú',
     inbox: 'Bandeja',
   },
   admin: {
@@ -54,6 +60,7 @@ export const messages = {
     next: 'Siguiente',
     page: (page: number, pageCount: number) => `Página ${page} de ${pageCount}`,
     noResults: 'Sin resultados.',
+    pagination: 'Paginación',
   },
   errors: {
     /** Mensaje general por código de error. */

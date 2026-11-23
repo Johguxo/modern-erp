@@ -115,7 +115,7 @@
   --color-ring: var(--ring);
 
   /* Radios del doc: 8 inputs y secundarios, 10 botón principal, 12 tarjetas; pastillas full */
-  --radius-sm: 6px;
+  --radius-sm: 8px; /* el doc no define 6 px: se alinea a inputs */
   --radius-md: 8px;
   --radius-lg: 10px;
   --radius-xl: 12px;

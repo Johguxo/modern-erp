@@ -3,7 +3,7 @@
 import { ErrorState } from '@/ui/base/error-state';
 
 // Nunca se muestra error.message: solo el digest como código de referencia.
-export default function Error({
+export default function ErrorPage({
   error,
   reset,
 }: {

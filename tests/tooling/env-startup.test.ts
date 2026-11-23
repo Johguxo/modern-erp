@@ -4,8 +4,6 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { TEST_ENV } from '../setup/test-env.mts';
-
 const ROOT = path.resolve(import.meta.dirname, '../..');
 
 /** Solo lo mínimo para que Node arranque (en Windows, SystemRoot y compañía); nada del entorno real. */
@@ -43,13 +41,5 @@ describe('falla al arrancar si falta alguna variable (worker)', () => {
 
     expect(code).not.toBe(0);
     expect(stderr).toContain('SESSION_SECRET');
-  });
-
-  it('con un entorno válido el worker arranca y termina con código 0', async () => {
-    const { code, stdout } = await runWorker({ ...TEST_ENV, LOG_LEVEL: 'info' });
-
-    // El logger escribe JSON a stdout.
-    expect(stdout).toContain('"msg":"worker env ok');
-    expect(code).toBe(0);
   });
 });

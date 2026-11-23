@@ -8,9 +8,52 @@ export const messages = {
     name: 'LinkUs',
     title: 'LinkUs · Plataforma de Compras y Almacén',
   },
-  home: {
-    title: 'LinkUs · Plataforma de Compras y Almacén',
-    description: 'Proyecto base en construcción.',
+  nav: {
+    mainLabel: 'Menú principal',
+    openMenu: 'Abrir menú',
+    inbox: 'Bandeja',
+  },
+  admin: {
+    consoleBanner: 'Consola LinkUs',
+    title: 'Clientes',
+    emptyTitle: 'Aún no hay clientes',
+    emptyDescription: 'Aquí verás las empresas que usan la plataforma.',
+  },
+  auth: {
+    signInTitle: 'Iniciar sesión',
+    comingSoon: 'Disponible pronto.',
+  },
+  inbox: {
+    title: 'Bandeja de solicitudes',
+    emptyTitle: 'Aún no hay solicitudes',
+    emptyDescription: 'Cuando crees o recibas solicitudes, aparecerán aquí.',
+  },
+  /** Pastillas de estado: siempre con texto (design-tokens.md). */
+  status: {
+    draft: 'Borrador',
+    in_approval: 'En aprobación',
+    changes_requested: 'Cambios solicitados',
+    approved: 'Aprobada',
+    delivered: 'Entregada',
+    rejected: 'Rechazada',
+    cancelled: 'Anulada',
+    awaiting_my_approval: 'Espera mi aprobación',
+    awaiting_external: 'Espera aprobación externa',
+  },
+  states: {
+    loading: 'Cargando…',
+    errorTitle: 'No pudimos cargar esta página',
+    errorDescription: 'Inténtalo de nuevo. Si el problema sigue, comparte el código de referencia.',
+    retry: 'Reintentar',
+    notFoundTitle: 'Página no encontrada',
+    notFoundDescription: 'No encontramos lo que buscas o no tienes acceso.',
+    backToInbox: 'Ir a la bandeja',
+  },
+  dataTable: {
+    previous: 'Anterior',
+    next: 'Siguiente',
+    page: (page: number, pageCount: number) => `Página ${page} de ${pageCount}`,
+    noResults: 'Sin resultados.',
   },
   errors: {
     /** Mensaje general por código de error. */

@@ -14,16 +14,19 @@ export interface JobPayload {
   readonly [key: string]: unknown;
 }
 
-export interface EnqueueOptions {
-  readonly startAfter?: Date;
-  /**
-   * Evita duplicados: si en los últimos `singletonSeconds` ya se encoló un job con esta clave
-   * en la misma cola, no se encola otro y enqueue devuelve null.
-   */
-  readonly singletonKey?: string;
-  /** Ventana de la deduplicación por singletonKey. Por defecto, 3600 s (1 hora). */
-  readonly singletonSeconds?: number;
+/**
+ * Deduplicación: dentro de la misma franja fija de `singletonSeconds` (alineada al reloj, no una
+ * ventana móvil), solo se encola un job por clave y cola; los siguientes devuelven null. La clave
+ * queda ocupada aunque el job ya haya terminado. Para "uno por día", incluye la fecha en la clave.
+ */
+export interface SingletonOptions {
+  readonly singletonKey: string;
+  readonly singletonSeconds: number;
 }
+
+export type EnqueueOptions = { readonly startAfter?: Date } & (
+  SingletonOptions | { readonly singletonKey?: undefined; readonly singletonSeconds?: undefined }
+);
 
 /** Lado productor (casos de uso). */
 export interface JobQueue {

@@ -24,7 +24,13 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  // El error de entorno (getEnv) ya trae un mensaje legible: va a stderr además del log.
+  // El error de entorno (getEnv) trae un mensaje legible para stderr. Si el entorno es válido
+  // (por ejemplo, la base no responde), además se registra completo en el log.
   console.error(error instanceof Error ? error.message : error);
+  try {
+    getLogger().error({ err: error }, 'worker start failed');
+  } catch {
+    // Sin entorno válido no hay logger: basta con stderr.
+  }
   process.exit(1);
 });

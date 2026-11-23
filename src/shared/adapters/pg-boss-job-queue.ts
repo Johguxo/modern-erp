@@ -7,7 +7,6 @@
 // diario lo cubre). Encolar dentro de la misma transacción queda como mejora futura.
 import { PgBoss } from 'pg-boss';
 
-import { getEnv } from '../../env';
 import type {
   EnqueueOptions,
   JobConsumer,
@@ -38,7 +37,6 @@ export interface JobRuntime extends JobConsumer {
 }
 
 const STOP_TIMEOUT_MS = 25_000;
-const DEFAULT_SINGLETON_SECONDS = 3600;
 
 export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
   const { logger } = options;
@@ -55,14 +53,9 @@ export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
     enqueue: (name: QueueName, payload: JobPayload, enqueueOptions: EnqueueOptions = {}) =>
       boss.send(name, payload, {
         startAfter: enqueueOptions.startAfter,
-        // pg-boss solo deduplica por singletonKey con una ventana (singletonSeconds) o con
-        // políticas de cola que limitan toda la cola: se usa la ventana.
-        ...(enqueueOptions.singletonKey
-          ? {
-              singletonKey: enqueueOptions.singletonKey,
-              singletonSeconds: enqueueOptions.singletonSeconds ?? DEFAULT_SINGLETON_SECONDS,
-            }
-          : {}),
+        // pg-boss 12 solo deduplica por singletonKey con singletonSeconds (franjas fijas).
+        singletonKey: enqueueOptions.singletonKey,
+        singletonSeconds: enqueueOptions.singletonSeconds,
       }),
   };
 
@@ -87,20 +80,5 @@ export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
   };
 }
 
-const globalForJobs = globalThis as typeof globalThis & { __linkusJobRuntime?: JobRuntime };
-
-/** Runtime del proceso, perezoso (lee DATABASE_URL_ADMIN del entorno validado). */
-export function getJobRuntime(logger: Logger): JobRuntime {
-  globalForJobs.__linkusJobRuntime ??= createPgBossRuntime({
-    connectionString: getEnv().DATABASE_URL_ADMIN,
-    logger,
-  });
-  return globalForJobs.__linkusJobRuntime;
-}
-
-/** Apaga el runtime del proceso si se creó (worker y pruebas). */
-export async function closeJobRuntime(): Promise<void> {
-  const runtime = globalForJobs.__linkusJobRuntime;
-  globalForJobs.__linkusJobRuntime = undefined;
-  await runtime?.stop();
-}
+// Encolar desde la web (E5) necesitará su propia instancia de solo envío (sin supervise ni
+// schedule) iniciada una vez por proceso; se diseña en esa historia.

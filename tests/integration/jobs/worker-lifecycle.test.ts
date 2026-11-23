@@ -13,7 +13,10 @@ import { startWorker } from '@/worker-runtime';
 import { TEST_ENV } from '@tests/setup/test-env.mts';
 
 const ROOT = path.resolve(import.meta.dirname, '../../..');
-const SCHEMA = `pgboss_test_${randomBytes(6).toString('hex')}`;
+const SUFFIX = randomBytes(6).toString('hex');
+const SCHEMA = `pgboss_test_${SUFFIX}`;
+// Nombre propio: no cuenta las conexiones de un `pnpm worker` que esté corriendo en local.
+const APP_NAME = `linkus-worker-test-${SUFFIX}`;
 
 // Cliente propio: stop() llama a closeDatabases(), que cierra las conexiones de la app.
 let observer: postgres.Sql;
@@ -35,7 +38,7 @@ afterAll(async () => {
 async function workerConnections(): Promise<number> {
   const [row] = await observer<{ count: number }[]>`
     select count(*)::int as count from pg_stat_activity
-    where application_name = 'linkus-worker' and datname = current_database()`;
+    where application_name = ${APP_NAME} and datname = current_database()`;
   return row?.count ?? 0;
 }
 
@@ -51,7 +54,7 @@ async function waitForZero(fn: () => Promise<number>, ms: number): Promise<numbe
 
 describe('ciclo de vida del worker', () => {
   it('startWorker() crea las 4 colas; stop() es idempotente y no deja conexiones abiertas', async () => {
-    const worker = await startWorker({ schema: SCHEMA });
+    const worker = await startWorker({ schema: SCHEMA, applicationName: APP_NAME });
     let stopped = false;
     try {
       // Sin las colas internas de pg-boss (prefijo __pgboss__).
@@ -84,8 +87,9 @@ function baseEnv(): Record<string, string> {
 }
 
 describe('proceso del worker (src/worker.ts)', () => {
-  // En Windows SIGTERM mata el proceso sin entregar la señal: se prueba a mano con Ctrl+C.
-  it.skipIf(process.platform === 'win32')(
+  // Solo en CI (Linux): usa el esquema `pgboss` por defecto de la base, que en CI es desechable.
+  // En Windows SIGTERM mata el proceso sin entregar la señal: en local se prueba con Ctrl+C.
+  it.runIf(process.env.CI === 'true' && process.platform !== 'win32')(
     'con SIGTERM se apaga limpio: registra "worker stopped" y sale con 0',
     async () => {
       const env = getEnv();

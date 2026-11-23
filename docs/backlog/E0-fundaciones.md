@@ -46,8 +46,8 @@ Estado: en revisión · Issue: [#6](https://github.com/Johguxo/modern-erp/issues
 
 ### E0-H5 · CI y worker
 **Criterios de aceptación**
-- [ ] GitHub Actions: lint, typecheck, test, build en cada PR; pruebas de integración con Supabase local en CI.
-- [ ] `src/worker.ts` arranca pg-boss, registra colas vacías y se apaga limpio con SIGTERM.
-- [ ] Adaptador `JobQueue` sobre pg-boss con una prueba de encolar y procesar.
+- [x] GitHub Actions: lint, typecheck, test, build en cada PR; pruebas de integración con Supabase local en CI.
+- [x] `src/worker.ts` arranca pg-boss, registra colas vacías y se apaga limpio con SIGTERM.
+- [x] Adaptador `JobQueue` sobre pg-boss con una prueba de encolar y procesar.
 
-Estado: pendiente · Issue: [#7](https://github.com/Johguxo/modern-erp/issues/7)
+Estado: en revisión · Issue: [#7](https://github.com/Johguxo/modern-erp/issues/7)

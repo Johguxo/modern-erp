@@ -107,6 +107,7 @@ Después sigue con `/historia E0-H2`, `E0-H3`, etc. Usa `/estado` para ver el av
 | `.claude/commands/release.md` | `/release`: abre el PR `develop` → `main` con el resumen de historias (solo el líder) |
 | `.github/pull_request_template.md` | Plantilla de PR con la Definición de hecha |
 | `.claude/skills/` + `skills-lock.json` | Skills públicas copiadas al repo y fijadas a un commit: `codebase-design` (mattpocock), `frontend-design` (anthropics), `web-design-guidelines` (vercel-labs), `supabase-postgres-best-practices` (supabase). Llegan con el clone, sin instalar nada. Precedencia frente a los docs: `CLAUDE.md` §Skills externas |
+| `.mcp.json` | Supabase (solo lectura, proyecto en la nube) y Playwright (navegador para probar la UI) |
 | Plugin `modern-web-guidance@googlechrome` | Skills públicas de Google Chrome con buenas prácticas web actuales. Declarado en `.claude/settings.json` (`extraKnownMarketplaces` + `enabledPlugins`): al abrir el repo y confiar en la carpeta, Claude Code ofrece instalarlo. Para agregar otro plugin solo a este proyecto: `claude plugin install <plugin>@<marketplace> --scope project` |
 
 ## 7. Protección de ramas en GitHub
@@ -116,7 +117,6 @@ En *Settings → Branches* (o con `gh api`), para `main` y `develop`:
 - Requerir PR antes de hacer merge, con al menos 1 aprobación; bloquear push directo y force-push.
 - Requerir que pasen los checks del CI (`.github/workflows/ci.yml`): **`checks`** (lint, formato, typecheck, pruebas unitarias y build) e **`integration`** (Postgres de Supabase local, migraciones y pruebas de integración). En *Settings → Branches → Require status checks*, búscalos después del primer PR que los ejecute.
 - En `main`, solo el líder puede hacer merge.
-| `.mcp.json` | Supabase (solo lectura, proyecto en la nube) y Playwright (navegador para probar la UI) |
 
 La implementación la hace la sesión principal de Claude Code; los subagentes la apoyan en planificar, probar y revisar.
 

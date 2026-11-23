@@ -13,12 +13,15 @@ export interface RunningWorker {
   stop(): Promise<void>;
 }
 
-export async function startWorker(options: { schema?: string } = {}): Promise<RunningWorker> {
+export async function startWorker(
+  options: { schema?: string; applicationName?: string } = {},
+): Promise<RunningWorker> {
   const env = getEnv();
   const logger = getLogger().child({ process: 'worker' });
   const runtime = createPgBossRuntime({
     connectionString: env.DATABASE_URL_ADMIN,
     schema: options.schema,
+    applicationName: options.applicationName,
     logger,
   });
 

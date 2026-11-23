@@ -113,8 +113,8 @@ describe('adaptador pg-boss (JobQueue y JobConsumer)', () => {
     JOB_TIMEOUT_MS + 10_000,
   );
 
-  // pg-boss 12 solo deduplica por singletonKey con una ventana (singletonSeconds): el adaptador
-  // la agrega (1 h por defecto). Con la política por defecto de la cola, la clave sola no basta.
+  // pg-boss 12 solo deduplica por singletonKey junto con singletonSeconds (franjas fijas del
+  // reloj). Una franja de 1 día evita que los dos envíos caigan en franjas distintas.
   it('un singletonKey repetido dentro de la ventana devuelve null', async () => {
     await runtime.ensureQueues(['approvals.reminders']);
     const key = `reminder-${newId()}`;
@@ -122,9 +122,11 @@ describe('adaptador pg-boss (JobQueue y JobConsumer)', () => {
 
     const first = await runtime.queue.enqueue('approvals.reminders', payload, {
       singletonKey: key,
+      singletonSeconds: 86_400,
     });
     const second = await runtime.queue.enqueue('approvals.reminders', payload, {
       singletonKey: key,
+      singletonSeconds: 86_400,
     });
 
     expect(first).toEqual(expect.any(String));

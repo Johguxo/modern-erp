@@ -32,6 +32,7 @@ Se guarda en `platform_admins`. Consola aparte: `/admin`.
 
 - Un usuario puede tener **varios roles**: `memberships.roles` es un arreglo.
 - Los roles se traducen a permisos en un **mapa fijo en el código** (`src/modules/identity/domain/permissions.ts`). Los casos de uso revisan **permisos**, nunca nombres de rol.
+- Los tipos `Role` y `Permission` (las listas de esta sección) viven en `src/shared/permissions.ts`, porque `Ctx` los necesita y `shared` no puede depender de un módulo (ADR-005). El mapa rol → permisos sigue en `identity`.
 - Las **etiquetas** visibles viven en el archivo de mensajes; se pueden sobreescribir por cliente en `tenant_settings.role_labels`.
 - **Pospuesto:** roles personalizados (tablas `roles` y `role_permissions` con el mapa actual como plantilla), permisos por usuario, por sede o por almacén, rol de solo lectura y rol de soporte de plataforma.
 

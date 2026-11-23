@@ -46,9 +46,10 @@ describe('falla al arrancar si falta alguna variable (worker)', () => {
   });
 
   it('con un entorno válido el worker arranca y termina con código 0', async () => {
-    const { code, stderr } = await runWorker(TEST_ENV);
+    const { code, stdout } = await runWorker({ ...TEST_ENV, LOG_LEVEL: 'info' });
 
-    expect(stderr).toContain('entorno válido');
+    // El logger escribe JSON a stdout.
+    expect(stdout).toContain('"msg":"worker env ok');
     expect(code).toBe(0);
   });
 });

@@ -3,3 +3,4 @@
 // desde @/db/schema (solo infrastructure/). src/app solo usa este archivo.
 export type { AppDatabase, DbTransaction } from './client';
 export { withTenant, withUser, type TenantScope, type UserScope } from './with-tenant';
+export { isUniqueViolation, pgErrorCode, PG_UNIQUE_VIOLATION } from './errors';

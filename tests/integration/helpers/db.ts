@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDbAdmin } from '@/db/admin';
 import { createDatabase, type AppDatabase } from '@/db/client';
+import { pgErrorCode } from '@/db/errors';
 import { getEnv } from '@/env';
 
 export const newId = (): string => randomUUID();
@@ -37,16 +38,6 @@ export function createSingleConnectionAppDb(): AppDatabase {
   return createDatabase(getEnv().DATABASE_URL, { applicationName: 'linkus-test', max: 1 });
 }
 
-/** Código SQLSTATE de un error de postgres-js (envuelto o no por Drizzle). */
-export function pgErrorCode(error: unknown): string | undefined {
-  let current: unknown = error;
-  for (let depth = 0; depth < 5 && typeof current === 'object' && current !== null; depth += 1) {
-    if ('code' in current && typeof current.code === 'string') return current.code;
-    current = 'cause' in current ? current.cause : undefined;
-  }
-  return undefined;
-}
-
 /** Ejecuta fn y devuelve el SQLSTATE con que falló; falla la prueba si no lanza. */
 export async function expectPgError(fn: () => Promise<unknown>): Promise<string | undefined> {
   try {
@@ -56,3 +47,5 @@ export async function expectPgError(fn: () => Promise<unknown>): Promise<string 
   }
   throw new Error('Se esperaba un error de Postgres y la consulta pasó.');
 }
+
+export { pgErrorCode };

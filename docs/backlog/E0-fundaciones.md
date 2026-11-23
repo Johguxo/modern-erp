@@ -25,13 +25,13 @@ Estado: en revisión · Issue: [#4](https://github.com/Johguxo/modern-erp/issues
 
 ### E0-H3 · Núcleo compartido
 **Criterios de aceptación**
-- [ ] `src/shared/context.ts`: tipo `Ctx { tenantId, userId, roles, permissions, locale, timezone, requestId }`.
-- [ ] `src/shared/errors.ts`: `DomainError` y subclases (`NotFoundError`, `ForbiddenError`, `ValidationError`, `ConflictError`, `InvalidTransitionError`, `LimitExceededError`), con su mapeo a respuestas HTTP y mensajes de interfaz.
-- [ ] Puertos en `src/shared/ports/`: `AuthProvider`, `Mailer`, `FileStorage`, `JobQueue`, `Clock`, `IdGenerator`.
-- [ ] Helper de server actions `action(contract, permission, handler)` que valida la entrada con Zod, arma el `ctx`, revisa el permiso y traduce errores. Igual para route handlers en `api/v1`.
-- [ ] Logger estructurado (pino) con `requestId`.
+- [x] `src/shared/context.ts`: tipo `Ctx { tenantId, userId, roles, permissions, locale, timezone, requestId }`.
+- [x] `src/shared/errors.ts`: `DomainError` y subclases (`NotFoundError`, `ForbiddenError`, `ValidationError`, `ConflictError`, `InvalidTransitionError`, `LimitExceededError`), con su mapeo a respuestas HTTP y mensajes de interfaz.
+- [x] Puertos en `src/shared/ports/`: `AuthProvider`, `Mailer`, `FileStorage`, `JobQueue`, `Clock`, `IdGenerator`.
+- [x] Helper de server actions `action(contract, permission, handler)` que valida la entrada con Zod, arma el `ctx`, revisa el permiso y traduce errores. Igual para route handlers en `api/v1`.
+- [x] Logger estructurado (pino) con `requestId`.
 
-Estado: pendiente · Issue: [#5](https://github.com/Johguxo/modern-erp/issues/5)
+Estado: en revisión · Issue: [#5](https://github.com/Johguxo/modern-erp/issues/5)
 
 ### E0-H4 · Sistema visual y layouts
 **Criterios de aceptación**

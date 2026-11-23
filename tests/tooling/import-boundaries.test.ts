@@ -86,6 +86,10 @@ const FORBIDDEN: Case[] = [
   ['src/shared/context.ts', 'drizzle-orm'],
   ['src/shared/context.ts', '@/db'],
   ['src/shared/context.ts', '../db/client'],
+  // E0-H3: pino es un SDK más (solo en src/shared/adapters)
+  ['src/shared/context.ts', 'pino'],
+  ['src/modules/requests/domain/x.ts', 'pino'],
+  ['src/app/page.tsx', 'pino'],
 ];
 
 const ALLOWED: Case[] = [
@@ -109,6 +113,10 @@ const ALLOWED: Case[] = [
   ['src/modules/requests/infrastructure/x.ts', '@/db/schema'],
   ['src/shared/adapters/mailer.ts', '@/db'],
   ['src/worker.ts', '@/db/admin'],
+  // E0-H3: el adaptador pino y los helpers de entrega
+  ['src/shared/adapters/x.ts', 'pino'],
+  ['src/app/_lib/action.ts', '@/db'],
+  ['src/app/_lib/action.ts', '@/shared/adapters/pino-logger'],
 ];
 
 describe('regla de imports prohibidos (no-restricted-imports por carpeta)', () => {

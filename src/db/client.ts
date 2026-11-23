@@ -9,6 +9,8 @@ import * as schema from './schema';
 export type Schema = typeof schema;
 export type AppDatabase = PostgresJsDatabase<Schema> & { $client: postgres.Sql };
 export type DbTransaction = Parameters<Parameters<AppDatabase['transaction']>[0]>[0];
+/** La base o una transacción: los repositorios aceptan cualquiera de las dos. */
+export type DbExecutor = AppDatabase | DbTransaction;
 
 export interface DatabaseOptions {
   /** Nombre visible en pg_stat_activity. */

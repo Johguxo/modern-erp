@@ -29,7 +29,6 @@ Cargar con `next/font/google`.
 | `--success` | `#15803D` | Aprobar, cifras positivas |
 | `--danger` | `#B91C1C` | Rechazar |
 | `--warning-bg` / `--warning-border` / `--warning-text` | `#FFF7ED` / `#FDBA74` / `#7C2D12` | Aviso de línea corregida |
-
 | `--nav-text` | `#CBD5E1` | Texto del menú lateral (prototipo) |
 | `--nav-muted` | `#94A3B8` | Pie del menú lateral (prototipo) |
 

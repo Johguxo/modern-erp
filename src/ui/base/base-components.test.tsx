@@ -213,7 +213,7 @@ describe('DataTable (TanStack)', () => {
 
   it('con getRowHref marca las filas como clicables', () => {
     const html = renderToStaticMarkup(
-      <DataTable columns={columns} data={rows} getRowHref={(row) => `/solicitudes/${row.id}`} />,
+      <DataTable columns={columns} data={rows} getRowHref={() => '/bandeja'} />,
     );
     expect(html.match(/cursor-pointer/g)).toHaveLength(2);
   });

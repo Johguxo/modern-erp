@@ -35,14 +35,14 @@ Estado: en revisión · Issue: [#5](https://github.com/Johguxo/modern-erp/issues
 
 ### E0-H4 · Sistema visual y layouts
 **Criterios de aceptación**
-- [ ] Tokens de `docs/ui/design-tokens.md` como variables CSS + tema de Tailwind; fuentes Inter y Space Grotesk con `next/font`.
-- [ ] Componentes shadcn listados instalados en `src/ui/components`.
-- [ ] Layout `(app)` con el menú lateral del prototipo (`Main.dc.html`), responsive (en el celular, barra superior con `sheet`).
-- [ ] Layout `(auth)` y layout `admin`.
-- [ ] Componentes base: `StatusBadge` (texto + color), `EmptyState`, `ErrorState`, `PageHeader`, `DataTable` (TanStack), `MoneyText` (formato es-PE), `DateText` (zona del tenant).
-- [ ] Archivo de mensajes `src/ui/messages/es-PE.ts`.
+- [x] Tokens de `docs/ui/design-tokens.md` como variables CSS + tema de Tailwind; fuentes Inter y Space Grotesk con `next/font`.
+- [x] Componentes shadcn listados instalados en `src/ui/components`.
+- [x] Layout `(app)` con el menú lateral del prototipo (`Main.dc.html`), responsive (en el celular, barra superior con `sheet`).
+- [x] Layout `(auth)` y layout `admin`.
+- [x] Componentes base: `StatusBadge` (texto + color), `EmptyState`, `ErrorState`, `PageHeader`, `DataTable` (TanStack), `MoneyText` (formato es-PE), `DateText` (zona del tenant).
+- [x] Archivo de mensajes `src/ui/messages/es-PE.ts`.
 
-Estado: pendiente · Issue: [#6](https://github.com/Johguxo/modern-erp/issues/6)
+Estado: en revisión · Issue: [#6](https://github.com/Johguxo/modern-erp/issues/6)
 
 ### E0-H5 · CI y worker
 **Criterios de aceptación**

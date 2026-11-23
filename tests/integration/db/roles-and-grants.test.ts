@@ -42,7 +42,7 @@ describe('migración inicial: extensiones y rol app_user', () => {
     expect(code).toBe('42501');
   });
 
-  it('una tabla nueva de public da a app_user select/insert/update/delete sin grant explícito y nada a anon/authenticated', async () => {
+  it('una tabla nueva de public da a app_user select/insert/update/delete sin grant explícito y nada a anon/authenticated/service_role', async () => {
     const name = probeTableName('_grants_probe');
     created.push(name);
     await getDbAdmin().execute(sql`create table public.${sql.identifier(name)} (id int)`);
@@ -50,7 +50,7 @@ describe('migración inicial: extensiones y rol app_user', () => {
     const rows = await getDbAdmin().execute<{ role: string; privilege: string; granted: boolean }>(
       sql`select r.role, p.privilege,
                  has_table_privilege(r.role, ${`public.${name}`}, p.privilege) as granted
-          from unnest(array['app_user', 'anon', 'authenticated']) as r(role)
+          from unnest(array['app_user', 'anon', 'authenticated', 'service_role']) as r(role)
           cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE']) as p(privilege)
           order by r.role, p.privilege`,
     );
@@ -60,5 +60,6 @@ describe('migración inicial: extensiones y rol app_user', () => {
     expect(granted('app_user')).toEqual(['DELETE', 'INSERT', 'SELECT', 'UPDATE']);
     expect(granted('anon')).toEqual([]);
     expect(granted('authenticated')).toEqual([]);
+    expect(granted('service_role')).toEqual([]);
   });
 });

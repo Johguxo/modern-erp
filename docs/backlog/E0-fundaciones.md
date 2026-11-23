@@ -16,12 +16,12 @@ Estado: en revisión · Issue: [#3](https://github.com/Johguxo/modern-erp/issues
 
 ### E0-H2 · Base de datos local y Drizzle
 **Criterios de aceptación**
-- [ ] Supabase CLI configurado (`supabase/config.toml`); `supabase start` levanta Postgres, Auth y Storage locales.
-- [ ] Drizzle configurado con dos conexiones: `db` (rol `app_user`, para la web) y `dbAdmin` (rol dueño, para migraciones y worker).
-- [ ] Migración inicial: extensiones (`pgcrypto`, `pg_trgm`), rol `app_user` y helper `withTenant(ctx, fn)` que abre una transacción con `set local app.tenant_id`.
-- [ ] Prueba de integración que verifica que `app_user` sin `app.tenant_id` no ve filas de una tabla con RLS.
+- [x] Supabase CLI configurado (`supabase/config.toml`); `supabase start` levanta Postgres, Auth y Storage locales.
+- [x] Drizzle configurado con dos conexiones: `db` (rol `app_user`, para la web) y `dbAdmin` (rol dueño, para migraciones y worker). Se exponen como `getDb()` y `getDbAdmin()`, perezosas (ADR-004).
+- [x] Migración inicial: extensiones (`pgcrypto`, `pg_trgm`), rol `app_user` y helper `withTenant(ctx, fn)` que abre una transacción con `set local app.tenant_id`.
+- [x] Prueba de integración que verifica que `app_user` sin `app.tenant_id` no ve filas de una tabla con RLS.
 
-Estado: pendiente · Issue: [#4](https://github.com/Johguxo/modern-erp/issues/4)
+Estado: en revisión · Issue: [#4](https://github.com/Johguxo/modern-erp/issues/4)
 
 ### E0-H3 · Núcleo compartido
 **Criterios de aceptación**

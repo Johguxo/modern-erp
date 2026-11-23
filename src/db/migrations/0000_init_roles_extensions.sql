@@ -42,6 +42,11 @@ revoke all on all functions in schema app from public;
 --> statement-breakpoint
 grant execute on all functions in schema app to app_user;
 --> statement-breakpoint
+-- Funciones futuras de app: no ejecutables por PUBLIC, sí por app_user.
+alter default privileges in schema app revoke execute on functions from public;
+--> statement-breakpoint
+alter default privileges in schema app grant execute on functions to app_user;
+--> statement-breakpoint
 
 -- Tablas y secuencias futuras de public creadas por el rol que migra: app_user puede usarlas
 -- (las políticas RLS deciden qué filas). Las inmutables quitan update/delete en su migración.

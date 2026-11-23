@@ -32,12 +32,12 @@ const DEEP_MODULE_IMPORT = {
 
 const DB_ACCESS = {
   group: ['drizzle-orm', 'drizzle-orm/*', 'postgres', '@/db', '@/db/*'],
-  message: `domain/, application/, contracts/ y ui/ no acceden a la base: los repositorios viven en infrastructure/. Ver ADR-001 y ADR-004.`,
+  message: `domain/, application/, contracts/, shared/ y ui/ no acceden a la base: los repositorios viven en infrastructure/. Ver ADR-001 y ADR-004.`,
 };
 
 const DB_RELATIVE = {
   regex: '^(\\.\\./)+db(/|$)',
-  message: `domain/, application/, contracts/ y ui/ no acceden a la base: los repositorios viven en infrastructure/. Ver ADR-001 y ADR-004.`,
+  message: `domain/, application/, contracts/, shared/ y ui/ no acceden a la base: los repositorios viven en infrastructure/. Ver ADR-001 y ADR-004.`,
 };
 
 const PG_DRIVER = {
@@ -53,6 +53,18 @@ const DRIZZLE = {
 const DB_ADMIN = {
   group: ['@/db/admin'],
   message: `La conexión dueño (sin RLS) solo se usa en casos de uso acotados y auditados, nunca desde src/app. Ver ADR-004.`,
+};
+
+// src/app solo puede usar @/db (withTenant/withUser para el helper action de E0-H3):
+// nunca la conexión directa, el esquema ni la conexión dueño, tampoco por ruta relativa.
+const APP_DB_INTERNALS = {
+  group: ['@/db/client', '@/db/schema', '@/db/schema/*'],
+  message: `src/app no consulta la base directamente: llama a un caso de uso (las transacciones van por withTenant). Ver ADR-001 y ADR-004.`,
+};
+
+const APP_DB_RELATIVE = {
+  regex: '^(\\.\\./)+db/',
+  message: `Importa la base por @/db, nunca por ruta relativa ni sus archivos internos. Ver ADR-004.`,
 };
 
 const LOWER_LAYER = {
@@ -109,13 +121,35 @@ export const importBoundaries = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [SDKS, DEEP_MODULE_IMPORT, PG_DRIVER, DRIZZLE, DB_ADMIN] },
+        {
+          patterns: [
+            SDKS,
+            DEEP_MODULE_IMPORT,
+            PG_DRIVER,
+            DRIZZLE,
+            DB_ADMIN,
+            APP_DB_INTERNALS,
+            APP_DB_RELATIVE,
+          ],
+        },
       ],
     },
   },
   {
     name: 'import-boundaries/ui',
     files: ['src/ui/**/*.{ts,tsx,mts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [SDKS, DEEP_MODULE_IMPORT, DB_ACCESS, DB_RELATIVE] },
+      ],
+    },
+  },
+  {
+    // ctx, errores y puertos: puros, sin base de datos (los adaptadores van en shared/adapters).
+    name: 'import-boundaries/shared',
+    files: ['src/shared/**/*.{ts,tsx,mts}'],
+    ignores: ['src/shared/adapters/**'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -131,7 +165,7 @@ export const importBoundaries = [
       'src/db/**',
       'src/app/**',
       'src/ui/**',
-      'src/shared/adapters/**',
+      'src/shared/**',
       'src/proxy.ts',
       'src/middleware.ts',
     ],

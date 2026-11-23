@@ -61,7 +61,31 @@ async function checkAppUser(url: string): Promise<void> {
   }
 }
 
+const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
+
+/** Las pruebas crean y borran tablas: fuera de CI solo se permiten contra una base local. */
+function assertLocal(url: string): void {
+  if (process.env.CI) return;
+  let hostname = '';
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    // La conexión fallará con su propio mensaje.
+    return;
+  }
+  if (!LOCAL_HOSTS.has(hostname)) {
+    throw new Error(
+      `Las pruebas de integración crean y borran tablas: solo corren contra una base local, no contra ${hostname}. Revisa DATABASE_URL y DATABASE_URL_ADMIN en tu terminal.`,
+    );
+  }
+}
+
 export default async function setup(): Promise<void> {
-  await checkAdmin(process.env.DATABASE_URL_ADMIN ?? TEST_ENV.DATABASE_URL_ADMIN);
-  await checkAppUser(process.env.DATABASE_URL ?? TEST_ENV.DATABASE_URL);
+  // `||` y no `??`: una variable vacía usa el valor local, igual que vitest.config.mts.
+  const adminUrl = process.env.DATABASE_URL_ADMIN || TEST_ENV.DATABASE_URL_ADMIN;
+  const appUrl = process.env.DATABASE_URL || TEST_ENV.DATABASE_URL;
+  assertLocal(adminUrl);
+  assertLocal(appUrl);
+  await checkAdmin(adminUrl);
+  await checkAppUser(appUrl);
 }

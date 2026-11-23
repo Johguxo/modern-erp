@@ -76,6 +76,16 @@ const FORBIDDEN: Case[] = [
   // src/db es una capa inferior
   ['src/db/client.ts', '@/modules/identity'],
   ['src/db/client.ts', 'next/headers'],
+  // src/app solo usa @/db: ni la conexión directa, ni el esquema, ni rutas relativas
+  ['src/app/page.tsx', '@/db/client'],
+  ['src/app/page.tsx', '@/db/schema'],
+  ['src/app/page.tsx', '@/db/schema/identity'],
+  ['src/app/page.tsx', '../db/admin'],
+  ['src/app/page.tsx', '../../db/client'],
+  // src/shared es puro
+  ['src/shared/context.ts', 'drizzle-orm'],
+  ['src/shared/context.ts', '@/db'],
+  ['src/shared/context.ts', '../db/client'],
 ];
 
 const ALLOWED: Case[] = [
@@ -96,6 +106,9 @@ const ALLOWED: Case[] = [
   ['src/db/client.ts', 'postgres'],
   ['src/db/client.ts', 'drizzle-orm/postgres-js'],
   ['src/app/page.tsx', '@/db'],
+  ['src/modules/requests/infrastructure/x.ts', '@/db/schema'],
+  ['src/shared/adapters/mailer.ts', '@/db'],
+  ['src/worker.ts', '@/db/admin'],
 ];
 
 describe('regla de imports prohibidos (no-restricted-imports por carpeta)', () => {
@@ -142,6 +155,7 @@ describe('la configuración real de ESLint aplica la regla de imports prohibidos
     'src/app/page.tsx',
     'src/db/client.ts',
     'src/ui/x.tsx',
+    'src/shared/context.ts',
   ])(
     'en %s la regla es la generada por importBoundaries (nada posterior la pisa)',
     async (file) => {

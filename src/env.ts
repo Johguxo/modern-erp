@@ -32,6 +32,7 @@ export const envSchema = z.object({
   ),
   REMINDER_HOURS: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().default(24)),
   SENTRY_DSN: optional(z.url()),
+  LOG_LEVEL: optional(z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])),
 });
 
 /** Variables que solo exige `pnpm db:seed`. */

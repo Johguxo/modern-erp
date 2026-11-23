@@ -4,8 +4,17 @@ import postgres from 'postgres';
 
 import { TEST_ENV } from './test-env.mts';
 
-const NOT_RUNNING =
-  'No se pudo conectar a Postgres local (127.0.0.1:54322). Levanta Supabase con `pnpm exec supabase start` y aplica `pnpm db:migrate`.';
+/** Host y puerto de la URL (sin credenciales), para el mensaje. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return 'URL inválida';
+  }
+}
+
+const notRunning = (url: string) =>
+  `No se pudo conectar a Postgres (${hostOf(url)}). En local, levanta Supabase con \`pnpm exec supabase start\` y aplica \`pnpm db:migrate\`.`;
 const MISSING_MIGRATION = 'Falta la migración inicial: ejecuta `pnpm db:migrate`.';
 const NO_LOGIN = 'app_user no tiene login local: ejecuta `pnpm db:reset`.';
 
@@ -31,7 +40,7 @@ async function checkAdmin(url: string): Promise<void> {
         select exists (select 1 from pg_roles where rolname = 'app_user') as has_role,
                to_regprocedure('app.current_tenant_id()') is not null as has_fn`;
     } catch (error) {
-      throw new Error(NOT_RUNNING, { cause: error });
+      throw new Error(notRunning(url), { cause: error });
     }
     const [row] = rows;
     if (!row?.has_role || !row.has_fn) throw new Error(MISSING_MIGRATION);
@@ -46,7 +55,7 @@ async function checkAppUser(url: string): Promise<void> {
     await sql`select 1`;
   } catch (error) {
     if (AUTH_FAILED.has(errorCode(error) ?? '')) throw new Error(NO_LOGIN, { cause: error });
-    throw new Error(NOT_RUNNING, { cause: error });
+    throw new Error(notRunning(url), { cause: error });
   } finally {
     await sql.end({ timeout: 5 });
   }

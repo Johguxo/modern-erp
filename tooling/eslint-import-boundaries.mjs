@@ -21,7 +21,16 @@ const FRAMEWORK = {
 };
 
 const SDKS = {
-  group: ['@supabase/*', 'resend', 'resend/*', 'pg-boss', 'pg-boss/*'],
+  group: [
+    '@supabase/*',
+    'resend',
+    'resend/*',
+    'pg-boss',
+    'pg-boss/*',
+    'pino',
+    'pino/*',
+    'pino-pretty',
+  ],
   message: `Los SDK externos solo se usan en infrastructure/ o src/shared/adapters/, detrás de un puerto. ${ADR}`,
 };
 

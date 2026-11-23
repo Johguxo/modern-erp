@@ -49,6 +49,14 @@ pnpm test:int                   # pruebas de integración (RLS, roles)
 - Usa los puertos 54321–54327: si tienes otro proyecto de Supabase corriendo, detenlo antes (`pnpm exec supabase stop --project-id <otro>`).
 - Las migraciones solo se crean con drizzle-kit (`pnpm db:generate`, o `pnpm db:generate --custom --name=<slug>` para SQL a mano). No uses `supabase migration`.
 
+### Worker (jobs)
+
+```bash
+pnpm worker        # arranca pg-boss y crea las colas (necesita Supabase local y .env.local)
+```
+
+Debe registrar `worker started` con las 4 colas. Con **Ctrl+C** se apaga limpio (`worker stopped`) y sale con 0; en Railway hace lo mismo con SIGTERM. Las colas viven en el esquema `pgboss` de la base (lo crea pg-boss solo).
+
 ## 4. Primera sesión con Claude Code
 
 Abre la terminal en la carpeta del repo y ejecuta `claude`. Luego, en este orden:
@@ -106,7 +114,7 @@ Después sigue con `/historia E0-H2`, `E0-H3`, etc. Usa `/estado` para ver el av
 En *Settings → Branches* (o con `gh api`), para `main` y `develop`:
 - Rama por defecto del repo: `develop` (así los PRs apuntan ahí sin pensarlo).
 - Requerir PR antes de hacer merge, con al menos 1 aprobación; bloquear push directo y force-push.
-- Cuando exista el CI (E0-H5), requerir que pasen sus checks.
+- Requerir que pasen los checks del CI (`.github/workflows/ci.yml`): **`checks`** (lint, formato, typecheck, pruebas unitarias y build) e **`integration`** (Postgres de Supabase local, migraciones y pruebas de integración). En *Settings → Branches → Require status checks*, búscalos después del primer PR que los ejecute.
 - En `main`, solo el líder puede hacer merge.
 | `.mcp.json` | Supabase (solo lectura, proyecto en la nube) y Playwright (navegador para probar la UI) |
 

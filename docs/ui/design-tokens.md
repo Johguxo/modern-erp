@@ -1,6 +1,6 @@
 # Design tokens (del prototipo)
 
-Marca **provisional** de LinkUs. Cuando llegue el logo y los colores oficiales, se cambian aquí y en `tailwind.config` / variables CSS; los componentes no llevan colores fijos.
+Marca **provisional** de LinkUs. Cuando llegue el logo y los colores oficiales, se cambian aquí y en `src/app/globals.css` (Tailwind v4: no hay `tailwind.config`); los componentes no llevan colores fijos.
 
 ## Tipografía
 | Uso | Fuente | Peso | Tamaño |
@@ -20,7 +20,7 @@ Cargar con `next/font/google`.
 | `--border` | `#E2E8F0` | Bordes de tarjetas |
 | `--border-strong` | `#CBD5E1` | Bordes de inputs y botones secundarios |
 | `--row-divider` | `#EEF2F6` | Separadores de filas |
-| `--muted` | `#475569` | Texto secundario |
+| `--muted-foreground` | `#475569` | Texto secundario (en el prototipo, `--muted`; ver mapeo abajo) |
 | `--muted-2` | `#64748B` | Notas al pie |
 | `--primary` | `#0B5CD5` | Botón principal, links, pestaña activa |
 | `--primary-hover` | `#0846A3` | |
@@ -29,6 +29,25 @@ Cargar con `next/font/google`.
 | `--success` | `#15803D` | Aprobar, cifras positivas |
 | `--danger` | `#B91C1C` | Rechazar |
 | `--warning-bg` / `--warning-border` / `--warning-text` | `#FFF7ED` / `#FDBA74` / `#7C2D12` | Aviso de línea corregida |
+| `--nav-text` | `#CBD5E1` | Texto del menú lateral (prototipo) |
+| `--nav-muted` | `#94A3B8` | Pie del menú lateral (prototipo) |
+
+**Regla de contraste:** `--muted-2` solo sobre `--surface` (sobre `--bg` no llega a AA en texto pequeño).
+
+### Mapeo a las variables de shadcn (`src/app/globals.css`)
+shadcn usa sus propios nombres; se definen como alias de los tokens, sin colores nuevos:
+
+| Variable shadcn | Token |
+|---|---|
+| `--background` | `--bg` |
+| `--foreground`, `--card-foreground`, `--popover-foreground`, `--secondary-foreground` | `--ink` |
+| `--card`, `--popover`, `--secondary`, `--primary-foreground` | `--surface` |
+| `--muted` (fondo neutro) | fondo de la pastilla neutra `#F1F5F9` |
+| `--muted-foreground` | texto secundario `#475569` |
+| `--accent` / `--accent-foreground` | `--primary-soft` / `--primary` |
+| `--destructive` | `--danger` |
+| `--input` | `--border-strong` |
+| `--ring` | `--primary` |
 
 ## Pastillas de estado (siempre con texto, nunca solo color)
 | Estado | Fondo | Texto |
@@ -39,6 +58,7 @@ Cargar con `next/font/google`.
 | Espera aprobación externa | `#EDE9FE` | `#5B21B6` |
 | Rechazada | `#FEE2E2` | `#991B1B` |
 | Borrador / Anulada | `#F1F5F9` | `#334155` |
+| Cambios solicitados | `#FEF3C7` | `#92400E` (igual que Pendiente: espera una acción del solicitante) |
 
 ## Forma y espaciado
 - Radio: 12 px tarjetas, 10 px botones principales, 8 px inputs y botones secundarios, 999 px pastillas.

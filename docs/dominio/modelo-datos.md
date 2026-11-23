@@ -79,9 +79,11 @@ pg-boss crea su propio esquema (`pgboss`). Colas iniciales: `notifications.send-
 
 - RLS **activado en todas las tablas** del esquema `public`.
 - **Primera defensa:** todo repositorio filtra por `tenant_id` del `ctx` (obligatorio y probado).
-- **Segunda defensa (RLS):** la app web se conecta con un rol propio, `app_user` (sin `bypassrls` y que no es dueño de las tablas). Cada transacción de un request ejecuta `set local app.tenant_id = '<uuid>'`, y las políticas comparan `tenant_id = current_setting('app.tenant_id', true)::uuid`. Sin ese valor, la consulta no devuelve filas.
-- **Migraciones y worker** usan el rol dueño (`DATABASE_URL_ADMIN`), que no aplica RLS. El worker igual pasa el `tenantId` a cada caso de uso.
-- Las tablas globales (`plans`, `users`, `platform_admins`) tienen políticas propias: lectura de `plans` para todos; `users` solo la propia fila o las de usuarios con membresía en el tenant activo.
+- **Segunda defensa (RLS):** la app web se conecta con `app_user` (sin `bypassrls`, no es dueño de las tablas ni puede crearlas). Cada request de negocio corre dentro de `withTenant(ctx, fn)`, que fija `app.tenant_id` y `app.user_id` para esa transacción con `set_config(..., true)` parametrizado. Las políticas son `to app_user` y comparan `tenant_id = (select app.current_tenant_id())`; sin valor, la función devuelve `null` y la consulta no devuelve filas. Plantilla y convenciones en ADR-004.
+- **Sin empresa elegida:** `withUser(ctx, fn)` fija solo `app.user_id`; `users` y `memberships` permiten leer las filas del propio `app.current_user_id()`.
+- **Migraciones y worker** usan el rol dueño (`DATABASE_URL_ADMIN`), que no aplica RLS; el worker igual pasa el `tenantId` a cada caso de uso. Aceptar invitación y operaciones de SuperAdmin usan este rol solo en casos de uso acotados y auditados.
+- Las tablas globales (`plans`, `users`, `platform_admins`) tienen políticas propias: lectura de `plans` para `app_user`; `users` solo la propia fila o las de usuarios con membresía en el tenant activo.
+- Extensiones (`pgcrypto`, `pg_trgm`) en el esquema `extensions`; el `search_path` de `app_user` es `public, extensions`.
 - Prueba de integración obligatoria: dos tenants con datos; cada repositorio debe devolver solo los del tenant del `ctx`.
 
 ## Diagrama de relaciones (resumen)

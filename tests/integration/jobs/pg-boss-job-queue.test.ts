@@ -113,13 +113,9 @@ describe('adaptador pg-boss (JobQueue y JobConsumer)', () => {
     JOB_TIMEOUT_MS + 10_000,
   );
 
-  // HALLAZGO (pg-boss 12): con la política por defecto de la cola ('standard') singletonKey sola
-  // no deduplica: pg-boss solo aplica índices únicos por clave en las políticas short/singleton/
-  // stately/exclusive, o con singletonSeconds (índice job_i4 sobre singleton_on). El adaptador hoy
-  // no pasa ni lo uno ni lo otro, así que el segundo enqueue devuelve otro id. Se marca como
-  // `fails` para documentar la brecha con el contrato del puerto; cuando el adaptador se corrija
-  // esta prueba empezará a "fallar" y habrá que quitar `.fails`.
-  it.fails('un singletonKey repetido devuelve null (sin consumidor en la cola)', async () => {
+  // pg-boss 12 solo deduplica por singletonKey con una ventana (singletonSeconds): el adaptador
+  // la agrega (1 h por defecto). Con la política por defecto de la cola, la clave sola no basta.
+  it('un singletonKey repetido dentro de la ventana devuelve null', async () => {
     await runtime.ensureQueues(['approvals.reminders']);
     const key = `reminder-${newId()}`;
     const payload = { tenantId: newId(), requestId: newId() };

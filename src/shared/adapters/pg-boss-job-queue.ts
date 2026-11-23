@@ -38,6 +38,7 @@ export interface JobRuntime extends JobConsumer {
 }
 
 const STOP_TIMEOUT_MS = 25_000;
+const DEFAULT_SINGLETON_SECONDS = 3600;
 
 export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
   const { logger } = options;
@@ -54,7 +55,14 @@ export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
     enqueue: (name: QueueName, payload: JobPayload, enqueueOptions: EnqueueOptions = {}) =>
       boss.send(name, payload, {
         startAfter: enqueueOptions.startAfter,
-        singletonKey: enqueueOptions.singletonKey,
+        // pg-boss solo deduplica por singletonKey con una ventana (singletonSeconds) o con
+        // políticas de cola que limitan toda la cola: se usa la ventana.
+        ...(enqueueOptions.singletonKey
+          ? {
+              singletonKey: enqueueOptions.singletonKey,
+              singletonSeconds: enqueueOptions.singletonSeconds ?? DEFAULT_SINGLETON_SECONDS,
+            }
+          : {}),
       }),
   };
 

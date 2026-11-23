@@ -16,8 +16,13 @@ export interface JobPayload {
 
 export interface EnqueueOptions {
   readonly startAfter?: Date;
-  /** Evita duplicados: si ya hay un job pendiente con esta clave, no se encola otro. */
+  /**
+   * Evita duplicados: si en los últimos `singletonSeconds` ya se encoló un job con esta clave
+   * en la misma cola, no se encola otro y enqueue devuelve null.
+   */
   readonly singletonKey?: string;
+  /** Ventana de la deduplicación por singletonKey. Por defecto, 3600 s (1 hora). */
+  readonly singletonSeconds?: number;
 }
 
 /** Lado productor (casos de uso). */

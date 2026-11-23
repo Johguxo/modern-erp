@@ -65,7 +65,7 @@ const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
 /** Las pruebas crean y borran tablas: fuera de CI solo se permiten contra una base local. */
 function assertLocal(url: string): void {
-  if (process.env.CI) return;
+  if (process.env.CI === 'true') return;
   let hostname = '';
   try {
     hostname = new URL(url).hostname;

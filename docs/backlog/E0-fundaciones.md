@@ -6,13 +6,13 @@ Objetivo: un repositorio que compila, prueba y despliega, con la estructura de A
 **Como** equipo **quiero** el proyecto Next.js inicial con las herramientas acordadas **para** empezar a construir sobre una base estable.
 
 **Criterios de aceptación**
-- [ ] Next.js (App Router) + TypeScript estricto (`strict`, `noUncheckedIndexedAccess`) con pnpm.
-- [ ] Estructura de carpetas exacta de ADR-001 (`src/app`, `src/modules/*/{domain,application,infrastructure,contracts}`, `src/shared`, `src/db`, `src/ui`, `src/worker.ts`, `src/env.ts`) con un `index.ts` por módulo.
-- [ ] Scripts: `dev`, `build`, `start`, `worker`, `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `db:generate`, `db:migrate`, `db:seed`, `format`.
-- [ ] ESLint + Prettier configurados, con la **regla de imports prohibidos** de ADR-003 (`no-restricted-imports` por carpeta) y una prueba que demuestre que falla al violarla.
-- [ ] `src/env.ts` valida variables con Zod y falla al arrancar si falta alguna; `.env.example` completo.
+- [x] Next.js (App Router) + TypeScript estricto (`strict`, `noUncheckedIndexedAccess`) con pnpm.
+- [x] Estructura de carpetas exacta de ADR-001 (`src/app`, `src/modules/*/{domain,application,infrastructure,contracts}`, `src/shared`, `src/db`, `src/ui`, `src/worker.ts`, `src/env.ts`) con un `index.ts` por módulo.
+- [x] Scripts: `dev`, `build`, `start`, `worker`, `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `db:generate`, `db:migrate`, `db:seed`, `format`.
+- [x] ESLint + Prettier configurados, con la **regla de imports prohibidos** de ADR-003 (`no-restricted-imports` por carpeta) y una prueba que demuestre que falla al violarla.
+- [x] `src/env.ts` valida variables con Zod y falla al arrancar si falta alguna; `.env.example` completo.
 
-Estado: pendiente · Issue: [#3](https://github.com/Johguxo/modern-erp/issues/3)
+Estado: en revisión · Issue: [#3](https://github.com/Johguxo/modern-erp/issues/3)
 
 ### E0-H2 · Base de datos local y Drizzle
 **Criterios de aceptación**

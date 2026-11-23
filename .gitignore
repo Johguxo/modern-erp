@@ -13,3 +13,7 @@ test-results/
 .DS_Store
 supabase/.temp/
 .claude/settings.local.json
+next-env.d.ts
+*.tsbuildinfo
+.eslintcache
+/playwright/.cache/

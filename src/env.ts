@@ -40,11 +40,17 @@ export const seedEnvSchema = z.object({
   SEED_DEFAULT_PASSWORD: required(z.string().min(12, 'debe tener al menos 12 caracteres')),
 });
 
+/** Variables que solo exigen las migraciones (drizzle-kit, CI): la conexión del rol dueño. */
+export const migrationEnvSchema = z.object({
+  DATABASE_URL_ADMIN: required(postgresUrl),
+});
+
 /** Variables de .env.example que no lee la app (las usa el MCP de Supabase de Claude Code). */
 export const TOOLING_ONLY_KEYS = ['SUPABASE_PROJECT_REF', 'SUPABASE_ACCESS_TOKEN'] as const;
 
 export type Env = z.infer<typeof envSchema>;
 export type SeedEnv = z.infer<typeof seedEnvSchema>;
+export type MigrationEnv = z.infer<typeof migrationEnvSchema>;
 /** Origen de las variables: process.env o un objeto equivalente (pruebas). */
 export type EnvSource = Readonly<Record<string, string | undefined>>;
 
@@ -72,6 +78,10 @@ export function parseEnv(source: EnvSource): Env {
 
 export function parseSeedEnv(source: EnvSource = process.env): SeedEnv {
   return parseWith(seedEnvSchema, source);
+}
+
+export function parseMigrationEnv(source: EnvSource = process.env): MigrationEnv {
+  return parseWith(migrationEnvSchema, source);
 }
 
 let cached: Env | undefined;

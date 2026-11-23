@@ -6,8 +6,8 @@
 |---|---|---|
 | Node.js 22 LTS | Ejecutar la app | `node -v` |
 | pnpm | Paquetes | `pnpm -v` (`corepack enable` lo instala) |
-| Docker Desktop | Supabase local | `docker ps` |
-| Supabase CLI | Base de datos, Auth y Storage locales | `supabase --version` |
+| Docker Desktop (con WSL2 en Windows) | Supabase local | `docker ps` |
+| Supabase CLI | Base de datos, Auth y Storage locales | Viene en `devDependencies`: `pnpm exec supabase --version` (no hace falta instalarla global) |
 | Git y GitHub CLI | Repositorio y PRs | `git --version`, `gh auth status` |
 | Claude Code | La fábrica | `claude --version` |
 
@@ -32,6 +32,22 @@ git push -u origin main
 git switch -c develop && git push -u origin develop   # rama de integración
 cp .env.example .env.local
 ```
+
+## 3b. Base de datos local
+
+```bash
+pnpm install
+pnpm exec supabase start        # la primera vez descarga imágenes de Docker (varios minutos)
+pnpm exec supabase status -o env  # claves locales para .env.local
+pnpm db:migrate                 # aplica src/db/migrations
+pnpm test:int                   # pruebas de integración (RLS, roles)
+```
+
+- Copia a tu `.env.local` las claves que imprime `supabase status`: `ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SERVICE_ROLE_KEY` → `SUPABASE_SERVICE_ROLE_KEY`. Las URLs de `.env.example` ya apuntan a la base local.
+- `pnpm db:reset` recrea la base local desde cero (login local de `app_user` + migraciones).
+- `pnpm exec supabase stop` la detiene conservando los datos. Studio: http://127.0.0.1:54323 · correos: http://127.0.0.1:54324.
+- Usa los puertos 54321–54327: si tienes otro proyecto de Supabase corriendo, detenlo antes (`pnpm exec supabase stop --project-id <otro>`).
+- Las migraciones solo se crean con drizzle-kit (`pnpm db:generate`, o `pnpm db:generate --custom --name=<slug>` para SQL a mano). No uses `supabase migration`.
 
 ## 4. Primera sesión con Claude Code
 

@@ -6,7 +6,14 @@ import { describe, expect, it } from 'vitest';
 
 import { TEST_ENV } from '../tests/setup/test-env.mts';
 
-import { envSchema, parseEnv, parseSeedEnv, seedEnvSchema, TOOLING_ONLY_KEYS } from './env';
+import {
+  envSchema,
+  parseEnv,
+  parseMigrationEnv,
+  parseSeedEnv,
+  seedEnvSchema,
+  TOOLING_ONLY_KEYS,
+} from './env';
 
 const valid = (overrides: Record<string, string | undefined> = {}): NodeJS.ProcessEnv => ({
   ...TEST_ENV,
@@ -117,6 +124,27 @@ describe('variables del seed', () => {
       SEED_SUPERADMIN_EMAIL: 'admin@linkus.pe',
       SEED_DEFAULT_PASSWORD: 'contrasena-de-prueba',
     });
+  });
+});
+
+describe('variables de las migraciones (E0-H2)', () => {
+  it('parseMigrationEnv pasa con solo DATABASE_URL_ADMIN', () => {
+    expect(parseMigrationEnv({ DATABASE_URL_ADMIN: TEST_ENV.DATABASE_URL_ADMIN })).toEqual({
+      DATABASE_URL_ADMIN: TEST_ENV.DATABASE_URL_ADMIN,
+    });
+  });
+
+  it('parseMigrationEnv sin DATABASE_URL_ADMIN falla y la nombra', () => {
+    expect(() => parseMigrationEnv({ DATABASE_URL: TEST_ENV.DATABASE_URL })).toThrow(
+      /DATABASE_URL_ADMIN/,
+    );
+    expect(() => parseMigrationEnv({ DATABASE_URL_ADMIN: '' })).toThrow(/DATABASE_URL_ADMIN/);
+  });
+
+  it('parseMigrationEnv con DATABASE_URL_ADMIN http:// falla', () => {
+    expect(() =>
+      parseMigrationEnv({ DATABASE_URL_ADMIN: 'http://127.0.0.1:54322/postgres' }),
+    ).toThrow(/DATABASE_URL_ADMIN/);
   });
 });
 

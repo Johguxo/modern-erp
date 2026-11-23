@@ -12,6 +12,7 @@ La plataforma la desarrolla **LinkUs** (empresa y marca de producto). Repositori
 | Arquitectura y reglas de capas | `docs/arquitectura/adr-001-monolito-modular.md` |
 | Login, roles, permisos, planes, SuperAdmin | `docs/arquitectura/adr-002-identidad-roles-planes.md` |
 | Stack y librerías permitidas | `docs/arquitectura/adr-003-stack.md` |
+| Conexiones, `withTenant`/`withUser`, roles y plantilla de RLS | `docs/arquitectura/adr-004-contexto-base-de-datos.md` |
 | Estados del SOF y motor de aprobaciones | `docs/dominio/flujo-sof-aprobaciones.md` |
 | Tablas, columnas, RLS, seed | `docs/dominio/modelo-datos.md` |
 | Pantallas, rutas y casos de uso | `docs/ui/mapa-pantallas.md` |
@@ -28,12 +29,16 @@ Next.js (App Router) · TypeScript estricto · pnpm · Tailwind + shadcn/ui · R
 ```
 pnpm dev            # app en http://localhost:3000
 pnpm worker         # proceso de jobs
-supabase start      # Postgres, Auth, Storage y correo locales (requiere Docker)
-pnpm db:generate    # generar migración desde el esquema Drizzle
-pnpm db:migrate     # aplicar migraciones
+pnpm exec supabase start   # Postgres, Auth, Storage y correo locales (requiere Docker; la CLI viene en devDependencies)
+pnpm exec supabase status  # URLs y claves locales (`-o env` para copiarlas a .env.local)
+pnpm exec supabase stop    # detener conservando los datos
+pnpm db:generate    # generar migración desde el esquema Drizzle (`--custom --name=<slug>` para SQL a mano)
+pnpm db:migrate     # aplicar migraciones (src/db/migrations)
+pnpm db:reset       # recrear la base local: login local de app_user + migraciones
 pnpm db:seed        # datos de demo (Genrent demo + Empresa prueba)
-pnpm lint | pnpm typecheck | pnpm test | pnpm test:int | pnpm test:e2e | pnpm build
+pnpm lint | pnpm typecheck | pnpm test | pnpm test:int | pnpm test:e2e | pnpm build | pnpm format
 ```
+Las migraciones solo se crean con drizzle-kit; nunca `supabase migration` ni `supabase db push`. `pnpm test:int` necesita Supabase local levantado y migrado.
 
 ## Reglas no negociables
 1. **Capas (ADR-001):** la lógica de negocio va en `src/modules/<módulo>/{domain,application}`. `src/app` solo valida con el contrato Zod, arma el `ctx` y llama al caso de uso.

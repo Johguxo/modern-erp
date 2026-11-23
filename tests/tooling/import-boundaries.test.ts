@@ -1,4 +1,4 @@
-// E0-H1 · Regla de imports prohibidos (ADR-001 / ADR-003) y prueba de que falla al violarla.
+// E0-H1/E0-H2 · Regla de imports prohibidos (ADR-001 / ADR-003) y prueba de que falla al violarla.
 import path from 'node:path';
 
 import { ESLint, type Linter } from 'eslint';
@@ -59,6 +59,33 @@ const FORBIDDEN: Case[] = [
   ['src/app/page.tsx', '@supabase/ssr'],
   ['src/app/page.tsx', '@/modules/requests/application/x'],
   ['src/worker.ts', 'pg-boss'],
+  // E0-H2: domain, application, contracts y ui no acceden a la base (ADR-004)
+  ['src/modules/requests/domain/x.ts', 'drizzle-orm'],
+  ['src/modules/requests/domain/x.ts', '@/db'],
+  ['src/modules/requests/domain/x.ts', 'postgres'],
+  ['src/modules/requests/domain/x.ts', '../../../db/client'],
+  ['src/modules/requests/application/x.ts', '@/db/with-tenant'],
+  ['src/modules/requests/contracts/x.ts', 'drizzle-orm/pg-core'],
+  ['src/ui/x.tsx', '@/db'],
+  // el driver solo en src/db; la conexión dueño nunca desde src/app
+  ['src/modules/requests/infrastructure/x.ts', 'postgres'],
+  ['src/app/page.tsx', '@/db/admin'],
+  ['src/app/page.tsx', 'drizzle-orm'],
+  ['src/app/page.tsx', 'postgres'],
+  ['src/shared/x.ts', 'postgres'],
+  // src/db es una capa inferior
+  ['src/db/client.ts', '@/modules/identity'],
+  ['src/db/client.ts', 'next/headers'],
+  // src/app solo usa @/db: ni la conexión directa, ni el esquema, ni rutas relativas
+  ['src/app/page.tsx', '@/db/client'],
+  ['src/app/page.tsx', '@/db/schema'],
+  ['src/app/page.tsx', '@/db/schema/identity'],
+  ['src/app/page.tsx', '../db/admin'],
+  ['src/app/page.tsx', '../../db/client'],
+  // src/shared es puro
+  ['src/shared/context.ts', 'drizzle-orm'],
+  ['src/shared/context.ts', '@/db'],
+  ['src/shared/context.ts', '../db/client'],
 ];
 
 const ALLOWED: Case[] = [
@@ -73,6 +100,15 @@ const ALLOWED: Case[] = [
   ['src/app/page.tsx', '@/modules/requests'],
   ['src/proxy.ts', '@supabase/ssr'],
   ['src/middleware.ts', '@supabase/ssr'],
+  ['src/modules/requests/infrastructure/x.ts', 'drizzle-orm'],
+  ['src/modules/requests/infrastructure/x.ts', '@/db'],
+  ['src/modules/requests/infrastructure/x.ts', '@/db/admin'],
+  ['src/db/client.ts', 'postgres'],
+  ['src/db/client.ts', 'drizzle-orm/postgres-js'],
+  ['src/app/page.tsx', '@/db'],
+  ['src/modules/requests/infrastructure/x.ts', '@/db/schema'],
+  ['src/shared/adapters/mailer.ts', '@/db'],
+  ['src/worker.ts', '@/db/admin'],
 ];
 
 describe('regla de imports prohibidos (no-restricted-imports por carpeta)', () => {
@@ -117,6 +153,9 @@ describe('la configuración real de ESLint aplica la regla de imports prohibidos
     'src/modules/requests/domain/x.ts',
     'src/modules/requests/infrastructure/x.ts',
     'src/app/page.tsx',
+    'src/db/client.ts',
+    'src/ui/x.tsx',
+    'src/shared/context.ts',
   ])(
     'en %s la regla es la generada por importBoundaries (nada posterior la pisa)',
     async (file) => {

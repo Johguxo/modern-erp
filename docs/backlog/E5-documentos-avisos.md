@@ -10,11 +10,11 @@ Estado: pendiente · Issue: [#25](https://github.com/Johguxo/modern-erp/issues/2
 
 ### E5-H2 · Correos de aprobación
 **Criterios de aceptación**
-- [ ] Adaptador `Mailer` con Resend + plantillas React Email en español y con la marca del cliente.
+- [ ] Plantillas React Email en español y con la marca del cliente sobre el adaptador `Mailer` de E1-H3 (Resend). Las plantillas viven en `src/ui/emails`; los módulos pasan id de plantilla y datos.
 - [ ] Correos: paso pendiente (al asignado, con botón "Revisar y aprobar" que abre `/solicitudes/[id]`), aprobado, rechazado, cambios pedidos (al solicitante), línea corregida (informativo), invitación (de E1).
 - [ ] Envío asíncrono por la cola `notifications.send-email` con reintentos; el fallo de un correo nunca bloquea la acción del usuario.
 - [ ] Respeta `tenant_settings.notification_channels`.
-- [ ] En desarrollo, los correos se capturan localmente (Inbucket de Supabase o un `Mailer` de consola).
+- [ ] En desarrollo, los correos se ven en Mailpit (http://127.0.0.1:54324), como desde E1-H3.
 
 Estado: pendiente · Issue: [#26](https://github.com/Johguxo/modern-erp/issues/26)
 

@@ -16,9 +16,12 @@ Estado: pendiente · Issue: [#8](https://github.com/Johguxo/modern-erp/issues/8)
 
 **Criterios de aceptación**
 - [ ] Adaptador `AuthProvider` sobre Supabase Auth (`@supabase/ssr`): iniciar sesión, cerrar sesión, recuperar y restablecer contraseña.
-- [ ] Middleware de Next.js que protege `(app)` y `admin`; redirige a `/login` sin sesión.
+- [ ] `src/proxy.ts` (el middleware de Next.js 16) protege `(app)` y `admin`; redirige a `/login` sin sesión.
 - [ ] Al entrar: si tiene 1 membresía activa, entra directo; si tiene varias, `/elegir-empresa`; si tiene 0 y es SuperAdmin, `/admin`; si no, mensaje "Tu cuenta no tiene acceso a ninguna empresa".
 - [ ] Cookie firmada `active_tenant`; el `ctx` se reconstruye en cada request validando membresía activa y estado del tenant.
+- [ ] `CtxResolver` real (reemplaza `unconfiguredCtxResolver` de ADR-005): obtiene `users.id` y las membresías a partir de `auth_user_id` con **una lectura acotada con `getDbAdmin()`** (ADR-004 §8); el resto del request usa `withTenant`.
+- [ ] Modo solo lectura: el resolver calcula `readOnly` con `Entitlements.isReadOnly` (E1-H1); `action()` rechaza las escrituras con `FORBIDDEN` (`reason: tenant_read_only`) y el layout `(app)` muestra un aviso arriba (slot `banner` de `AppShell`).
+- [ ] Cliente: `configureZodMessages()` activo en los formularios y `applyActionError` para llevar `fieldErrors` a React Hook Form (ADR-005).
 - [ ] Mensajes de error en español sin revelar si el correo existe.
 - [ ] E2E: login correcto, contraseña errónea, cierre de sesión.
 
@@ -31,6 +34,7 @@ Estado: pendiente · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
 - [ ] `/configuracion/usuarios`: lista (nombre, correo, roles, estado), invitar, editar roles, desactivar.
 - [ ] Invitar respeta `Entitlements.canAddUser`; si se supera el límite, mensaje claro con el límite del plan.
 - [ ] La invitación envía correo (puerto `Mailer`) con link `/invitacion/[token]` que vence en 7 días; el token se guarda como hash.
+- [ ] Adaptador `Mailer` mínimo: en local los correos se ven en Mailpit (http://127.0.0.1:54324); en producción, Resend con texto simple. Las plantillas con diseño (React Email) llegan en E5-H2.
 - [ ] Aceptar invitación: si el correo no tiene cuenta, crea contraseña; si ya tiene, solo agrega la membresía.
 - [ ] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
 - [ ] Cada acción queda en `audit_events`.
@@ -42,8 +46,8 @@ Estado: pendiente · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/1
 
 **Criterios de aceptación**
 - [ ] `/admin/clientes`: tabla con nombre, plan, estado de suscripción, usuarios activos / límite.
-- [ ] `/admin/clientes/nuevo`: nombre, slug, plan, ajustes (`max_users`), moneda, prefijo y siguiente número de SOF, correo del primer admin.
-- [ ] Caso de uso `platform.createTenant` en una transacción: tenant, settings, suscripción, almacén por defecto, secuencia `SOF`, política "SOF estándar" (paso 1 "Almacén" con rol `warehouse`, paso 2 "Gerencia" con rol `approver`; el admin del cliente la ajusta después) e invitación.
+- [ ] `/admin/clientes/nuevo`: nombre, slug, plan, ajustes (`max_users`), moneda, correo del primer admin. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
+- [ ] Caso de uso `platform.createTenant` en una transacción: tenant, settings, suscripción e invitación al primer admin. Las historias que crean tablas le agregan su paso: almacén por defecto (E2-H1), secuencia `SOF` (E3-H1) y política "SOF estándar" (E4-H1).
 - [ ] `/admin/clientes/[id]`: cambiar plan, estado de suscripción y ajustes.
 - [ ] Solo accesible para usuarios en `platform_admins`; auditoría de cada acción.
 
@@ -51,8 +55,7 @@ Estado: pendiente · Issue: [#11](https://github.com/Johguxo/modern-erp/issues/1
 
 ### E1-H5 · Configuración de la empresa
 **Criterios de aceptación**
-- [ ] `/configuracion/empresa`: nombre visible, logo (subida a `FileStorage`), color principal, moneda, prefijo y siguiente número de SOF.
+- [ ] `/configuracion/empresa`: nombre visible, logo (subida a `FileStorage`), color principal, moneda. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
 - [ ] El logo y el color se aplican en el menú lateral.
-- [ ] Cambiar el siguiente número no puede dejarlo por debajo del último usado.
 
 Estado: pendiente · Issue: [#12](https://github.com/Johguxo/modern-erp/issues/12)

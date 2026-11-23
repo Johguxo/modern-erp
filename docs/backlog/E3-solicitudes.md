@@ -9,6 +9,7 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md`, `docs/ui/mapa-pantallas.md
 - [ ] Cálculo de subtotales y total con `decimal.js`; el total siempre se recalcula en el servidor.
 - [ ] Numeración al enviar con bloqueo de fila (prueba de concurrencia: 20 envíos simultáneos → 20 números distintos y consecutivos).
 - [ ] Bloqueo optimista con `version`.
+- [ ] `platform.createTenant` (E1-H4) crea la secuencia `SOF`; el alta y la edición de cliente (`/admin/clientes`) y `/configuracion/empresa` (E1-H5) permiten fijar el prefijo y el siguiente número. Cambiar el siguiente número no puede dejarlo por debajo del último usado.
 
 Estado: pendiente · Issue: [#16](https://github.com/Johguxo/modern-erp/issues/16)
 

@@ -23,6 +23,7 @@ ADR-001 exige filtrar por tenant en cada repositorio y deja RLS como segunda def
 8. **`getDbAdmin()` en la web:** prohibido salvo en casos de uso acotados y auditados en `audit_events`: aceptar invitación (E1-H3) y operaciones de plataforma del SuperAdmin (E1-H4). Nunca desde `src/app` directamente (regla de ESLint).
 9. **Worker:** usa `getDbAdmin()` y aun así pasa `tenantId` a cada caso de uso, y los repositorios filtran.
 10. **Capas:** `domain/`, `application/`, `contracts/` y `src/ui` no importan `drizzle-orm`, `postgres` ni `@/db`; los repositorios viven en `infrastructure/`. El driver `postgres` solo se importa en `src/db` (regla de ESLint).
+11. **Migraciones con RLS (desde E1-H1):** las políticas se declaran en el esquema Drizzle (`pgPolicy(..., { to: appUser })`, con las fábricas `tenantIsolation()` y `appendOnlyPolicies()` de `src/db/schema/rls.ts`); drizzle-kit las genera junto con `enable row level security`. Las tablas sin política usan `.enableRLS()` (nadie las ve con `app_user`). Los grants van en una migración `--custom` inmediata a la generada, que quita a `app_user` lo que la web no debe hacer. Regla: **la política dice qué filas; los grants dicen qué operaciones**. Una prueba (`rls-coverage`) exige RLS en toda tabla de `public` y `to app_user` en toda política.
 
 ## Consecuencias
 - Toda tabla nueva lleva su política en la misma migración y una prueba de aislamiento entre dos tenants.

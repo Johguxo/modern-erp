@@ -1,6 +1,6 @@
 // Vocabulario de roles y permisos (ADR-002). Vive en shared porque Ctx lo necesita y shared no
 // puede depender de un módulo. El mapa rol → permisos (ROLE_PERMISSIONS) vive en
-// identity/domain/permissions.ts (E1-H1).
+// src/modules/identity/domain/permissions.ts.
 
 export const TENANT_ROLES = ['admin', 'requester', 'warehouse', 'approver', 'purchasing'] as const;
 export type Role = (typeof TENANT_ROLES)[number];

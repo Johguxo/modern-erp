@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "worker": "node --env-file-if-exists=.env.local --import tsx src/worker.ts",
-    "lint": "eslint . --max-warnings=0 --cache",
+    "lint": "next typegen && eslint . --max-warnings=0 --cache",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --project unit",
     "test:int": "vitest run --project integration",

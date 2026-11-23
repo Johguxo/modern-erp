@@ -7,7 +7,7 @@
 | Lenguaje | TypeScript estricto (`strict: true`, `noUncheckedIndexedAccess: true`) | |
 | Gestor de paquetes | pnpm | |
 | Framework | Next.js (App Router) | Server Components por defecto; Client Components solo donde haya interacción |
-| UI | Tailwind CSS + shadcn/ui + lucide-react | Tokens del prototipo en `docs/ui/design-tokens.md` |
+| UI | Tailwind CSS v4 + shadcn/ui + lucide-react | Tokens del prototipo en `docs/ui/design-tokens.md` |
 | Formularios | React Hook Form + Zod (`@hookform/resolvers`) | El mismo esquema Zod del `contracts/` del módulo |
 | Tablas | TanStack Table | Bandeja y listas de admin |
 | Base de datos | PostgreSQL en Supabase | Supabase CLI para entorno local |
@@ -25,8 +25,8 @@
 | CI | GitHub Actions | lint, typecheck, test, build en cada PR |
 | Despliegue | Railway: servicio `web` (Next.js) y servicio `worker` | Vercel Hobby no permite uso comercial |
 | Observabilidad | Logs estructurados (pino) + Sentry (plan gratuito) | |
-| Fechas | date-fns + date-fns-tz | UTC en base de datos, America/Lima en pantalla |
-| Montos | `numeric(14,2)` en BD; `decimal.js` en dominio | Nunca `float` para dinero |
+| Fechas | `Intl.DateTimeFormat` con la zona del tenant (`src/ui/format/date.ts`); date-fns solo si hace falta aritmética de fechas | UTC en base de datos, America/Lima en pantalla |
+| Montos | `numeric(14,2)` en BD; `decimal.js` en dominio; en pantalla `Intl.NumberFormat` sobre el string decimal (`src/ui/format/money.ts`) | Nunca `float` para dinero |
 
 ## Regla de imports (ESLint)
 Dentro de `src/modules/**` están prohibidos: `next`, `next/*`, `react`, `react-dom`, `@supabase/*`, `resend`, `pg-boss`. Solo los adaptadores en `src/modules/**/infrastructure/**` y `src/shared/adapters/**` pueden importar `@supabase/*`, `resend` y `pg-boss`. Ningún módulo importa la carpeta `infrastructure/` de otro módulo.

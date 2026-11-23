@@ -1,11 +1,6 @@
-import { messages } from '@/ui/messages/es-PE';
+import { redirect } from 'next/navigation';
 
-// Página temporal: E1 la reemplaza por la redirección a /bandeja o /login.
+// La entrada de la app es la bandeja (mapa-pantallas.md). E1-H2 agrega el paso por /login.
 export default function HomePage() {
-  return (
-    <main>
-      <h1>{messages.home.title}</h1>
-      <p>{messages.home.description}</p>
-    </main>
-  );
+  redirect('/bandeja');
 }

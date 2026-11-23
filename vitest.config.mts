@@ -4,7 +4,10 @@ import { defineConfig } from 'vitest/config';
 
 import { TEST_ENV } from './tests/setup/test-env.mts';
 
-const alias = { '@': path.resolve(import.meta.dirname, 'src') };
+const alias = {
+  '@tests': path.resolve(import.meta.dirname, 'tests'),
+  '@': path.resolve(import.meta.dirname, 'src'),
+};
 
 /** DATABASE_URL y DATABASE_URL_ADMIN de process.env, si vienen, mandan sobre TEST_ENV. */
 function databaseOverrides(): Record<string, string> {
@@ -25,7 +28,11 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
-          include: ['src/**/*.test.{ts,tsx}', 'tests/tooling/**/*.test.ts'],
+          include: [
+            'src/**/*.test.{ts,tsx}',
+            'tests/tooling/**/*.test.ts',
+            'tests/support/**/*.test.ts',
+          ],
           env: TEST_ENV,
           testTimeout: 30_000,
         },

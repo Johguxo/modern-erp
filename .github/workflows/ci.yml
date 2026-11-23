@@ -1,0 +1,64 @@
+# CI de cada PR (E0-H5): calidad y build en un job, pruebas de integración con Postgres de
+# Supabase local en otro. Las E2E se agregan en E7-H2.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CI: 'true'
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      # Sin .env.local: getEnv() es perezoso y la validación no corre durante `next build`.
+      - run: pnpm build
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://app_user:app_user_password@127.0.0.1:54322/postgres
+      DATABASE_URL_ADMIN: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Solo Postgres: el resto de servicios no se usa en las pruebas de integración.
+      - name: Start Supabase (Postgres only)
+        run: >-
+          pnpm exec supabase start
+          -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: pnpm db:migrate
+      - run: pnpm test:int
+      - name: Stop Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup

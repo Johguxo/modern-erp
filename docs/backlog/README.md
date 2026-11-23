@@ -8,7 +8,7 @@ Las épicas se hacen en orden; dentro de cada épica, las historias también, sa
 
 | Épica | Nombre | Depende de | Estado |
 |---|---|---|---|
-| E0 | Fundaciones del proyecto | — | En curso |
+| E0 | Fundaciones del proyecto | — | En revisión |
 | E1 | Identidad, acceso y SuperAdmin | E0 | Pendiente |
 | E2 | Catálogo y datos maestros | E1 | Pendiente |
 | E3 | Solicitudes SOF | E2 | Pendiente |

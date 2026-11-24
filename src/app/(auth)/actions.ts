@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 
 import { getEnv } from '@/env';
 import {
+  acceptInvitation,
+  createInvitationServices,
   createSessionServices,
   requestPasswordReset,
   resetPassword,
@@ -12,12 +14,15 @@ import {
   signIn,
 } from '@/modules/identity';
 import {
+  acceptInvitationContract,
   requestPasswordResetContract,
   resetPasswordContract,
   selectTenantContract,
   signInContract,
   signOutContract,
 } from '@/modules/identity/contracts';
+import { createSupabaseAuthAdmin } from '@/shared/adapters/supabase-auth-admin';
+import { systemClock } from '@/shared/adapters/system-clock';
 import { ForbiddenError, UnauthenticatedError } from '@/shared/errors';
 
 import {
@@ -77,4 +82,30 @@ export const signOutAction = publicAction(
     return {};
   },
   { name: 'auth.signOut' },
+);
+
+/**
+ * Acepta una invitación (E1-H3): crea la cuenta o inicia sesión según el caso, agrega la
+ * membresía y deja como activa la empresa de la invitación. El cliente luego va a /bandeja.
+ */
+export const acceptInvitationAction = publicAction(
+  acceptInvitationContract,
+  async ({ input, logger, client }) => {
+    const { tenantId, authUserId } = await acceptInvitation(input, {
+      store: createInvitationServices().store,
+      authAdmin: createSupabaseAuthAdmin(),
+      auth: await getAuthProvider(),
+      clock: systemClock,
+      logger,
+      client,
+    });
+    const env = getEnv();
+    (await cookies()).set(
+      ACTIVE_TENANT_COOKIE,
+      signActiveTenant(env.SESSION_SECRET, authUserId, tenantId),
+      activeTenantCookieOptions(env.APP_URL),
+    );
+    return {};
+  },
+  { name: 'auth.acceptInvitation' },
 );

@@ -100,6 +100,18 @@ export const messages = {
     signOut: 'Cerrar sesión',
     signedInAs: 'Sesión iniciada como',
   },
+  invitation: {
+    title: (tenantName: string) => `Únete a ${tenantName}`,
+    invitedEmail: (email: string) => `Invitación para ${email}.`,
+    invalidTitle: 'Invitación no válida',
+    newAccountHint: (min: number) =>
+      `Completa tu nombre y crea una contraseña de al menos ${min} caracteres.`,
+    fullName: 'Nombre completo',
+    passwordHint: 'Ya tienes una cuenta en LinkUs. Ingresa tu contraseña para unirte.',
+    sessionHint: (email: string) => `Sesión iniciada como ${email}.`,
+    submitNewAccount: 'Crear cuenta y unirme',
+    submitJoin: 'Unirme',
+  },
   /** Correos en texto simple (E1-H3). Las plantillas con diseño (React Email) llegan en E5-H2. */
   emails: {
     invitation: {

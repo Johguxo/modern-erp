@@ -76,7 +76,7 @@ describe('resetPassword', () => {
   it('token inválido o vencido → ValidationError reset_link_invalid sin llamar a updatePassword', async () => {
     const auth = new FakeAuthProvider({ recoveryTokenValid: false });
 
-    const error = await caught(resetPassword(input, { auth }));
+    const error = await caught(resetPassword(input, { auth, logger: new CapturingLogger() }));
 
     expect(error).toBeInstanceOf(ValidationError);
     expect((error as ValidationError).reason).toBe('reset_link_invalid');
@@ -84,23 +84,32 @@ describe('resetPassword', () => {
   });
 
   it.each(['weak_password', 'same_password'] as const)(
-    'contraseña rechazada (%s) → ValidationError con reason y fieldErrors.password; no cierra otras sesiones',
+    'contraseña rechazada (%s): el enlace ya se gastó → cierra la sesión de recuperación (local) y pide un enlace nuevo',
     async (reason) => {
       const auth = new FakeAuthProvider({ updatePassword: { ok: false, reason } });
 
-      const error = await caught(resetPassword(input, { auth }));
+      const error = await caught(resetPassword(input, { auth, logger: new CapturingLogger() }));
 
       expect(error).toBeInstanceOf(ValidationError);
       expect((error as ValidationError).reason).toBe(reason);
-      expect((error as ValidationError).fieldErrors.password).toHaveLength(1);
-      expect(auth.methods()).not.toContain('signOut');
+      expect(auth.calls.at(-1)).toEqual({ method: 'signOut', scope: 'local' });
+      expect(auth.calls).not.toContainEqual({ method: 'signOut', scope: 'others' });
     },
   );
+
+  it('si cerrar las otras sesiones falla, la contraseña ya cambió: responde {} y registra un warn', async () => {
+    const auth = new FakeAuthProvider();
+    auth.signOut = () => Promise.reject(new Error('auth down'));
+    const logger = new CapturingLogger();
+
+    expect(await resetPassword(input, { auth, logger })).toEqual({});
+    expect(logger.entries.some((e) => e.level === 'warn')).toBe(true);
+  });
 
   it('restablecer correcto: canjea el token, cambia la contraseña y cierra las demás sesiones', async () => {
     const auth = new FakeAuthProvider();
 
-    expect(await resetPassword(input, { auth })).toEqual({});
+    expect(await resetPassword(input, { auth, logger: new CapturingLogger() })).toEqual({});
     expect(auth.calls).toEqual([
       { method: 'verifyRecoveryToken', tokenHash: 'hash-1' },
       { method: 'updatePassword', newPassword: 'nueva-clave-123' },

@@ -43,7 +43,7 @@ export const requestPasswordResetAction = publicAction(
 
 export const resetPasswordAction = publicAction(
   resetPasswordContract,
-  async ({ input }) => resetPassword(input, { auth: await getAuthProvider() }),
+  async ({ input, logger }) => resetPassword(input, { auth: await getAuthProvider(), logger }),
   { name: 'auth.resetPassword' },
 );
 

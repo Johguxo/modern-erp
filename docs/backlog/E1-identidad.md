@@ -15,17 +15,17 @@ Estado: en revisión · Issue: [#8](https://github.com/Johguxo/modern-erp/issues
 **Como** usuario **quiero** entrar con mi correo y contraseña **para** usar la plataforma de mi empresa.
 
 **Criterios de aceptación**
-- [ ] Adaptador `AuthProvider` sobre Supabase Auth (`@supabase/ssr`): iniciar sesión, cerrar sesión, recuperar y restablecer contraseña.
-- [ ] `src/proxy.ts` (el middleware de Next.js 16) protege `(app)` y `admin`; redirige a `/login` sin sesión.
-- [ ] Al entrar: si tiene 1 membresía activa, entra directo; si tiene varias, `/elegir-empresa`; si tiene 0 y es SuperAdmin, `/admin`; si no, mensaje "Tu cuenta no tiene acceso a ninguna empresa".
-- [ ] Cookie firmada `active_tenant`; el `ctx` se reconstruye en cada request validando membresía activa y estado del tenant.
-- [ ] `CtxResolver` real (reemplaza `unconfiguredCtxResolver` de ADR-005): obtiene `users.id` y las membresías a partir de `auth_user_id` con **una lectura acotada con `getDbAdmin()`** (ADR-004 §8); el resto del request usa `withTenant`.
-- [ ] Modo solo lectura: el resolver calcula `readOnly` con `Entitlements.isReadOnly` (E1-H1); `action()` rechaza las escrituras con `FORBIDDEN` (`reason: tenant_read_only`) y el layout `(app)` muestra un aviso arriba (slot `banner` de `AppShell`).
-- [ ] Cliente: `configureZodMessages()` activo en los formularios y `applyActionError` para llevar `fieldErrors` a React Hook Form (ADR-005).
-- [ ] Mensajes de error en español sin revelar si el correo existe.
-- [ ] E2E: login correcto, contraseña errónea, cierre de sesión.
+- [x] Adaptador `AuthProvider` sobre Supabase Auth (`@supabase/ssr`): iniciar sesión, cerrar sesión, recuperar y restablecer contraseña.
+- [x] `src/proxy.ts` (el middleware de Next.js 16) protege `(app)` y `admin`; redirige a `/login` sin sesión.
+- [x] Al entrar: si tiene 1 membresía activa, entra directo; si tiene varias, `/elegir-empresa`; si tiene 0 y es SuperAdmin, `/admin`; si no, mensaje "Tu cuenta no tiene acceso a ninguna empresa".
+- [x] Cookie firmada `active_tenant`; el `ctx` se reconstruye en cada request validando membresía activa y estado del tenant.
+- [x] `CtxResolver` real (reemplaza `unconfiguredCtxResolver` de ADR-005): obtiene `users.id` y las membresías a partir de `auth_user_id` con **una lectura acotada con `getDbAdmin()`** (ADR-004 §8); el resto del request usa `withTenant`.
+- [x] Modo solo lectura: el resolver calcula `readOnly` con `Entitlements.isReadOnly` (E1-H1); `action()` rechaza las escrituras con `FORBIDDEN` (`reason: tenant_read_only`) y el layout `(app)` muestra un aviso arriba (slot `banner` de `AppShell`).
+- [x] Cliente: `configureZodMessages()` activo en los formularios y `applyActionError` para llevar `fieldErrors` a React Hook Form (ADR-005).
+- [x] Mensajes de error en español sin revelar si el correo existe.
+- [x] E2E: login correcto, contraseña errónea, cierre de sesión.
 
-Estado: pendiente · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
+Estado: en revisión · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
 
 ### E1-H3 · Invitaciones y gestión de usuarios
 **Como** admin del cliente **quiero** invitar usuarios y asignarles roles **para** que usen la plataforma.

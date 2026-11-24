@@ -47,10 +47,20 @@ export interface Accounts {
 
 const shortId = () => randomUUID().replaceAll('-', '').slice(0, 10);
 
+/** El fixture crea y borra cuentas: solo contra Supabase local, nunca un entorno real. */
+function assertLocal(name: string): string {
+  const value = requiredEnv(name);
+  const { hostname } = new URL(value);
+  if (!['127.0.0.1', 'localhost', '[::1]'].includes(hostname)) {
+    throw new Error(`${name} debe apuntar a Supabase local (127.0.0.1), no a ${hostname}.`);
+  }
+  return value;
+}
+
 export function createAccounts(): Accounts {
-  const sql = postgres(requiredEnv('DATABASE_URL_ADMIN'), { max: 2, onnotice: () => undefined });
+  const sql = postgres(assertLocal('DATABASE_URL_ADMIN'), { max: 2, onnotice: () => undefined });
   const admin = createClient(
-    requiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    assertLocal('NEXT_PUBLIC_SUPABASE_URL'),
     requiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
     { auth: { autoRefreshToken: false, persistSession: false } },
   );

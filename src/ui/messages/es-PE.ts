@@ -108,8 +108,10 @@ export const messages = {
       too_many_attempts: () => 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
       reset_link_invalid: () =>
         'El enlace venció o ya se usó. Pide uno nuevo desde "¿Olvidaste tu contraseña?".',
-      same_password: () => 'La nueva contraseña debe ser distinta de la anterior.',
-      weak_password: () => 'Elige una contraseña más segura.',
+      same_password: () =>
+        'La nueva contraseña debe ser distinta de la anterior. Pide un enlace nuevo para intentarlo otra vez.',
+      weak_password: () =>
+        'Elige una contraseña más segura. Pide un enlace nuevo para intentarlo otra vez.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

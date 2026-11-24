@@ -6,7 +6,7 @@
 
 | Layout | Rutas | Contenido |
 |---|---|---|
-| `(auth)` | `/login`, `/recuperar`, `/restablecer`, `/invitacion/[token]`, `/elegir-empresa` | Tarjeta centrada con marca LinkUs |
+| `(auth)` | `/login`, `/recuperar`, `/restablecer`, `/invitacion/[token]`, `/elegir-empresa` | Tarjeta centrada con marca LinkUs. Tras el login, el route handler `GET /auth/continuar` decide el destino (ADR-006) |
 | `(app)` | Todo lo del cliente | Menú lateral oscuro (prototipo: `nav` de `Main.dc.html`) + contenido. En el celular, el menú pasa a una barra superior con menú desplegable |
 | `admin` | `/admin/*` | Consola de SuperAdmin; mismo estilo con una franja que dice "Consola LinkUs" |
 

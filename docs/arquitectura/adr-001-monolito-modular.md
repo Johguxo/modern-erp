@@ -15,7 +15,7 @@ Una sola app Next.js (App Router, TypeScript) con frontend y backend, organizada
 7. **API pública versionada** en `src/app/api/v1/*`, para los links de aprobación por correo, webhooks (WhatsApp) y una futura app móvil. Usa los mismos contratos.
 8. **Tareas en segundo plano** (recordatorios, correos, cierre diario) mediante un puerto `JobQueue` implementado con **pg-boss**, en un proceso worker aparte (`src/worker.ts`) en Railway.
 9. **Configuración** solo por variables de entorno, validadas con Zod en un único `env.ts`.
-10. **Dependencias entre módulos:** un módulo solo usa a otro a través de sus casos de uso o de su `contracts/` público (`index.ts`), nunca importando su `infrastructure/` ni sus tablas directamente.
+10. **Dependencias entre módulos:** un módulo solo usa a otro a través de sus casos de uso o de su `contracts/` público (`index.ts`), nunca importando su `infrastructure/` ni sus tablas directamente. Hay dos entradas públicas: `@/modules/<módulo>` (su `index.ts`) y `@/modules/<módulo>/contracts` (solo esquemas Zod, segura para componentes cliente: los formularios usan el mismo contrato que el servidor). Nada más profundo (regla de ESLint).
 
 ## Cómo se migra después
 Se copia `src/modules` a un proyecto NestJS. Los casos de uso se exponen como controladores con los mismos contratos, y el frontend reemplaza las server actions por llamadas HTTP a esos contratos. El dominio, los repositorios, el worker y la base de datos no cambian.

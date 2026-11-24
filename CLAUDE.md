@@ -13,6 +13,8 @@ La plataforma la desarrolla **LinkUs** (empresa y marca de producto). Repositori
 | Login, roles, permisos, planes, SuperAdmin | `docs/arquitectura/adr-002-identidad-roles-planes.md` |
 | Stack y librerías permitidas | `docs/arquitectura/adr-003-stack.md` |
 | Conexiones, `withTenant`/`withUser`, roles y plantilla de RLS | `docs/arquitectura/adr-004-contexto-base-de-datos.md` |
+| `Ctx`, errores, `action()`/`route()`, mensajes y logs | `docs/arquitectura/adr-005-entrega-ctx-errores.md` |
+| Login, sesión, empresa activa, `publicAction`, solo lectura | `docs/arquitectura/adr-006-sesion-empresa-activa.md` |
 | Estados del SOF y motor de aprobaciones | `docs/dominio/flujo-sof-aprobaciones.md` |
 | Tablas, columnas, RLS, seed | `docs/dominio/modelo-datos.md` |
 | Pantallas, rutas y casos de uso | `docs/ui/mapa-pantallas.md` |

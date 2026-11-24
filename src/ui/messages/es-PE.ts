@@ -47,6 +47,25 @@ export const messages = {
     signOut: 'Cerrar sesión',
     signedInAs: 'Sesión iniciada como',
   },
+  /** Correos en texto simple (E1-H3). Las plantillas con diseño (React Email) llegan en E5-H2. */
+  emails: {
+    invitation: {
+      subject: (p: Params) => `Te invitaron a ${p.tenantName ?? 'LinkUs'} en LinkUs`,
+      text: (p: Params) =>
+        [
+          'Hola:',
+          '',
+          `Te invitaron a usar LinkUs en ${p.tenantName ?? 'tu empresa'}.`,
+          'Para aceptar la invitación, abre este enlace:',
+          '',
+          String(p.url ?? ''),
+          '',
+          `El enlace vence en ${p.expiresInDays ?? 7} días. Si no esperabas este correo, ignóralo.`,
+          '',
+          'LinkUs',
+        ].join('\n'),
+    },
+  },
   readOnly: {
     banner:
       'Tu empresa está en modo solo lectura: puedes consultar, pero no crear ni modificar. Contacta al administrador de LinkUs.',

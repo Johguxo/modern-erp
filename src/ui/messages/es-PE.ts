@@ -19,6 +19,7 @@ export const messages = {
     closeMenu: 'Cerrar menú',
     inbox: 'Bandeja',
     users: 'Usuarios',
+    company: 'Empresa',
   },
   /** Etiquetas de los roles del cliente (ADR-002). */
   roles: {
@@ -70,6 +71,33 @@ export const messages = {
       rolesSaved: 'Roles actualizados.',
       disabled: 'Usuario desactivado.',
       reactivated: 'Usuario reactivado.',
+    },
+  },
+  company: {
+    title: 'Empresa',
+    description: 'Cómo se ve tu empresa en la plataforma y la moneda de tus solicitudes.',
+    detailsTitle: 'Datos de la empresa',
+    displayName: 'Nombre visible',
+    displayNameHint: (legalName: string) =>
+      `Se muestra en el menú. Si lo dejas vacío, usamos el nombre registrado: ${legalName}.`,
+    primaryColor: 'Color principal',
+    primaryColorHint: 'Formato #RRGGBB. Se usa como acento en el menú. Vacío = color de LinkUs.',
+    pickColor: 'Elegir color',
+    currency: 'Moneda',
+    currencyHint: 'Se usará en las nuevas solicitudes.',
+    save: 'Guardar cambios',
+    logoTitle: 'Logo',
+    logoHint: 'PNG, JPG o WebP de hasta 512 KB. Se muestra en el menú lateral.',
+    logoCurrent: 'Logo actual',
+    logoNone: 'Aún no hay logo: en el menú se muestran las iniciales.',
+    logoChoose: 'Archivo del logo',
+    logoUpload: 'Subir logo',
+    logoRemove: 'Quitar logo',
+    notices: {
+      saved: 'Cambios guardados.',
+      unchanged: 'No había cambios que guardar.',
+      logoUploaded: 'Logo actualizado.',
+      logoRemoved: 'Logo quitado.',
     },
   },
   admin: {
@@ -285,6 +313,8 @@ export const messages = {
       // se le lleva a recuperar la contraseña (con la sesión de ese correo, el enlace solo une).
       email_in_use: () =>
         'Ya existe una cuenta con este correo. Recupera tu contraseña desde "¿Olvidaste tu contraseña?", inicia sesión y vuelve a abrir este enlace de invitación.',
+      logo_invalid_type: () => 'El logo debe ser una imagen PNG, JPG o WebP.',
+      logo_too_large: () => 'El logo pesa más de 512 KB. Usa una imagen más liviana.',
       slug_taken: () => 'Ya existe un cliente con este identificador. Elige otro.',
       slug_reserved: () => 'Este identificador está reservado. Elige otro.',
       plan_unavailable: () => 'El plan elegido no está disponible.',

@@ -298,6 +298,51 @@ describe('invitar: token, invited_by, actor y auditoría', () => {
   });
 });
 
+describe('invitación aceptada entre la lectura y el UPDATE (reenviar, anular)', () => {
+  /** Marca la invitación aceptada (conexión dueño, otra transacción) justo después de leerla. */
+  const acceptAfterRead = (deps: UserAdminDeps): UserAdminDeps => ({
+    ...deps,
+    invitations: {
+      ...deps.invitations,
+      findPendingById: async (tenantId, invitationId) => {
+        const row = await deps.invitations.findPendingById(tenantId, invitationId);
+        await getDbAdmin()
+          .update(invitations)
+          .set({ acceptedAt: clock.now() })
+          .where(eq(invitations.id, invitationId));
+        return row;
+      },
+    },
+  });
+
+  it.each([
+    ['reenviar', 'invitation.resent', resendInvitation],
+    ['anular', 'invitation.cancelled', cancelInvitation],
+  ] as const)('%s → NOT_FOUND, sin auditoría ni correo programado', async (_l, action, useCase) => {
+    const t = await makeTenant();
+    const invitation = await fx.invitation(t.tenantId);
+    const harness: Harness = { sent: [], tasks: [] };
+
+    const error = await errorOf(
+      withTenant(t.ctx, (tx) =>
+        useCase(
+          t.ctx,
+          { invitationId: invitation.id },
+          acceptAfterRead(createUserAdminDeps(tx, extras(harness))),
+        ),
+      ),
+    );
+
+    expect(error.code).toBe('NOT_FOUND');
+    expect(harness.tasks).toHaveLength(0);
+    const events = await getDbAdmin()
+      .select({ id: auditEvents.id })
+      .from(auditEvents)
+      .where(and(eq(auditEvents.entityId, invitation.id), eq(auditEvents.action, action)));
+    expect(events).toEqual([]);
+  });
+});
+
 describe('concurrencia', () => {
   it('cupo: con max_users = usados + 1, dos invitaciones simultáneas → una pasa y la otra LIMIT_EXCEEDED', async () => {
     // 1 miembro activo (el admin) → max_users 2 deja un solo cupo.

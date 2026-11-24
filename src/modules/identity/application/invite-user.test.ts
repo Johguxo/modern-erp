@@ -159,6 +159,30 @@ describe('inviteUser', () => {
     expect(fake.audit[0]?.action).toBe('invitation.renewed');
   });
 
+  it('la pendiente se aceptó entre la lectura y el UPDATE → NOT_FOUND, sin auditar ni programar el correo', async () => {
+    const fake = createInMemoryUserAdmin();
+    const old = fake.addInvitation(TEST_TENANT_ID, { email: 'ana@genrent.pe' });
+    const deps = {
+      ...fake.deps,
+      invitations: {
+        ...fake.deps.invitations,
+        findPendingByEmail: async (tenantId: string, email: string) => {
+          const found = await fake.deps.invitations.findPendingByEmail(tenantId, email);
+          // Otro request acepta la invitación justo después de leerla.
+          fake.invitations.splice(0, 1, { ...old, acceptedAt: fake.clock.now() });
+          return found;
+        },
+      },
+    };
+
+    const error = await errorOf(inviteUser(admin, input, deps));
+
+    expect(error.code).toBe('NOT_FOUND');
+    expect(fake.audit).toHaveLength(0);
+    expect(await fake.runAfterCommit()).toEqual({});
+    expect(fake.sent).toHaveLength(0);
+  });
+
   it('con una invitación pendiente vencida sí revisa el cupo antes de renovarla', async () => {
     const fake = createInMemoryUserAdmin();
     fake.addInvitation(TEST_TENANT_ID, {

@@ -54,13 +54,19 @@ export interface InvitationRepository {
     expiresAt: Date;
     invitedBy: string;
   }): Promise<string>;
-  /** Nuevo token y vencimiento (y roles), sobre la misma fila. */
+  /**
+   * Nuevo token y vencimiento (y roles), sobre la misma fila. NotFoundError si ya no está
+   * pendiente (p. ej. se aceptó entre la lectura y el UPDATE).
+   */
   renew(
     tenantId: string,
     invitationId: string,
     input: { roles: readonly Role[]; tokenHash: string; expiresAt: Date; invitedBy: string },
   ): Promise<void>;
-  /** Anula: vence ahora (sin migración; accepted_at solo lo escribe aceptar). */
+  /**
+   * Anula: vence ahora (sin migración; accepted_at solo lo escribe aceptar). NotFoundError si ya
+   * no está pendiente.
+   */
   expire(tenantId: string, invitationId: string, now: Date): Promise<void>;
 }
 

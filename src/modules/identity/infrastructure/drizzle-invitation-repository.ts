@@ -5,6 +5,7 @@ import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import { invitations, users } from '@/db/schema';
+import { NotFoundError } from '@/shared/errors';
 
 import type { InvitationRecord, InvitationRepository } from '../application/user-admin-ports';
 
@@ -27,6 +28,10 @@ type Row = {
   acceptedAt: Date | null;
   invitedByName: string | null;
 };
+
+// La fila se leyó pendiente pero ya no lo está (se aceptó entre la lectura y el UPDATE): se
+// aborta antes de auditar o programar el correo.
+const notPending = () => new NotFoundError({ message: 'Pending invitation not found' });
 
 function toRecord(row: Row): InvitationRecord {
   return { ...row, roles: toRoles(row.roles) };
@@ -71,7 +76,7 @@ export function createDrizzleInvitationRepository(db: DbExecutor): InvitationRep
     },
 
     async renew(tenantId, invitationId, input) {
-      await db
+      const [row] = await db
         .update(invitations)
         .set({
           roles: [...input.roles],
@@ -79,14 +84,18 @@ export function createDrizzleInvitationRepository(db: DbExecutor): InvitationRep
           expiresAt: input.expiresAt,
           invitedBy: input.invitedBy,
         })
-        .where(and(pending(tenantId), eq(invitations.id, invitationId)));
+        .where(and(pending(tenantId), eq(invitations.id, invitationId)))
+        .returning({ id: invitations.id });
+      if (!row) throw notPending();
     },
 
     async expire(tenantId, invitationId, now) {
-      await db
+      const [row] = await db
         .update(invitations)
         .set({ expiresAt: now })
-        .where(and(pending(tenantId), eq(invitations.id, invitationId)));
+        .where(and(pending(tenantId), eq(invitations.id, invitationId)))
+        .returning({ id: invitations.id });
+      if (!row) throw notPending();
     },
   };
 }

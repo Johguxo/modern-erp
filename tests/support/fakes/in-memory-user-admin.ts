@@ -8,6 +8,7 @@ import type {
   MemberRecord,
   MemberStatus,
 } from '@/modules/identity/application/user-admin-ports';
+import { NotFoundError } from '@/shared/errors';
 import type { Role } from '@/shared/permissions';
 import type { AfterCommitTask } from '@/shared/ports/after-commit';
 import type { MailMessage } from '@/shared/ports/mailer';
@@ -48,6 +49,8 @@ export interface InMemoryUserAdmin {
   /** Corre las tareas registradas con afterCommit y combina sus salidas (como el pipeline). */
   runAfterCommit(): Promise<Record<string, unknown>>;
 }
+
+const notPending = () => new NotFoundError({ message: 'Pending invitation not found' });
 
 let counter = 0;
 const nextId = (prefix: string) => {
@@ -129,16 +132,23 @@ export function createInMemoryUserAdmin(
         });
         return Promise.resolve(id);
       },
+      // Como el repositorio Drizzle: solo una fila pendiente; si no, NotFoundError.
       renew(tenantId, id, input) {
-        const index = invitations.findIndex((i) => i.tenantId === tenantId && i.id === id);
+        const index = invitations.findIndex(
+          (i) => i.tenantId === tenantId && i.id === id && i.acceptedAt === null,
+        );
         const current = invitations[index];
-        if (current) replace(invitations, index, { ...current, ...input, roles: [...input.roles] });
+        if (!current) return Promise.reject(notPending());
+        replace(invitations, index, { ...current, ...input, roles: [...input.roles] });
         return Promise.resolve();
       },
       expire(tenantId, id, now) {
-        const index = invitations.findIndex((i) => i.tenantId === tenantId && i.id === id);
+        const index = invitations.findIndex(
+          (i) => i.tenantId === tenantId && i.id === id && i.acceptedAt === null,
+        );
         const current = invitations[index];
-        if (current) replace(invitations, index, { ...current, expiresAt: now });
+        if (!current) return Promise.reject(notPending());
+        replace(invitations, index, { ...current, expiresAt: now });
         return Promise.resolve();
       },
     },

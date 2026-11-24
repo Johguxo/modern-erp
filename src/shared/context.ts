@@ -15,3 +15,12 @@ export interface Ctx {
   /** Cliente suspendido, cancelado o sin suscripción vigente: solo lectura (ADR-006). */
   readonly readOnly: boolean;
 }
+
+/**
+ * Contexto de la consola de plataforma (ADR-007): un SuperAdmin, sin tenant ni permisos de tenant.
+ * Los casos de uso de plataforma vuelven a revisar platform_admins dentro de su transacción.
+ */
+export interface PlatformCtx {
+  readonly userId: string;
+  readonly requestId: string;
+}

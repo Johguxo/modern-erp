@@ -4,10 +4,17 @@ import type { DbExecutor } from '@/db';
 import { getDbAdmin } from '@/db/admin';
 
 import { createEntitlements, type Entitlements } from '../application/entitlements';
+import type { InvitationAcceptStore } from '../application/invitation-accept-ports';
 import type { SessionRepository } from '../application/session-ports';
+import type { UserAdminDeps } from '../application/user-admin-ports';
 
+import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
+import { createDrizzleInvitationAcceptStore } from './drizzle-invitation-accept-store';
+import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
+import { createDrizzleMemberRepository } from './drizzle-member-repository';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
+import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
 /** Entitlements sobre una conexión (transacción de withTenant o getDbAdmin()). */
 export function createEntitlementsFor(db: DbExecutor): Entitlements {
@@ -26,4 +33,36 @@ export function createSessionServices(db: DbExecutor = getDbAdmin()): {
     sessions: createDrizzleSessionRepository(db),
     entitlements: createEntitlementsFor(db),
   };
+}
+
+/** Lo que la entrega aporta a la gestión de usuarios (además de la transacción). */
+export type UserAdminExtras = Pick<
+  UserAdminDeps,
+  'clock' | 'logger' | 'client' | 'afterCommit' | 'mailer' | 'appUrl'
+>;
+
+/**
+ * Dependencias de la gestión de usuarios (E1-H3) sobre la transacción de withTenant: todos los
+ * repositorios usan esa transacción (RLS del tenant activo) y filtran por tenantId.
+ */
+export function createUserAdminDeps(tx: DbExecutor, extras: UserAdminExtras): UserAdminDeps {
+  return {
+    members: createDrizzleMemberRepository(tx),
+    invitations: createDrizzleInvitationRepository(tx),
+    locks: createDrizzleTenantLocks(tx),
+    tenants: createDrizzleTenantDirectory(tx),
+    audit: createDrizzleAuditLog(tx),
+    entitlements: createEntitlementsFor(tx),
+    ...extras,
+  };
+}
+
+/**
+ * Aceptar invitación (E1-H3): conexión dueño acotada por token_hash y auditada (ADR-004 §8),
+ * porque el invitado aún no tiene tenant activo. La entrega solo recibe el store.
+ */
+export function createInvitationServices(db: DbExecutor = getDbAdmin()): {
+  store: InvitationAcceptStore;
+} {
+  return { store: createDrizzleInvitationAcceptStore(db) };
 }

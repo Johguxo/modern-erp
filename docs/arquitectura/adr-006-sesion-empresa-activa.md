@@ -15,9 +15,24 @@ E1-H2 conecta el login real (Supabase Auth) con el `Ctx` de ADR-005 y el context
 7. **Acciones previas al `ctx`:** `publicAction(contract, handler)` (login, recuperar, restablecer, elegir empresa, cerrar sesión): mismo `requestId`, validación Zod, mensajes es-PE y logs que `action()`, sin `ctx` ni transacción. La protección CSRF de las server actions la da Next. Sus casos de uso (`identity/application`) son una excepción documentada a "todo caso de uso recibe `ctx`".
 8. **Recuperar contraseña con `token_hash`** (no PKCE): el enlace del correo (`/restablecer?token_hash=…`) funciona aunque se abra en otro navegador, y los escáneres de correo no lo consumen porque no hay un GET que lo canjee. La acción canjea el token, cambia la contraseña y cierra las demás sesiones. Política: 10 a 72 caracteres.
 9. **Registro cerrado** (`enable_signup = false`): las cuentas solo se crean desde invitaciones (E1-H3, con la API admin).
+10. **Aceptar invitación** (E1-H3, `/invitacion/[token]`, pública):
+    - **Token:** 32 bytes aleatorios en base64url. Solo se guarda su sha256 (`token_hash`). Vence en 7 días y nunca va a logs, auditoría ni respuestas. La página usa `no-referrer` y `noindex`. Inválida, vencida y aceptada muestran el mismo mensaje.
+    - **Tres casos**, que decide el servidor con la vista previa y vuelve a revisar al enviar (si cambió, `CONFLICT`):
+      - **Cuenta nueva:** nombre y contraseña (10 a 72). La cuenta se crea con la API admin de Supabase (puerto `AuthAdmin`, service role solo en `src/shared/adapters/supabase-auth-admin.ts`) y el correo ya confirmado.
+      - **Cuenta existente sin sesión:** su contraseña, con el correo fijo de la invitación.
+      - **Sesión del mismo correo:** solo "Unirme".
+    - **Escritura con `getDbAdmin`** (ADR-004 §8), acotada por `token_hash`. En una transacción:
+      - bloquea la invitación (`for update`) y la vuelve a validar, así que de dos aceptaciones simultáneas solo gana una;
+      - toma el bloqueo de cupos;
+      - crea el usuario o le enlaza su `auth_user_id`;
+      - crea la membresía o reactiva una desactivada (una activa conserva sus roles);
+      - marca `accepted_at` y registra `invitation.accepted` con el invitado como actor.
+    - **Compensación:** si la transacción falla después de crear la cuenta en Auth, se borra esa cuenta.
+    - **Al final:** inicia sesión, fija `active_tenant` y va a `/bandeja`.
+11. **Desactivar un miembro no revoca sus sesiones de Supabase.** La desactivación es por empresa y la cuenta puede seguir activa en otra. Supabase no permite cerrar las sesiones de un usuario por id sin bloquear la cuenta entera. El resolver del `Ctx` valida la membresía en cada request, así que la siguiente petición ya queda bloqueada.
 
 ## Consecuencias
 - Cada request hace una validación con Auth (`getUser`) y dos lecturas acotadas en paralelo. Si la latencia molesta: `getClaims()` con claves JWT asimétricas y una caché corta.
 - Producción necesita SMTP propio (Resend SMTP) con la plantilla `supabase/templates/recovery.html`, y subir el límite de intentos de Auth: todos los logins salen de la IP del servidor.
-- Al desactivar un usuario (E1-H3) conviene revocar sus sesiones de Supabase; el resolver igual lo bloquea por `users.status`.
+- Desactivar un usuario en todas las empresas (`users.status`) sí debería revocar sus sesiones: queda para la consola de SuperAdmin (E1-H4 o después). El resolver igual lo bloquea por `users.status`.
 - Rotar `SESSION_SECRET` solo obliga a elegir empresa de nuevo.

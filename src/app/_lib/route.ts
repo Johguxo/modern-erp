@@ -10,6 +10,7 @@ import type { ApiErrorBody, ApiSuccessBody } from '@/shared/result';
 import type { Contract } from '@/shared/contract';
 
 import { productionPipelineDeps } from './action';
+import { clientInfoFromHeaders } from './client-info';
 import { errorOf, runPipeline, type Handler, type PipelineDeps } from './pipeline';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD']);
@@ -70,6 +71,7 @@ export function createRoute(deps: () => PipelineDeps, appUrl: () => string) {
         rawInput: input.value,
         // GET/HEAD son lectura; el resto, escritura (bloqueada en solo lectura).
         access: SAFE_METHODS.has(request.method) ? 'read' : 'write',
+        client: clientInfoFromHeaders(request.headers),
       });
       if (result.ok) return json({ data: result.data }, options.successStatus ?? 200, requestId);
       return json({ error: result.error }, HTTP_STATUS_BY_CODE[result.error.code], requestId);

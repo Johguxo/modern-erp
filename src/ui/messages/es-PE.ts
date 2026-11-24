@@ -18,6 +18,59 @@ export const messages = {
     openMenu: 'Abrir menú',
     closeMenu: 'Cerrar menú',
     inbox: 'Bandeja',
+    users: 'Usuarios',
+  },
+  /** Etiquetas de los roles del cliente (ADR-002). */
+  roles: {
+    admin: 'Administrador',
+    requester: 'Solicitante',
+    warehouse: 'Almacén',
+    approver: 'Aprobador',
+    purchasing: 'Compras',
+  },
+  users: {
+    title: 'Usuarios',
+    description: 'Invita a tu equipo y define qué puede hacer cada persona.',
+    seats: (used: number, limit: number | null) =>
+      limit === null ? `${used} usuarios` : `${used} de ${limit} usuarios de tu plan`,
+    invite: 'Invitar usuario',
+    columns: {
+      name: 'Nombre',
+      email: 'Correo',
+      roles: 'Roles',
+      status: 'Estado',
+      actions: 'Acciones',
+    },
+    you: 'Tú',
+    editRoles: 'Editar roles',
+    disable: 'Desactivar',
+    reactivate: 'Reactivar',
+    pendingTitle: 'Invitaciones pendientes',
+    pendingEmpty: 'No hay invitaciones pendientes.',
+    expires: (date: string) => `Vence: ${date}`,
+    invitedBy: (name: string) => `Invitó: ${name}`,
+    resend: 'Reenviar',
+    cancelInvitation: 'Anular',
+    inviteTitle: 'Invitar usuario',
+    inviteDescription: 'Le enviaremos un correo con un enlace que vence en 7 días.',
+    rolesLabel: 'Roles',
+    inviteSubmit: 'Enviar invitación',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    editRolesTitle: (name: string) => `Roles de ${name}`,
+    disableTitle: (name: string) => `¿Desactivar a ${name}?`,
+    disableDescription:
+      'Ya no podrá entrar a esta empresa. Su cuenta sigue activa en otras empresas y podrás reactivarlo después.',
+    notices: {
+      invited: 'Invitación enviada.',
+      emailFailed:
+        'La invitación quedó guardada, pero no pudimos enviar el correo. Usa "Reenviar" para intentarlo de nuevo.',
+      resent: 'Invitación reenviada.',
+      cancelled: 'Invitación anulada.',
+      rolesSaved: 'Roles actualizados.',
+      disabled: 'Usuario desactivado.',
+      reactivated: 'Usuario reactivado.',
+    },
   },
   admin: {
     consoleBanner: 'Consola LinkUs',
@@ -47,6 +100,37 @@ export const messages = {
     signOut: 'Cerrar sesión',
     signedInAs: 'Sesión iniciada como',
   },
+  invitation: {
+    title: (tenantName: string) => `Únete a ${tenantName}`,
+    invitedEmail: (email: string) => `Invitación para ${email}.`,
+    invalidTitle: 'Invitación no válida',
+    newAccountHint: (min: number) =>
+      `Completa tu nombre y crea una contraseña de al menos ${min} caracteres.`,
+    fullName: 'Nombre completo',
+    passwordHint: 'Ya tienes una cuenta en LinkUs. Ingresa tu contraseña para unirte.',
+    sessionHint: (email: string) => `Sesión iniciada como ${email}.`,
+    submitNewAccount: 'Crear cuenta y unirme',
+    submitJoin: 'Unirme',
+  },
+  /** Correos en texto simple (E1-H3). Las plantillas con diseño (React Email) llegan en E5-H2. */
+  emails: {
+    invitation: {
+      subject: (p: Params) => `Te invitaron a ${p.tenantName ?? 'LinkUs'} en LinkUs`,
+      text: (p: Params) =>
+        [
+          'Hola:',
+          '',
+          `Te invitaron a usar LinkUs en ${p.tenantName ?? 'tu empresa'}.`,
+          'Para aceptar la invitación, abre este enlace:',
+          '',
+          String(p.url ?? ''),
+          '',
+          `El enlace vence en ${p.expiresInDays ?? 7} días. Si no esperabas este correo, ignóralo.`,
+          '',
+          'LinkUs',
+        ].join('\n'),
+    },
+  },
   readOnly: {
     banner:
       'Tu empresa está en modo solo lectura: puedes consultar, pero no crear ni modificar. Contacta al administrador de LinkUs.',
@@ -67,6 +151,8 @@ export const messages = {
     cancelled: 'Anulada',
     awaiting_my_approval: 'Espera mi aprobación',
     awaiting_external: 'Espera aprobación externa',
+    user_active: 'Activo',
+    user_disabled: 'Desactivado',
   },
   states: {
     loading: 'Cargando…',
@@ -112,6 +198,20 @@ export const messages = {
         'La nueva contraseña debe ser distinta de la anterior. Pide un enlace nuevo para intentarlo otra vez.',
       weak_password: () =>
         'Elige una contraseña más segura. Pide un enlace nuevo para intentarlo otra vez.',
+      password_rejected: () => 'Elige una contraseña más segura.',
+      no_subscription: () =>
+        'Tu empresa no tiene una suscripción vigente. Contacta al administrador de LinkUs.',
+      already_member: () => 'Este correo ya pertenece a un usuario activo de tu empresa.',
+      last_admin: () =>
+        'La empresa debe tener al menos un administrador activo. Asigna otro administrador antes de hacer este cambio.',
+      cannot_disable_self: () => 'No puedes desactivar tu propio usuario.',
+      invitation_invalid: () =>
+        'La invitación no es válida o ya venció. Pide al administrador que te envíe una nueva.',
+      // Cuenta en Auth sin usuario de la plataforma: recargar vuelve al mismo formulario, así que
+      // se le lleva a recuperar la contraseña (con la sesión de ese correo, el enlace solo une).
+      email_in_use: () =>
+        'Ya existe una cuenta con este correo. Recupera tu contraseña desde "¿Olvidaste tu contraseña?", inicia sesión y vuelve a abrir este enlace de invitación.',
+      account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

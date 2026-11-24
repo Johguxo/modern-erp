@@ -31,16 +31,16 @@ Estado: en revisión · Issue: [#9](https://github.com/Johguxo/modern-erp/issues
 **Como** admin del cliente **quiero** invitar usuarios y asignarles roles **para** que usen la plataforma.
 
 **Criterios de aceptación**
-- [ ] `/configuracion/usuarios`: lista (nombre, correo, roles, estado), invitar, editar roles, desactivar.
-- [ ] Invitar respeta `Entitlements.canAddUser` (dentro de la transacción de invitar, con `pg_advisory_xact_lock(hashtext('seats:' || tenant_id))` para que dos invitaciones simultáneas no superen el límite: `app_user` no puede bloquear `tenants` ni `subscriptions` con `FOR UPDATE`); si no se puede, mensaje claro según `reason` (límite del plan, solo lectura o sin suscripción).
-- [ ] La invitación envía correo (puerto `Mailer`) con link `/invitacion/[token]` que vence en 7 días; el token se guarda como hash.
-- [ ] Adaptador `Mailer` mínimo: en local los correos se ven en Mailpit (http://127.0.0.1:54324); en producción, Resend con texto simple. Las plantillas con diseño (React Email) llegan en E5-H2.
-- [ ] Aceptar invitación: si el correo no tiene cuenta, crea contraseña; si ya tiene, solo agrega la membresía.
-- [ ] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
-- [ ] `invitations.invited_by` y el actor de `audit_events` se toman del `ctx`, nunca de lo que envía el cliente.
-- [ ] Cada acción queda en `audit_events`.
+- [x] `/configuracion/usuarios`: lista (nombre, correo, roles, estado), invitar, editar roles, desactivar.
+- [x] Invitar respeta `Entitlements.canAddUser` (dentro de la transacción de invitar, con `pg_advisory_xact_lock(hashtext('seats:' || tenant_id))` para que dos invitaciones simultáneas no superen el límite: `app_user` no puede bloquear `tenants` ni `subscriptions` con `FOR UPDATE`); si no se puede, mensaje claro según `reason` (límite del plan, solo lectura o sin suscripción).
+- [x] La invitación envía correo (puerto `Mailer`) con link `/invitacion/[token]` que vence en 7 días; el token se guarda como hash.
+- [x] Adaptador `Mailer` mínimo: en local los correos se ven en Mailpit (http://127.0.0.1:54324); en producción, Resend con texto simple. Las plantillas con diseño (React Email) llegan en E5-H2.
+- [x] Aceptar invitación: si el correo no tiene cuenta, crea contraseña; si ya tiene, solo agrega la membresía.
+- [x] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
+- [x] `invitations.invited_by` y el actor de `audit_events` se toman del `ctx`, nunca de lo que envía el cliente.
+- [x] Cada acción queda en `audit_events`.
 
-Estado: pendiente · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/10)
+Estado: en revisión · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/10)
 
 ### E1-H4 · Consola mínima de SuperAdmin
 **Como** SuperAdmin de LinkUs **quiero** crear un cliente con su plan y su primer admin **para** activar nuevas empresas sin tocar la base de datos.

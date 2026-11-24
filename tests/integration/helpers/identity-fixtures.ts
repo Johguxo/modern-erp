@@ -49,7 +49,14 @@ export interface IdentityFixtures {
   ): Promise<{ id: string }>;
   invitation(
     tenantId: string,
-    opts?: { email?: string; roles?: string[]; expiresAt?: Date; acceptedAt?: Date | null },
+    opts?: {
+      email?: string;
+      roles?: string[];
+      expiresAt?: Date;
+      acceptedAt?: Date | null;
+      tokenHash?: string;
+      invitedBy?: string;
+    },
   ): Promise<{ id: string; email: string }>;
   subscription(
     tenantId: string,
@@ -62,12 +69,18 @@ export interface IdentityFixtures {
   auditEvent(tenantId: string, opts?: { action?: string }): Promise<{ id: string }>;
   /** Registra un tenant creado por fuera del helper para borrarlo en cleanup. */
   trackTenant(id: string): void;
+  /**
+   * Registra el correo de un usuario que crea el código bajo prueba (p. ej. al aceptar una
+   * invitación): cleanup lo busca por correo y lo borra con sus membresías y auditoría.
+   */
+  trackUserEmail(email: string): void;
   cleanup(): Promise<void>;
 }
 
 export function createIdentityFixtures(): IdentityFixtures {
   const tenantIds: string[] = [];
   const userIds: string[] = [];
+  const userEmails: string[] = [];
   const db = () => getDbAdmin();
 
   return {
@@ -120,9 +133,10 @@ export function createIdentityFixtures(): IdentityFixtures {
           tenantId,
           email,
           roles: opts.roles ?? ['requester'],
-          tokenHash: `hash-${randomUUID()}`,
+          tokenHash: opts.tokenHash ?? `hash-${randomUUID()}`,
           expiresAt: opts.expiresAt ?? FAR_FUTURE,
           acceptedAt: opts.acceptedAt ?? null,
+          invitedBy: opts.invitedBy ?? null,
         })
         .returning({ id: invitations.id });
       if (!row) throw new Error('invitation no creada');
@@ -177,8 +191,19 @@ export function createIdentityFixtures(): IdentityFixtures {
       tenantIds.push(id);
     },
 
+    trackUserEmail(email) {
+      userEmails.push(email);
+    },
+
     async cleanup() {
       const admin = db();
+      if (userEmails.length > 0) {
+        const created = await admin
+          .select({ id: users.id })
+          .from(users)
+          .where(inArray(users.email, userEmails));
+        for (const { id } of created) if (!userIds.includes(id)) userIds.push(id);
+      }
       if (tenantIds.length > 0) {
         await admin.delete(auditEvents).where(inArray(auditEvents.tenantId, tenantIds));
         await admin.delete(invitations).where(inArray(invitations.tenantId, tenantIds));
@@ -198,6 +223,7 @@ export function createIdentityFixtures(): IdentityFixtures {
       }
       tenantIds.length = 0;
       userIds.length = 0;
+      userEmails.length = 0;
     },
   };
 }

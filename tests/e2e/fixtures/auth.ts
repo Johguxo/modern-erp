@@ -42,6 +42,15 @@ export interface Account {
 
 export interface Accounts {
   create(variant: AccountVariant): Promise<Account>;
+  /** E1-H3: usuario con cuenta de Auth y membresía activa en un tenant ya creado. */
+  addMember(tenantId: string, roles: readonly string[]): Promise<Account>;
+  /**
+   * E1-H3: correo de una cuenta que crea la app (al aceptar una invitación). `cleanup` borra su
+   * fila de users, sus membresías y su cuenta de Auth.
+   */
+  trackEmail(email: string): void;
+  /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
+  setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
 }
 
@@ -67,6 +76,28 @@ export function createAccounts(): Accounts {
   const authUserIds: string[] = [];
   const userIds: string[] = [];
   const tenantIds: string[] = [];
+  const trackedEmails: string[] = [];
+
+  async function authAccount(): Promise<Omit<Account, 'tenants'>> {
+    const tag = shortId();
+    const email = `e2e-${tag}@test.linkus.pe`;
+    const password = `Clave-${tag}-segura`;
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+    if (error) throw new Error(`No se pudo crear el usuario de Auth: ${error.message}`);
+    const authUserId = data.user.id;
+    authUserIds.push(authUserId);
+
+    const [user] = await sql<{ id: string }[]>`
+      insert into users (email, full_name, status, auth_user_id)
+      values (${email}, ${`E2E ${tag}`}, 'active', ${authUserId}) returning id`;
+    if (!user) throw new Error('user no creado');
+    userIds.push(user.id);
+    return { email, password, authUserId, userId: user.id };
+  }
 
   async function tenant(name: string, status: 'active' | 'suspended') {
     const slug = `e2e-${shortId()}`;
@@ -83,23 +114,9 @@ export function createAccounts(): Accounts {
 
   return {
     async create(variant) {
+      const account = await authAccount();
       const tag = shortId();
-      const email = `e2e-${tag}@test.linkus.pe`;
-      const password = `Clave-${tag}-segura`;
-      const { data, error } = await admin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (error) throw new Error(`No se pudo crear el usuario de Auth: ${error.message}`);
-      const authUserId = data.user.id;
-      authUserIds.push(authUserId);
-
-      const [user] = await sql<{ id: string }[]>`
-        insert into users (email, full_name, status, auth_user_id)
-        values (${email}, ${`E2E ${tag}`}, 'active', ${authUserId}) returning id`;
-      if (!user) throw new Error('user no creado');
-      userIds.push(user.id);
+      const user = { id: account.userId };
 
       const tenants: { id: string; name: string }[] = [];
       if (variant === 'single') tenants.push(await tenant(`E2E Alfa ${tag}`, 'active'));
@@ -116,18 +133,52 @@ export function createAccounts(): Accounts {
       if (variant === 'superadmin') {
         await sql`insert into platform_admins (user_id) values (${user.id})`;
       }
-      return { email, password, authUserId, userId: user.id, tenants };
+      return { ...account, tenants };
+    },
+
+    async addMember(tenantId, roles) {
+      const account = await authAccount();
+      await sql`
+        insert into memberships (tenant_id, user_id, roles, status)
+        values (${tenantId}, ${account.userId}, ${[...roles]}, 'active')`;
+      const [row] = await sql<{ name: string }[]>`select name from tenants where id = ${tenantId}`;
+      return { ...account, tenants: [{ id: tenantId, name: row?.name ?? '' }] };
+    },
+
+    trackEmail(email) {
+      trackedEmails.push(email.toLowerCase());
+    },
+
+    async setMaxUsers(tenantId, max) {
+      const overrides = max === null ? {} : { max_users: max };
+      await sql`
+        update subscriptions set overrides = ${sql.json(overrides)}
+        where tenant_id = ${tenantId} and status <> 'cancelled'`;
     },
 
     async cleanup() {
       try {
+        if (trackedEmails.length > 0) {
+          const created = await sql<{ id: string; auth_user_id: string | null }[]>`
+            select id, auth_user_id from users where email in ${sql(trackedEmails)}`;
+          for (const row of created) {
+            if (!userIds.includes(row.id)) userIds.push(row.id);
+            if (row.auth_user_id && !authUserIds.includes(row.auth_user_id)) {
+              authUserIds.push(row.auth_user_id);
+            }
+          }
+        }
         if (tenantIds.length > 0) {
+          await sql`delete from audit_events where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from invitations where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from memberships where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from subscriptions where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from tenant_settings where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from audit_events where tenant_id in ${sql(tenantIds)}`;
         }
         if (userIds.length > 0) {
+          await sql`delete from audit_events where actor_user_id in ${sql(userIds)}`;
+          await sql`delete from invitations where invited_by in ${sql(userIds)}`;
           await sql`delete from platform_admins where user_id in ${sql(userIds)}`;
           await sql`delete from memberships where user_id in ${sql(userIds)}`;
           await sql`delete from users where id in ${sql(userIds)}`;
@@ -138,6 +189,7 @@ export function createAccounts(): Accounts {
         tenantIds.length = 0;
         userIds.length = 0;
         authUserIds.length = 0;
+        trackedEmails.length = 0;
         await sql.end();
       }
     },

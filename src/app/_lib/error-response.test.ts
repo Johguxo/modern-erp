@@ -70,6 +70,19 @@ describe('toActionError', () => {
     );
   });
 
+  // E1-H3 · Cuenta de Auth sin usuario en la app: recargar no saca del formulario de cuenta nueva,
+  // así que el mensaje lleva a recuperar la contraseña y no pide recargar.
+  it('email_in_use lleva a recuperar la contraseña (no a recargar)', () => {
+    const error = new ConflictError({ reason: 'email_in_use', message: SECRET });
+
+    const result = toActionError(error, REQUEST_ID, new CapturingLogger());
+
+    expect(result.code).toBe('CONFLICT');
+    expect(result.message).toBe(messages.errors.reasons.email_in_use());
+    expect(result.message).toContain(messages.auth.forgotPassword);
+    expect(result.message).not.toMatch(/recarga/i);
+  });
+
   it('una reason desconocida usa el mensaje del código', () => {
     const error = new ConflictError({ reason: 'no_existe', message: SECRET });
 

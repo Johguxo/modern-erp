@@ -14,9 +14,12 @@ ADR-001 dice que `src/app` solo valida, arma el `ctx` y llama al caso de uso. Fa
 6. **Logs:** puerto `Logger` y adaptador pino (JSON a stdout, sin transports), con `requestId`, `tenantId` y `userId` en cada línea. Se redactan contraseñas, tokens, `authorization` y `cookie`, y nunca se registran los parámetros de las consultas SQL ni el input de una validación fallida. `pino` solo se importa en `src/shared/adapters`.
 7. **Errores de Postgres** (por ejemplo, 23505) se traducen en los repositorios con `isUniqueViolation`, nunca en `action()`.
 8. **Montos** en las salidas: como `string` decimal (las server actions no serializan `Decimal`).
+9. **Cliente y tareas después del commit** (E1-H3). `SharedDeps` agrega dos campos:
+   - `client: { ip, userAgent }`: sale de los encabezados (`x-forwarded-for` y `user-agent`, recortados) en `action()`, `route()` y `publicAction()`, y alimenta `audit_events`. Va fuera de `Ctx`, porque no es identidad. La IP es solo informativa: quien llama la puede falsear.
+   - `afterCommit(task)`: la tarea corre después del commit de la transacción del request, en orden. Si falla, se registra y no revierte nada. Lo que devuelve se combina con la salida y se vuelve a validar con el contrato. El primer uso es el correo de invitación (`emailSent`). Si la transacción falla, la tarea no corre. Cuando haya cola (E5), los correos irán por `JobQueue` en la misma transacción.
 
 ## Consecuencias
 - No se llama a `redirect()` ni `notFound()` dentro del handler: corren dentro de la transacción y la revierten. El handler devuelve el resultado, y el cliente o la página redirigen según `ok`. La salida se valida dentro de la transacción, así que un error de contrato también revierte.
 - `z.config` es global al proceso: los esquemas sin mensaje propio (incluido `env.ts`) muestran el texto en es-PE. En el cliente se activa con `configureZodMessages()` en el primer formulario (E1-H2).
 - El `CtxResolver` real (sesión de Supabase + empresa activa) y `publicAction` para las acciones sin sesión están en ADR-006.
-- El modo solo lectura llegó en E1-H2 (ADR-006): `action(..., { access })`. Quedan para más adelante: los permisos "uno de varios", la IP y el navegador para `audit_events` (E1-H3) y un actor `system` para los jobs sin usuario (E0-H5 o E4).
+- El modo solo lectura llegó en E1-H2 (ADR-006): `action(..., { access })`. La IP y el navegador para `audit_events` llegaron en E1-H3 (punto 9). Quedan para más adelante: los permisos "uno de varios" y un actor `system` para los jobs sin usuario (E0-H5 o E4).

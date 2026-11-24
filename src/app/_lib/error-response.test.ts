@@ -98,6 +98,26 @@ describe('toActionError', () => {
     expect(result).toMatchObject({ code: 'VALIDATION', fieldErrors });
   });
 
+  // E1-H2 · resetPassword pone la reason (same_password, weak_password) como mensaje del campo:
+  // el usuario debe ver el texto es-PE, nunca la clave técnica.
+  it('un fieldError que es una reason conocida se traduce a es-PE; los demás quedan igual', () => {
+    const result = toActionError(
+      new ValidationError({
+        reason: 'same_password',
+        fieldErrors: { password: ['same_password'], email: ['Formato inválido.'] },
+      }),
+      REQUEST_ID,
+      new CapturingLogger(),
+    );
+
+    expect(result.message).toBe(messages.errors.reasons.same_password());
+    expect(result.fieldErrors).toEqual({
+      password: [messages.errors.reasons.same_password()],
+      email: ['Formato inválido.'],
+    });
+    expect(JSON.stringify(result)).not.toContain('"same_password"');
+  });
+
   it('un error inesperado → INTERNAL con mensaje genérico y logger.error con err', () => {
     const logger = new CapturingLogger();
     const error = new Error(SECRET);

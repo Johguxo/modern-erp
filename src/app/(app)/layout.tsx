@@ -8,13 +8,19 @@ import { ReadOnlyBanner } from '@/ui/layout/read-only-banner';
 import { signOutAction } from '../(auth)/actions';
 import { requireCtx } from '../_lib/session';
 
+// Server action en línea: una función normal no puede pasar a un componente cliente.
+async function signOut() {
+  'use server';
+  return signOutAction({});
+}
+
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const { ctx, email } = await requireCtx();
   return (
     <AppShell
       items={visibleNavItems(APP_NAV, ctx.permissions)}
       banner={ctx.readOnly ? <ReadOnlyBanner /> : undefined}
-      account={<AccountMenu email={email} signOut={() => signOutAction({})} />}
+      account={<AccountMenu email={email} signOut={signOut} />}
     >
       {children}
     </AppShell>

@@ -159,6 +159,27 @@ describe('checks y unicidad', () => {
     }
   });
 
+  it('el código tiene formato válido: espacio interno o más de 40 caracteres → 23514', async () => {
+    const admin = getDbAdmin();
+    const badCodes = ['PR 9', 'PR*9', '-PR9', 'A'.repeat(41)];
+    for (const code of badCodes) {
+      const attempts = [
+        () => admin.insert(products).values({ tenantId: A, code, name: 'x', unit: 'UND' }),
+        () => admin.insert(equipment).values({ tenantId: A, code, name: 'x' }),
+        () => admin.insert(costCenters).values({ tenantId: A, code, name: 'x' }),
+        () => admin.insert(warehouses).values({ tenantId: A, code, name: 'x' }),
+      ];
+      for (const attempt of attempts) {
+        expect((await capturePgError(attempt)).code).toBe('23514');
+      }
+    }
+    // El límite exacto (40) y los separadores permitidos sí entran.
+    await admin
+      .insert(costCenters)
+      .values({ tenantId: A, code: `C${'0'.repeat(39)}`, name: 'Largo' });
+    await admin.insert(costCenters).values({ tenantId: A, code: 'A.B_C/D-9', name: 'Separadores' });
+  });
+
   it('precio y moneda van juntos, y el precio no es negativo', async () => {
     const insert = (values: { referencePrice?: string; currency?: string }) =>
       getDbAdmin()

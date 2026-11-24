@@ -49,6 +49,16 @@ pnpm test:int                   # pruebas de integración (RLS, roles)
 - Usa los puertos 54321–54327: si tienes otro proyecto de Supabase corriendo, detenlo antes (`pnpm exec supabase stop --project-id <otro>`).
 - Las migraciones solo se crean con drizzle-kit (`pnpm db:generate`, o `pnpm db:generate --custom --name=<slug>` para SQL a mano). No uses `supabase migration`.
 
+### Storage (logos)
+
+```bash
+pnpm exec supabase seed buckets   # crea los buckets de supabase/config.toml (hoy: brand-assets)
+```
+
+- `brand-assets` guarda los logos de los clientes (E1-H5): **público**, solo PNG/JPEG/WebP, hasta 512 KiB. La ruta es `<tenantId>/brand/logo-<uuid>.<ext>`; la arma el servidor.
+- **Producción:** créalo en el Dashboard de Supabase (Storage → New bucket) con el nombre `brand-assets`, público, límite de 512 KB y tipos `image/png, image/jpeg, image/webp`. La app sube con la service role; no hacen falta políticas de Storage.
+- Las pruebas de integración del adaptador de Storage corren solo si exportas `SUPABASE_SERVICE_ROLE_KEY` y el bucket existe; si no, se omiten (en CI solo corre Postgres).
+
 ### Primer SuperAdmin
 
 ```bash

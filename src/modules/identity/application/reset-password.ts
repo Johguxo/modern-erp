@@ -15,7 +15,11 @@ export async function resetPassword(
   }
   const result = await deps.auth.updatePassword(input.password);
   if (!result.ok) {
-    await deps.auth.signOut('local');
+    try {
+      await deps.auth.signOut('local');
+    } catch (error) {
+      deps.logger.warn({ err: error }, 'sign out of recovery session failed');
+    }
     throw new ValidationError({
       reason: result.reason === 'same_password' ? 'same_password' : 'weak_password',
       message: `Password rejected: ${result.reason}`,

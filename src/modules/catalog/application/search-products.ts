@@ -1,12 +1,13 @@
 // Búsqueda de productos para el selector del SOF: solo activos, por código o nombre. El stock no
 // va aquí: E6 lo combina desde fuera.
+// Con `q` vacío no es un error: devuelve los primeros productos activos del tenant (por nombre y
+// código), hasta el límite. Sirve para abrir el combobox (E2-H2, E3-H2) antes de que se escriba.
 import type { Ctx } from '@/shared/context';
+
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT } from '../domain/search';
 
 import { requireCatalogRead } from './master-data';
 import type { ProductDeps, ProductSearchItem } from './ports';
-
-export const SEARCH_DEFAULT_LIMIT = 20;
-export const SEARCH_MAX_LIMIT = 50;
 
 export async function searchProducts(
   ctx: Ctx,

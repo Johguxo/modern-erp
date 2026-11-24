@@ -1,10 +1,9 @@
 // Búsqueda de productos para el selector del SOF: solo activos, máximo 50.
 import { z } from 'zod';
 
-import { currencySchema, SEARCH_MAX } from './shared';
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT } from '../domain/search';
 
-export const SEARCH_DEFAULT_LIMIT = 20;
-export const SEARCH_MAX_LIMIT = 50;
+import { currencySchema, SEARCH_MAX } from './shared';
 
 export const inputSchema = z.object({
   q: z.string().trim().max(SEARCH_MAX).default(''),

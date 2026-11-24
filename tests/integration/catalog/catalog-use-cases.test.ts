@@ -328,6 +328,17 @@ describe('searchProducts', () => {
     expect(await search('pad_1')).toEqual(['PAD_1']);
   });
 
+  it('con q vacío devuelve los primeros activos del propio tenant, hasta el límite', async () => {
+    const all = await search('', 50);
+    expect(all).not.toContain('OLD-1');
+    expect(all).not.toContain('TOR-B1');
+    expect(all).toEqual(expect.arrayContaining(['TOR-100', 'TOR', 'ABR-1']));
+    expect(await search('', 2)).toHaveLength(2);
+    const ofB = await search('', 50, B);
+    expect(ofB).toContain('TOR-B1');
+    expect(ofB).not.toContain('TOR-100');
+  });
+
   it('respeta el límite y devuelve el precio como string', async () => {
     expect(await search('', 3)).toHaveLength(3);
     const withPrice = await run(A, async (d) => {

@@ -76,7 +76,7 @@ export interface ProductSearchItem {
 }
 
 export interface ProductRepository extends MasterRepository<ProductView, ProductFields> {
-  /** Solo activos; ordena código exacto, prefijo y nombre. */
+  /** Solo activos; ordena código exacto, prefijo y nombre. Con `q` vacío devuelve los primeros activos. */
   search(tenantId: string, q: string, limit: number): Promise<ProductSearchItem[]>;
 }
 

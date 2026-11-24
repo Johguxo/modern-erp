@@ -32,10 +32,10 @@
 
 | Tabla | Columnas clave | Notas |
 |---|---|---|
-| `warehouses` | `tenant_id`, `code`, `name`, `is_default` bool, `active` | MVP: uno por defecto por tenant |
-| `products` | `tenant_id`, `code`, `name`, `unit`, `category`, `reference_price` numeric(14,4), `currency`, `active` | unique(`tenant_id`,`code`); índice de búsqueda `pg_trgm` sobre `code` y `name` |
-| `equipment` | `tenant_id`, `code`, `name`, `type`, `active` | unique(`tenant_id`,`code`) — ej. `GEN-045` |
-| `cost_centers` | `tenant_id`, `code`, `name`, `active` | unique(`tenant_id`,`code`) |
+| `warehouses` | `tenant_id`, `code`, `name`, `is_default` bool, `active` | MVP: uno por defecto por tenant. Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`). De solo lectura para `app_user`: el almacén por defecto lo crea el alta del tenant |
+| `products` | `tenant_id`, `code`, `name`, `unit`, `category`, `reference_price` numeric(14,4), `currency`, `active` | unique(`tenant_id`,`code`); índice de búsqueda `pg_trgm` sobre `code` y `name`. Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
+| `equipment` | `tenant_id`, `code`, `name`, `type`, `active` | unique(`tenant_id`,`code`) — ej. `GEN-045`. Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
+| `cost_centers` | `tenant_id`, `code`, `name`, `active` | unique(`tenant_id`,`code`). Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
 | `import_jobs` | `tenant_id`, `kind` (`products`,`equipment`,`stock`), `status`, `file_path`, `summary` jsonb, `errors` jsonb, `created_by` | Resultado fila por fila de importaciones |
 
 ## Módulo `requests`
@@ -84,6 +84,7 @@ pg-boss crea su propio esquema (`pgboss`). Colas iniciales: `notifications.send-
 - **Migraciones y worker** usan el rol dueño (`DATABASE_URL_ADMIN`), que no aplica RLS; el worker igual pasa el `tenantId` a cada caso de uso. Aceptar invitación y operaciones de SuperAdmin usan este rol solo en casos de uso acotados y auditados.
 - Las tablas globales (`plans`, `users`, `platform_admins`) tienen políticas propias: lectura de `plans` para `app_user`; `users` solo la propia fila o las de usuarios con membresía en el tenant activo.
 - Extensiones (`pgcrypto`, `pg_trgm`) en el esquema `extensions`; el `search_path` de `app_user` es `public, extensions`.
+- Índices `pg_trgm` de `products` (`code`, `name`): sin `tenant_id`, aceptable en el MVP; con volumen, considerar `btree_gin` con (`tenant_id`, `name` `gin_trgm_ops`).
 - Prueba de integración obligatoria: dos tenants con datos; cada repositorio debe devolver solo los del tenant del `ctx`.
 
 ## Diagrama de relaciones (resumen)

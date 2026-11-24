@@ -315,10 +315,16 @@ describe('invitación aceptada entre la lectura y el UPDATE (reenviar, anular)',
     },
   });
 
-  it.each([
+  type InvitationUseCase = (
+    ctx: Ctx,
+    input: { invitationId: string },
+    deps: UserAdminDeps,
+  ) => Promise<unknown>;
+
+  it.each<[string, string, InvitationUseCase]>([
     ['reenviar', 'invitation.resent', resendInvitation],
     ['anular', 'invitation.cancelled', cancelInvitation],
-  ] as const)('%s → NOT_FOUND, sin auditoría ni correo programado', async (_l, action, useCase) => {
+  ])('%s → NOT_FOUND, sin auditoría ni correo programado', async (_l, action, useCase) => {
     const t = await makeTenant();
     const invitation = await fx.invitation(t.tenantId);
     const harness: Harness = { sent: [], tasks: [] };

@@ -131,6 +131,7 @@ export const messages = {
         'La nueva contraseña debe ser distinta de la anterior. Pide un enlace nuevo para intentarlo otra vez.',
       weak_password: () =>
         'Elige una contraseña más segura. Pide un enlace nuevo para intentarlo otra vez.',
+      password_rejected: () => 'Elige una contraseña más segura.',
       no_subscription: () =>
         'Tu empresa no tiene una suscripción vigente. Contacta al administrador de LinkUs.',
       already_member: () => 'Este correo ya pertenece a un usuario activo de tu empresa.',

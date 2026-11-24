@@ -9,6 +9,7 @@ import type { Contract } from '@/shared/contract';
 import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 import type { ActionResult } from '@/shared/result';
 
+import { clientInfoFromHeaders } from './client-info';
 import { runPublicPipeline, type PublicHandler } from './pipeline';
 
 export function publicAction<C extends Contract>(
@@ -24,6 +25,7 @@ export function publicAction<C extends Contract>(
       headers: requestHeaders,
       requestId,
       rawInput: input,
+      client: clientInfoFromHeaders(requestHeaders),
     });
   };
 }

@@ -17,6 +17,7 @@ import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 import type { ActionResult } from '@/shared/result';
 
 import { sessionCtxResolver } from './session';
+import { clientInfoFromHeaders } from './client-info';
 import { runPipeline, type Handler, type PipelineDeps } from './pipeline';
 
 export function createAction(deps: () => PipelineDeps) {
@@ -37,6 +38,7 @@ export function createAction(deps: () => PipelineDeps) {
         requestId,
         rawInput: input,
         access: options.access ?? 'write',
+        client: clientInfoFromHeaders(requestHeaders),
       });
     };
   };

@@ -4,11 +4,13 @@ import type { DbExecutor } from '@/db';
 import { getDbAdmin } from '@/db/admin';
 
 import { createEntitlements, type Entitlements } from '../application/entitlements';
+import type { InvitationAcceptStore } from '../application/invitation-accept-ports';
 import type { SessionRepository } from '../application/session-ports';
 import type { UserAdminDeps } from '../application/user-admin-ports';
 
 import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
+import { createDrizzleInvitationAcceptStore } from './drizzle-invitation-accept-store';
 import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
 import { createDrizzleMemberRepository } from './drizzle-member-repository';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
@@ -53,4 +55,14 @@ export function createUserAdminDeps(tx: DbExecutor, extras: UserAdminExtras): Us
     entitlements: createEntitlementsFor(tx),
     ...extras,
   };
+}
+
+/**
+ * Aceptar invitación (E1-H3): conexión dueño acotada por token_hash y auditada (ADR-004 §8),
+ * porque el invitado aún no tiene tenant activo. La entrega solo recibe el store.
+ */
+export function createInvitationServices(db: DbExecutor = getDbAdmin()): {
+  store: InvitationAcceptStore;
+} {
+  return { store: createDrizzleInvitationAcceptStore(db) };
 }

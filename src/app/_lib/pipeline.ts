@@ -11,6 +11,8 @@ import {
   type ErrorCode,
 } from '@/shared/errors';
 import type { Permission } from '@/shared/permissions';
+import type { AfterCommit, AfterCommitTask } from '@/shared/ports/after-commit';
+import { UNKNOWN_CLIENT, type ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 import type { IdGenerator } from '@/shared/ports/id-generator';
 import type { Logger } from '@/shared/ports/logger';
@@ -29,6 +31,10 @@ export interface SharedDeps {
   readonly clock: Clock;
   readonly ids: IdGenerator;
   readonly logger: Logger;
+  /** IP y navegador para audit_events (fuera de Ctx; la IP es solo informativa). */
+  readonly client: ClientInfo;
+  /** Tareas después del commit (p. ej. enviar un correo); su resultado se suma a la salida. */
+  readonly afterCommit: AfterCommit;
 }
 
 export interface HandlerArgs<I> {
@@ -58,6 +64,34 @@ export interface PipelineRequest {
   readonly rawInput: unknown;
   /** 'write' (por defecto) se bloquea si el tenant está en solo lectura (ADR-006). */
   readonly access?: 'read' | 'write';
+  readonly client?: ClientInfo;
+}
+
+/**
+ * Corre las tareas de afterCommit en orden, ya confirmada la transacción. Una tarea que falla se
+ * registra y no cambia el resultado (lo guardado no se revierte); lo que devuelven se combina con
+ * la salida y se vuelve a validar con el contrato.
+ */
+async function runAfterCommit<T>(
+  tasks: readonly AfterCommitTask[],
+  data: T,
+  outputSchema: z.ZodType,
+  logger: Logger,
+): Promise<T> {
+  if (tasks.length === 0) return data;
+  let merged: Record<string, unknown> = { ...(data as Record<string, unknown>) };
+  for (const task of tasks) {
+    try {
+      const patch = await task();
+      if (patch) merged = { ...merged, ...patch };
+    } catch (error) {
+      logger.error({ err: error }, 'after-commit task failed');
+    }
+  }
+  const parsed = outputSchema.safeParse(merged);
+  if (parsed.success) return parsed.data as T;
+  logger.error({ issues: parsed.error.issues.length }, 'after-commit output rejected by contract');
+  return data;
 }
 
 /**
@@ -98,8 +132,15 @@ export async function runPipeline<C extends Contract>(
       });
     }
 
-    const shared: SharedDeps = { clock: deps.clock, ids: deps.ids, logger };
-    const data = await deps.runInTenant(ctx, async (tx) => {
+    const tasks: AfterCommitTask[] = [];
+    const shared: SharedDeps = {
+      clock: deps.clock,
+      ids: deps.ids,
+      logger,
+      client: request.client ?? UNKNOWN_CLIENT,
+      afterCommit: (task) => tasks.push(task),
+    };
+    const committed = await deps.runInTenant(ctx, async (tx) => {
       const output = await handler({
         ctx,
         input: parsed.data as z.output<C['inputSchema']>,
@@ -110,6 +151,7 @@ export async function runPipeline<C extends Contract>(
       // usuario puede reintentar sin duplicar datos. También descarta campos de más.
       return contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
     });
+    const data = await runAfterCommit(tasks, committed, contract.outputSchema, logger);
     return { ok: true, data };
   } catch (error) {
     const actionError = toActionError(error, requestId, logger);
@@ -128,6 +170,7 @@ export type PublicHandler<C extends Contract> = (args: {
   readonly input: z.output<C['inputSchema']>;
   readonly requestId: string;
   readonly logger: Logger;
+  readonly client: ClientInfo;
 }) => Promise<z.input<C['outputSchema']>>;
 
 /**
@@ -156,6 +199,7 @@ export async function runPublicPipeline<C extends Contract>(
       input: parsed.data as z.output<C['inputSchema']>,
       requestId,
       logger,
+      client: request.client ?? UNKNOWN_CLIENT,
     });
     const data = contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
     return { ok: true, data };

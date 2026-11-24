@@ -459,3 +459,54 @@ describe('runPublicPipeline', () => {
     expect(entry?.bindings).toMatchObject({ requestId: REQUEST_ID, action: 'auth.signIn' });
   });
 });
+
+describe('runPipeline con afterCommit (E1-H3)', () => {
+  it('la tarea corre después del commit y su resultado se suma a la salida', async () => {
+    const { deps } = setup();
+    const order: string[] = [];
+    const runInTenant: PipelineDeps['runInTenant'] = async (ctx, fn) => {
+      const value = await fn({} as DbTransaction);
+      order.push('commit');
+      return value;
+    };
+    const handler: Handler<C> = ({ shared }) => {
+      shared.afterCommit(() => {
+        order.push('task');
+        return Promise.resolve({ title: 'Enviado' });
+      });
+      return Promise.resolve({ id: 'id-1', title: 'Pedido' });
+    };
+
+    const result = await run({ ...deps, runInTenant }, handler);
+
+    expect(order).toEqual(['commit', 'task']);
+    expect(result).toEqual({ ok: true, data: { id: 'id-1', title: 'Enviado' } });
+  });
+
+  it('si la tarea falla, la acción sigue ok con la salida original y queda un error en el log', async () => {
+    const { deps, logger } = setup();
+    const handler: Handler<C> = ({ shared }) => {
+      shared.afterCommit(() => Promise.reject(new Error('smtp down')));
+      return Promise.resolve({ id: 'id-1', title: 'Pedido' });
+    };
+
+    const result = await run(deps, handler);
+
+    expect(result).toEqual({ ok: true, data: { id: 'id-1', title: 'Pedido' } });
+    expect(logger.find('after-commit task failed')?.level).toBe('error');
+  });
+
+  it('si la transacción falla, la tarea no corre', async () => {
+    const { deps } = setup();
+    const task = vi.fn(() => Promise.resolve());
+    const handler: Handler<C> = ({ shared }) => {
+      shared.afterCommit(task);
+      return Promise.reject(new ConflictError());
+    };
+
+    const result = await run(deps, handler);
+
+    expect(result.ok).toBe(false);
+    expect(task).not.toHaveBeenCalled();
+  });
+});

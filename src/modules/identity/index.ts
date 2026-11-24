@@ -6,6 +6,7 @@ export type { UserCapacity } from './domain/entitlements';
 export type { Entitlements } from './application/entitlements';
 export {
   createEntitlementsFor,
+  createInvitationServices,
   createSessionServices,
   createUserAdminDeps,
   type UserAdminExtras,
@@ -31,3 +32,13 @@ export { cancelInvitation } from './application/cancel-invitation';
 export { updateMemberRoles } from './application/update-member-roles';
 export { disableMember } from './application/disable-member';
 export { reactivateMember } from './application/reactivate-member';
+export {
+  previewInvitation,
+  type AcceptMode,
+  type InvitationPreview,
+} from './application/preview-invitation';
+export {
+  acceptInvitation,
+  type AcceptInvitationDeps,
+  type AcceptInvitationInput,
+} from './application/accept-invitation';

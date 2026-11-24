@@ -11,5 +11,6 @@ export * as cancelInvitationContract from './cancel-invitation';
 export * as updateMemberRolesContract from './update-member-roles';
 export * as disableMemberContract from './disable-member';
 export * as reactivateMemberContract from './reactivate-member';
+export * as acceptInvitationContract from './accept-invitation';
 export { PASSWORD_MAX, PASSWORD_MIN } from './reset-password';
 export { ASSIGNABLE_ROLES } from './members';

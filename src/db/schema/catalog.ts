@@ -2,6 +2,7 @@
 // trabajos de importación. RLS según ADR-004; grants en 0006 (sin DELETE: se desactiva, no se borra).
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -29,6 +30,10 @@ const updatedAt = () =>
     .defaultNow()
     .$onUpdate(() => new Date());
 
+/** Código normalizado (mayúsculas, sin espacios), de hasta 40 caracteres y con el patrón del dominio. */
+const codeFormat = (code: AnyPgColumn) =>
+  sql`${code} = upper(btrim(${code})) and char_length(${code}) <= 40 and ${code} ~ '^[A-Z0-9][A-Z0-9._/-]*$'`;
+
 export const warehouses = pgTable(
   'warehouses',
   {
@@ -47,7 +52,7 @@ export const warehouses = pgTable(
     uniqueIndex('warehouses_one_default_per_tenant')
       .on(t.tenantId)
       .where(sql`${t.isDefault}`),
-    check('warehouses_code_normalized', sql`${t.code} = upper(btrim(${t.code}))`),
+    check('warehouses_code_normalized', codeFormat(t.code)),
     check('warehouses_code_not_empty', sql`${t.code} <> ''`),
     check('warehouses_name_not_empty', sql`btrim(${t.name}) <> ''`),
     tenantIsolation(t.tenantId),
@@ -75,7 +80,7 @@ export const products = pgTable(
     // Búsqueda por código o nombre (searchProducts); pg_trgm vive en el esquema extensions.
     index('products_code_trgm_idx').using('gin', t.code.op('extensions.gin_trgm_ops')),
     index('products_name_trgm_idx').using('gin', t.name.op('extensions.gin_trgm_ops')),
-    check('products_code_normalized', sql`${t.code} = upper(btrim(${t.code}))`),
+    check('products_code_normalized', codeFormat(t.code)),
     check('products_code_not_empty', sql`${t.code} <> ''`),
     check('products_name_not_empty', sql`btrim(${t.name}) <> ''`),
     check('products_unit_not_empty', sql`btrim(${t.unit}) <> ''`),
@@ -102,7 +107,7 @@ export const equipment = pgTable(
   },
   (t) => [
     uniqueIndex('equipment_tenant_code_key').on(t.tenantId, t.code),
-    check('equipment_code_normalized', sql`${t.code} = upper(btrim(${t.code}))`),
+    check('equipment_code_normalized', codeFormat(t.code)),
     check('equipment_code_not_empty', sql`${t.code} <> ''`),
     check('equipment_name_not_empty', sql`btrim(${t.name}) <> ''`),
     tenantIsolation(t.tenantId),
@@ -122,7 +127,7 @@ export const costCenters = pgTable(
   },
   (t) => [
     uniqueIndex('cost_centers_tenant_code_key').on(t.tenantId, t.code),
-    check('cost_centers_code_normalized', sql`${t.code} = upper(btrim(${t.code}))`),
+    check('cost_centers_code_normalized', codeFormat(t.code)),
     check('cost_centers_code_not_empty', sql`${t.code} <> ''`),
     check('cost_centers_name_not_empty', sql`btrim(${t.name}) <> ''`),
     tenantIsolation(t.tenantId),

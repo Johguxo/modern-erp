@@ -37,6 +37,7 @@ Estado: pendiente · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
 - [ ] Adaptador `Mailer` mínimo: en local los correos se ven en Mailpit (http://127.0.0.1:54324); en producción, Resend con texto simple. Las plantillas con diseño (React Email) llegan en E5-H2.
 - [ ] Aceptar invitación: si el correo no tiene cuenta, crea contraseña; si ya tiene, solo agrega la membresía.
 - [ ] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
+- [ ] `invitations.invited_by` y el actor de `audit_events` se toman del `ctx`, nunca de lo que envía el cliente.
 - [ ] Cada acción queda en `audit_events`.
 
 Estado: pendiente · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/10)

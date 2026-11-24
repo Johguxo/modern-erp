@@ -51,6 +51,8 @@ export interface Accounts {
   trackEmail(email: string): void;
   /** E1-H4: tenant que crea la app (consola): `cleanup` lo busca por slug y lo borra. */
   trackTenantSlug(slug: string): void;
+  /** E2-H2: producto activo (unidad UND, sin precio) en un tenant ya creado. */
+  addProduct(tenantId: string, code: string, name: string): Promise<void>;
   /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
   setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
@@ -163,6 +165,12 @@ export function createAccounts(): Accounts {
         where tenant_id = ${tenantId} and status <> 'cancelled'`;
     },
 
+    async addProduct(tenantId, code, name) {
+      await sql`
+        insert into products (tenant_id, code, name, unit)
+        values (${tenantId}, ${code}, ${name}, 'UND')`;
+    },
+
     async cleanup() {
       try {
         if (trackedSlugs.length > 0) {
@@ -183,6 +191,11 @@ export function createAccounts(): Accounts {
         if (tenantIds.length > 0) {
           await sql`delete from audit_events where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from invitations where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from products where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from equipment where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from cost_centers where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from import_jobs where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from warehouses where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from memberships where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from subscriptions where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from tenant_settings where tenant_id in ${sql(tenantIds)}`;

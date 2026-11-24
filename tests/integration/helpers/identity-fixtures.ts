@@ -9,13 +9,18 @@ import { getDbAdmin } from '@/db/admin';
 import { pgErrorCode } from '@/db/errors';
 import {
   auditEvents,
+  costCenters,
+  equipment,
+  importJobs,
   invitations,
   memberships,
   platformAdmins,
+  products,
   plans,
   subscriptions,
   tenantSettings,
   tenants,
+  warehouses,
   users,
 } from '@/db/schema';
 import type { Role } from '@/shared/permissions';
@@ -205,6 +210,12 @@ export function createIdentityFixtures(): IdentityFixtures {
         for (const { id } of created) if (!userIds.includes(id)) userIds.push(id);
       }
       if (tenantIds.length > 0) {
+        // Catálogo (E2-H1): sin FK entre ellas, solo hacia tenants y users.
+        await admin.delete(importJobs).where(inArray(importJobs.tenantId, tenantIds));
+        await admin.delete(products).where(inArray(products.tenantId, tenantIds));
+        await admin.delete(equipment).where(inArray(equipment.tenantId, tenantIds));
+        await admin.delete(costCenters).where(inArray(costCenters.tenantId, tenantIds));
+        await admin.delete(warehouses).where(inArray(warehouses.tenantId, tenantIds));
         await admin.delete(auditEvents).where(inArray(auditEvents.tenantId, tenantIds));
         await admin.delete(invitations).where(inArray(invitations.tenantId, tenantIds));
         await admin.delete(memberships).where(inArray(memberships.tenantId, tenantIds));

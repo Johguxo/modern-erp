@@ -5,6 +5,7 @@ export { PLAN_FEATURES, type PlanFeature } from './domain/plan-features';
 export type { UserCapacity } from './domain/entitlements';
 export type { Entitlements } from './application/entitlements';
 export {
+  createAuditLogFor,
   createEntitlementsFor,
   createInvitationServices,
   createSessionServices,
@@ -42,7 +43,7 @@ export { requestPasswordReset } from './application/request-password-reset';
 export { resetPassword } from './application/reset-password';
 export { resolveEntry } from './application/resolve-entry';
 export { resolveTenantSession } from './application/resolve-tenant-session';
-export type { UserAdminDeps } from './application/user-admin-ports';
+export type { AuditLog, UserAdminDeps } from './application/user-admin-ports';
 export { recordAudit, type AuditEvent } from './application/audit';
 export {
   listMembers,

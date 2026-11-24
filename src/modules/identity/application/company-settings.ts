@@ -12,13 +12,14 @@ export interface CompanyBrandView {
   readonly displayName: string;
   readonly primaryColor: string | null;
   readonly logoUrl: string | null;
+  /** Moneda del tenant (la usan las pantallas del catálogo para proponer moneda). */
+  readonly currency: Currency;
 }
 
 export interface CompanySettingsView extends CompanyBrandView {
   readonly legalName: string;
   /** El nombre visible guardado (null = se usa el legal). */
   readonly customDisplayName: string | null;
-  readonly currency: Currency;
 }
 
 async function load(ctx: Ctx, deps: Pick<SettingsDeps, 'settings'>): Promise<SettingsRecord> {
@@ -39,6 +40,7 @@ function brandView(
     logoUrl: brand.logoPath
       ? deps.storage.publicUrl({ tenantId: ctx.tenantId, key: brand.logoPath })
       : null,
+    currency: record.currency,
   };
 }
 
@@ -60,6 +62,5 @@ export async function getCompanySettings(
     ...brandView(ctx, record, deps),
     legalName: record.legalName,
     customDisplayName: record.brand.displayName ?? null,
-    currency: record.currency,
   };
 }

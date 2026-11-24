@@ -92,6 +92,7 @@ describe('lecturas', () => {
       displayName: 'Genrent S.A.C.',
       primaryColor: '#0A7C6E',
       logoUrl: `https://storage.test/${TEST_TENANT_ID}/${OLD_LOGO}`,
+      currency: 'PEN',
     });
   });
 

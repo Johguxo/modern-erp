@@ -22,7 +22,7 @@ describe('cobertura de RLS en public', () => {
       where n.nspname = 'public' and c.relkind in ('r', 'p') and ${NOT_PROBE}
       order by c.relname`);
 
-    expect(rows.length).toBeGreaterThanOrEqual(9);
+    expect(rows.length).toBeGreaterThanOrEqual(14);
     expect(rows.filter((r) => !r.relrowsecurity).map((r) => r.relname)).toEqual([]);
   });
 
@@ -59,5 +59,22 @@ describe('cobertura de RLS en public', () => {
     expect(rows.length).toBeGreaterThan(0);
     const offenders = rows.filter((r) => r.roles !== '{app_user}');
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('cobertura de RLS en catalog (E2-H1)', () => {
+  it('las 5 tablas del catálogo tienen RLS y una política tenant_isolation para app_user', async () => {
+    const tables = ['warehouses', 'products', 'equipment', 'cost_centers', 'import_jobs'];
+    const rows = await getDbAdmin().execute<{ tablename: string; policyname: string }>(sql`
+      select tablename, policyname from pg_policies
+      where schemaname = 'public' and policyname = 'tenant_isolation'`);
+    const rls = await getDbAdmin().execute<{ relname: string; relrowsecurity: boolean }>(sql`
+      select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r'`);
+
+    for (const table of tables) {
+      expect(rows.map((r) => r.tablename)).toContain(table);
+      expect(rls.find((r) => r.relname === table)?.relrowsecurity).toBe(true);
+    }
   });
 });

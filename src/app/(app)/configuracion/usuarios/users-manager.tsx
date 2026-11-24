@@ -107,7 +107,6 @@ export function UsersManager({
             ) : (
               <Button
                 variant="outline"
-                size="sm"
                 disabled={readOnly || pending}
                 onClick={() =>
                   run(
@@ -159,7 +158,6 @@ export function UsersManager({
                 <div className="flex shrink-0 gap-2">
                   <Button
                     variant="outline"
-                    size="sm"
                     disabled={readOnly || pending}
                     onClick={() =>
                       run(
@@ -175,7 +173,6 @@ export function UsersManager({
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
                     disabled={readOnly || pending}
                     onClick={() =>
                       run(

@@ -150,7 +150,7 @@ export function EditRolesDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>
+        <Button variant="outline" disabled={disabled}>
           {t.editRoles}
         </Button>
       </DialogTrigger>
@@ -215,7 +215,7 @@ export function DisableDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>
+        <Button variant="outline" disabled={disabled}>
           {t.disable}
         </Button>
       </DialogTrigger>

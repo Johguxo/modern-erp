@@ -4,7 +4,7 @@
 // 5 min de Supabase local) y cada prueba reutiliza sus cookies.
 import { randomUUID } from 'node:crypto';
 
-import type { BrowserContext, Page } from '@playwright/test';
+import type { BrowserContext, Locator, Page } from '@playwright/test';
 
 import { messages } from '../../src/ui/messages/es-PE';
 
@@ -46,6 +46,20 @@ async function mainNav(page: Page, projectName: string) {
 
 const rowOf = (page: Page, email: string) => page.getByRole('row').filter({ hasText: email });
 
+/** design-tokens.md: botones de al menos 44 px de alto. */
+async function expectTouchTarget(locator: Locator) {
+  const box = await locator.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+}
+
+/** Sin scroll horizontal de la página (la tabla se desplaza dentro de su contenedor). */
+async function expectNoPageOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+}
+
 test.describe('con sesión de admin', () => {
   test.beforeEach(async ({ context }) => {
     await context.addCookies(adminCookies);
@@ -77,6 +91,9 @@ test.describe('con sesión de admin', () => {
     const self = rowOf(page, admin.email);
     await expect(self.getByText(`(${u.you})`)).toBeVisible();
     await expect(self.getByRole('button', { name: u.disable })).toHaveCount(0);
+    await expectTouchTarget(row.getByRole('button', { name: u.editRoles }));
+    await expectTouchTarget(row.getByRole('button', { name: u.disable }));
+    await expectNoPageOverflow(page);
   });
 
   test('editar roles: cambia Solicitante por Aprobador y la lista se actualiza', async ({
@@ -141,6 +158,7 @@ test.describe('con sesión de admin', () => {
     await expect(
       rowOf(page, member.email).getByRole('button', { name: u.reactivate }),
     ).toBeVisible();
+    await expectTouchTarget(rowOf(page, member.email).getByRole('button', { name: u.reactivate }));
 
     await memberPage.goto('/bandeja');
     await expect(memberPage).toHaveURL(/\/login\?error=sin-acceso$/);

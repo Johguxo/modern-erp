@@ -50,6 +50,20 @@ async function invite(page: Page, email: string) {
   await expect(
     page.getByRole('region', { name: u.pendingTitle }).getByText(email, { exact: true }),
   ).toBeVisible();
+  // design-tokens.md: botones de al menos 44 px, también en 390 px y sin scroll horizontal.
+  const item = page
+    .getByRole('region', { name: u.pendingTitle })
+    .getByRole('listitem')
+    .filter({ hasText: email });
+  for (const name of [u.resend, u.cancelInvitation]) {
+    const box = await item.getByRole('button', { name }).boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
 }
 
 test('admin invita → el correo llega a Mailpit con el enlace → crea su cuenta y entra a /bandeja', async ({

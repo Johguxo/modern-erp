@@ -23,7 +23,7 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 export const APP_NAV: readonly NavItem[] = [
   { href: '/bandeja', label: messages.nav.inbox, permission: 'requests.read_own' },
   {
-    href: '/configuracion/productos' as Route, // TEMP: quitar el cast cuando exista la página
+    href: '/configuracion/productos',
     label: messages.nav.catalog,
     permission: 'catalog.manage',
     activePrefixes: ['/configuracion/equipos', '/configuracion/centros-de-costo'],

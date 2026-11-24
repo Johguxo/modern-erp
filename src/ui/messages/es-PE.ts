@@ -111,6 +111,7 @@ export const messages = {
       equipment: 'Equipos',
       costCenters: 'Centros de costo',
     },
+    noValue: '—',
     search: 'Buscar',
     searchPlaceholder: 'Código o nombre',
     statusFilter: 'Estado',
@@ -161,6 +162,7 @@ export const messages = {
       currency: 'Moneda',
       currencyPlaceholder: 'Sin moneda',
       type: 'Tipo',
+      unitPlaceholder: 'Ej.: UND',
     },
     products: {
       title: 'Productos',

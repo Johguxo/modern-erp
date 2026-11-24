@@ -56,6 +56,7 @@ export function SetActiveControl({
       <Button
         type="button"
         variant="outline"
+        aria-label={`${t.actions.activate} ${name}`}
         disabled={disabled || pending}
         onClick={() => run(true, (message) => onDone({ tone: 'warning', text: message }))}
       >
@@ -73,7 +74,12 @@ export function SetActiveControl({
       }}
     >
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" disabled={disabled}>
+        <Button
+          type="button"
+          variant="outline"
+          aria-label={`${t.actions.deactivate} ${name}`}
+          disabled={disabled}
+        >
           {t.actions.deactivate}
         </Button>
       </DialogTrigger>

@@ -9,7 +9,7 @@ import { messages } from '@/ui/messages/es-PE';
 export type CatalogSection = keyof typeof messages.catalog.sections;
 
 const SECTIONS: readonly { readonly key: CatalogSection; readonly href: Route }[] = [
-  { key: 'products', href: '/configuracion/productos' as Route },
+  { key: 'products', href: '/configuracion/productos' },
   { key: 'equipment', href: '/configuracion/equipos' as Route },
   { key: 'costCenters', href: '/configuracion/centros-de-costo' as Route },
 ];

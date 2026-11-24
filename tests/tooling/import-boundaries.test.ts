@@ -90,6 +90,14 @@ const FORBIDDEN: Case[] = [
   ['src/shared/context.ts', 'pino'],
   ['src/modules/requests/domain/x.ts', 'pino'],
   ['src/app/page.tsx', 'pino'],
+  // E1-H2: contracts/ es entrada pública solo como carpeta, nunca sus archivos ni otras carpetas
+  ['src/app/page.tsx', '@/modules/identity/contracts/sign-in'],
+  ['src/app/page.tsx', '@/modules/identity/application/x'],
+  ['src/app/page.tsx', '@/modules/identity/contractsx'],
+  ['src/ui/x.tsx', '@/modules/identity/contracts/sign-in'],
+  ['src/ui/x.tsx', '@/modules/identity/domain/x'],
+  ['src/modules/requests/application/x.ts', '@/modules/identity/contracts/sign-in'],
+  ['src/shared/context.ts', '@/modules/identity/infrastructure/deps'],
 ];
 
 const ALLOWED: Case[] = [
@@ -117,6 +125,12 @@ const ALLOWED: Case[] = [
   ['src/shared/adapters/x.ts', 'pino'],
   ['src/app/_lib/action.ts', '@/db'],
   ['src/app/_lib/action.ts', '@/shared/adapters/pino-logger'],
+  // E1-H2: segunda entrada pública de un módulo, segura para el cliente (ADR-001 §10)
+  ['src/app/page.tsx', '@/modules/identity/contracts'],
+  ['src/app/(auth)/login/login-form.tsx', '@/modules/identity/contracts'],
+  ['src/ui/x.tsx', '@/modules/identity/contracts'],
+  ['src/modules/requests/application/x.ts', '@/modules/identity/contracts'],
+  ['src/proxy.ts', '@/shared/adapters/supabase-auth-provider'],
 ];
 
 describe('regla de imports prohibidos (no-restricted-imports por carpeta)', () => {

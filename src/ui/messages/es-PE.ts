@@ -290,6 +290,8 @@ export const messages = {
     reasons: {
       max_users: (p: Params) =>
         `Tu plan permite hasta ${p.max ?? '?'} usuarios. Pide al administrador ampliar el plan.`,
+      code_taken: (p: Params) =>
+        `Ya existe un registro con el código ${p.code ?? ''}. Usa otro código o busca el existente.`,
       stale_version: () => 'Alguien modificó este documento. Recarga la página.',
       tenant_read_only: () =>
         'Tu empresa está en modo solo lectura. Contacta al administrador de LinkUs.',

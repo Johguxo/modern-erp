@@ -70,6 +70,21 @@ describe('toActionError', () => {
     );
   });
 
+  // E2-H1 · Código repetido en el catálogo: el mensaje nombra el código.
+  it('code_taken nombra el código repetido', () => {
+    const error = new ConflictError({
+      reason: 'code_taken',
+      params: { code: 'PR-001' },
+      message: SECRET,
+    });
+
+    const result = toActionError(error, REQUEST_ID, new CapturingLogger());
+
+    expect(result.code).toBe('CONFLICT');
+    expect(result.message).toContain('PR-001');
+    expect(result.message).not.toContain(SECRET);
+  });
+
   // E1-H3 · Cuenta de Auth sin usuario en la app: recargar no saca del formulario de cuenta nueva,
   // así que el mensaje lleva a recuperar la contraseña y no pide recargar.
   it('email_in_use lleva a recuperar la contraseña (no a recargar)', () => {

@@ -5,6 +5,7 @@ import { getDbAdmin } from '@/db/admin';
 
 import { createEntitlements, type Entitlements } from '../application/entitlements';
 import type { InvitationAcceptStore } from '../application/invitation-accept-ports';
+import type { PlatformDeps, PlatformStore } from '../application/platform/ports';
 import type { SessionRepository } from '../application/session-ports';
 import type { UserAdminDeps } from '../application/user-admin-ports';
 
@@ -13,6 +14,7 @@ import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repo
 import { createDrizzleInvitationAcceptStore } from './drizzle-invitation-accept-store';
 import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
 import { createDrizzleMemberRepository } from './drizzle-member-repository';
+import { createDrizzlePlatformStore, type TenantSetupStepFactory } from './drizzle-platform-store';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
 import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
@@ -65,4 +67,25 @@ export function createInvitationServices(db: DbExecutor = getDbAdmin()): {
   store: InvitationAcceptStore;
 } {
   return { store: createDrizzleInvitationAcceptStore(db) };
+}
+
+/**
+ * Consola de plataforma (E1-H4, ADR-007): store sobre la conexión dueño. La entrega nunca recibe
+ * la conexión; solo el store, cuyos casos de uso revisan SuperAdmin y auditan cada escritura.
+ */
+export function createPlatformStore(
+  setupSteps: readonly TenantSetupStepFactory[] = [],
+  db: DbExecutor = getDbAdmin(),
+): PlatformStore {
+  return createDrizzlePlatformStore(db, setupSteps);
+}
+
+/** Lo que la entrega aporta a la consola (además de los pasos de alta). */
+export type PlatformExtras = Omit<PlatformDeps, 'store'>;
+
+export function createPlatformDeps(
+  extras: PlatformExtras,
+  setupSteps: readonly TenantSetupStepFactory[] = [],
+): PlatformDeps {
+  return { store: createPlatformStore(setupSteps), ...extras };
 }

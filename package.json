@@ -19,6 +19,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:reset": "supabase db reset && pnpm db:migrate",
+    "admin:create-superadmin": "node --env-file-if-exists=.env.local --import tsx scripts/create-superadmin.ts",
     "db:seed": "node scripts/not-implemented.mjs db:seed \"E1 (planes) / E7 (demo)\"",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

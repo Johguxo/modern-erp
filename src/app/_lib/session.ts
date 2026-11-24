@@ -7,7 +7,7 @@ import { cache } from 'react';
 import { getEnv } from '@/env';
 import { createSessionServices, resolveEntry, resolveTenantSession } from '@/modules/identity';
 import { cryptoIdGenerator } from '@/shared/adapters/crypto-id-generator';
-import type { Ctx } from '@/shared/context';
+import type { Ctx, PlatformCtx } from '@/shared/context';
 import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 
 import { ACTIVE_TENANT_COOKIE, verifyActiveTenant } from './active-tenant';
@@ -55,13 +55,26 @@ export async function requireCtx(): Promise<{ ctx: Ctx; email: string }> {
   return { ctx: state.ctx, email: state.email };
 }
 
-/** Para /admin: sin sesión → /login; si no es SuperAdmin → 404 (no revela que existe). */
-export async function requirePlatformAdmin(): Promise<{ email: string }> {
+/**
+ * SuperAdmin del request (ADR-007): usuario de Auth validado, usuario activo y fila en
+ * platform_admins. 'anonymous' sin sesión; 'forbidden' si no es SuperAdmin.
+ */
+export async function resolvePlatformSession(
+  requestId: string,
+): Promise<{ ctx: PlatformCtx; email: string } | 'anonymous' | 'forbidden'> {
   const session = await (await getAuthProvider()).getSession();
-  if (!session) redirect('/login');
+  if (!session) return 'anonymous';
   const { access } = await resolveEntry(session.authUserId, createSessionServices());
-  if (!access.isPlatformAdmin) notFound();
-  return { email: session.email };
+  if (!access.user || !access.isPlatformAdmin) return 'forbidden';
+  return { ctx: { userId: access.user.id, requestId }, email: session.email };
+}
+
+/** Para /admin: sin sesión → /login; si no es SuperAdmin → 404 (no revela que existe). */
+export async function requirePlatformAdmin(): Promise<{ ctx: PlatformCtx; email: string }> {
+  const resolved = await resolvePlatformSession(await currentRequestId());
+  if (resolved === 'anonymous') redirect('/login');
+  if (resolved === 'forbidden') notFound();
+  return resolved;
 }
 
 /** Resolver de action() y route(): el ctx del request o null (sin sesión o sin empresa). */

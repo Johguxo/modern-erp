@@ -8,9 +8,31 @@ export {
   createEntitlementsFor,
   createInvitationServices,
   createSessionServices,
+  createPlatformDeps,
+  createPlatformStore,
   createUserAdminDeps,
+  type PlatformExtras,
   type UserAdminExtras,
 } from './infrastructure/deps';
+export type { TenantSetupStepFactory } from './infrastructure/drizzle-platform-store';
+export type { PlatformDeps, PlatformStore, TenantSetupStep } from './application/platform/ports';
+export { createTenant } from './application/platform/create-tenant';
+export { updateSubscription } from './application/platform/update-subscription';
+export { inviteTenantAdmin } from './application/platform/invite-tenant-admin';
+export {
+  getTenant,
+  listPlans,
+  listTenants,
+  type PlanOption,
+  type TenantDetail,
+  type TenantListItem,
+  type TenantSubscriptionView,
+} from './application/platform/queries';
+export {
+  bootstrapPlatformAdmin,
+  BootstrapError,
+  type BootstrapResult,
+} from './application/platform/bootstrap-platform-admin';
 export type { EntryDecision } from './domain/entry';
 export type { SessionRepository, TenantAccess } from './application/session-ports';
 export { signIn } from './application/sign-in';

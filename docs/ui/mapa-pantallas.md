@@ -36,8 +36,8 @@
 | Pantalla | Ruta | Casos de uso |
 |---|---|---|
 | Clientes | `/admin/clientes` | `platform.listTenants()` |
-| Nuevo cliente | `/admin/clientes/nuevo` | `platform.createTenant({name, slug, planCode, overrides, adminEmail})` (crea tenant, settings, suscripción, almacén por defecto, secuencias, política SOF estándar e invitación) |
-| Detalle de cliente | `/admin/clientes/[id]` | `platform.getTenant()`, `platform.updateSubscription()` |
+| Nuevo cliente | `/admin/clientes/nuevo` | `platform.createTenant({name, slug, planCode, maxUsers, currency, adminEmail})` (crea tenant, settings, suscripción e invitación; E2-H1, E3-H1 y E4-H1 agregan almacén por defecto, secuencia SOF y política SOF estándar con `tenantSetupSteps`) |
+| Detalle de cliente | `/admin/clientes/[id]` | `platform.getTenant()`, `platform.updateSubscription()`, `platform.inviteTenantAdmin()` |
 
 ## Pantallas de fases siguientes (no implementar en el MVP)
 

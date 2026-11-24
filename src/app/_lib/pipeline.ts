@@ -2,7 +2,7 @@
 // Sin Next ni base de datos directa: todo llega por `deps`, así se prueba con fakes.
 import type { DbTransaction } from '@/db';
 import { hasPermission } from '@/shared/authorization';
-import type { Ctx } from '@/shared/context';
+import type { Ctx, PlatformCtx } from '@/shared/context';
 import type { Contract } from '@/shared/contract';
 import {
   ForbiddenError,
@@ -202,6 +202,78 @@ export async function runPublicPipeline<C extends Contract>(
       client: request.client ?? UNKNOWN_CLIENT,
     });
     const data = contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
+    return { ok: true, data };
+  } catch (error) {
+    const actionError = toActionError(error, requestId, logger);
+    outcome = actionError.code;
+    return { ok: false, error: actionError };
+  } finally {
+    logger.info({ outcome, durationMs: Date.now() - started }, 'action finished');
+  }
+}
+
+export interface PlatformPipelineDeps {
+  /** Sesión de un SuperAdmin activo: 'anonymous' sin sesión, 'forbidden' si no es SuperAdmin. */
+  readonly resolvePlatformCtx: (request: {
+    readonly requestId: string;
+  }) => Promise<PlatformCtx | 'anonymous' | 'forbidden'>;
+  readonly clock: Clock;
+  readonly ids: IdGenerator;
+  readonly logger: Logger;
+}
+
+export type PlatformHandler<C extends Contract> = (args: {
+  readonly ctx: PlatformCtx;
+  readonly input: z.output<C['inputSchema']>;
+  readonly shared: SharedDeps;
+}) => Promise<z.input<C['outputSchema']>>;
+
+/**
+ * Acciones de la consola de plataforma (ADR-007): SuperAdmin → Zod → caso de uso → afterCommit.
+ * No abre transacción: el caso de uso abre la suya con la conexión dueño (acotada y auditada).
+ */
+export async function runPlatformPipeline<C extends Contract>(
+  deps: PlatformPipelineDeps,
+  contract: C,
+  handler: PlatformHandler<C>,
+  request: Omit<PipelineRequest, 'access'>,
+): Promise<ActionResult<z.output<C['outputSchema']>>> {
+  const { requestId } = request;
+  const started = Date.now();
+  let logger = deps.logger.child({ requestId, action: request.name });
+  let outcome: ErrorCode | 'OK' = 'OK';
+  try {
+    const resolved = await deps.resolvePlatformCtx({ requestId });
+    if (resolved === 'anonymous') throw new UnauthenticatedError();
+    if (resolved === 'forbidden') {
+      throw new ForbiddenError({ message: 'Not a platform admin' });
+    }
+    const ctx = resolved;
+    logger = logger.child({ userId: ctx.userId, platform: true });
+
+    const parsed = contract.inputSchema.safeParse(request.rawInput);
+    if (!parsed.success) {
+      throw new ValidationError({
+        fieldErrors: issuesToFieldErrors(parsed.error.issues),
+        message: `Invalid input: ${parsed.error.issues.map((i) => i.path.join('.')).join(', ')}`,
+      });
+    }
+
+    const tasks: AfterCommitTask[] = [];
+    const shared: SharedDeps = {
+      clock: deps.clock,
+      ids: deps.ids,
+      logger,
+      client: request.client ?? UNKNOWN_CLIENT,
+      afterCommit: (task) => tasks.push(task),
+    };
+    const output = await handler({
+      ctx,
+      input: parsed.data as z.output<C['inputSchema']>,
+      shared,
+    });
+    const committed = contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
+    const data = await runAfterCommit(tasks, committed, contract.outputSchema, logger);
     return { ok: true, data };
   } catch (error) {
     const actionError = toActionError(error, requestId, logger);

@@ -49,6 +49,16 @@ pnpm test:int                   # pruebas de integración (RLS, roles)
 - Usa los puertos 54321–54327: si tienes otro proyecto de Supabase corriendo, detenlo antes (`pnpm exec supabase stop --project-id <otro>`).
 - Las migraciones solo se crean con drizzle-kit (`pnpm db:generate`, o `pnpm db:generate --custom --name=<slug>` para SQL a mano). No uses `supabase migration`.
 
+### Primer SuperAdmin
+
+```bash
+pnpm admin:create-superadmin   # usa SEED_SUPERADMIN_EMAIL y SEED_DEFAULT_PASSWORD de .env.local
+```
+
+- Crea la cuenta de Auth, el usuario y la fila en `platform_admins`. Se puede correr varias veces: si el usuario ya existe, solo lo hace SuperAdmin.
+- Con esa cuenta entras a `/admin/clientes` para crear clientes; cada alta invita a su primer administrador (el correo llega a Mailpit en local).
+- **Fuera de local** (base remota o `NODE_ENV=production`) se niega salvo que pases `--allow-production`. En ese modo ignora `SEED_DEFAULT_PASSWORD` y pone una contraseña aleatoria que no se muestra: fíjala con «¿Olvidaste tu contraseña?» (requiere el SMTP de producción).
+
 ### Worker (jobs)
 
 ```bash

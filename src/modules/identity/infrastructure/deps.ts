@@ -7,6 +7,7 @@ import { createEntitlements, type Entitlements } from '../application/entitlemen
 import type { InvitationAcceptStore } from '../application/invitation-accept-ports';
 import type { PlatformDeps, PlatformStore } from '../application/platform/ports';
 import type { SessionRepository } from '../application/session-ports';
+import type { SettingsDeps } from '../application/settings-ports';
 import type { UserAdminDeps } from '../application/user-admin-ports';
 
 import { createDrizzleAuditLog } from './drizzle-audit-log';
@@ -16,6 +17,7 @@ import { createDrizzleInvitationRepository } from './drizzle-invitation-reposito
 import { createDrizzleMemberRepository } from './drizzle-member-repository';
 import { createDrizzlePlatformStore, type TenantSetupStepFactory } from './drizzle-platform-store';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
+import { createDrizzleSettingsRepository } from './drizzle-settings-repository';
 import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
 /** Entitlements sobre una conexión (transacción de withTenant o getDbAdmin()). */
@@ -88,4 +90,19 @@ export function createPlatformDeps(
   setupSteps: readonly TenantSetupStepFactory[] = [],
 ): PlatformDeps {
   return { store: createPlatformStore(setupSteps), ...extras };
+}
+
+/** Lo que la entrega aporta a la configuración de la empresa (además de la transacción). */
+export type SettingsExtras = Omit<SettingsDeps, 'settings' | 'audit'>;
+
+/**
+ * Configuración de la empresa (E1-H5) sobre la transacción de withTenant: RLS de tenant_settings
+ * y filtro por tenantId.
+ */
+export function createSettingsDeps(tx: DbExecutor, extras: SettingsExtras): SettingsDeps {
+  return {
+    settings: createDrizzleSettingsRepository(tx),
+    audit: createDrizzleAuditLog(tx),
+    ...extras,
+  };
 }

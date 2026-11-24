@@ -122,6 +122,13 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
+# Logos de los clientes (E1-H5): público, solo PNG/JPEG/WebP de hasta 512 KiB. En producción se
+# crea igual desde el Dashboard (docs/setup/arranque.md).
+[storage.buckets.brand-assets]
+public = true
+file_size_limit = "512KiB"
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp"]
+
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
 # public = false

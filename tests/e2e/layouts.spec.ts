@@ -1,11 +1,44 @@
 // E0-H4 · Layouts (app), (auth) y admin, estados globales y fuentes, en escritorio y en celular.
-import { expect, test } from '@playwright/test';
+// Desde E1-H2 (app) y admin exigen sesión: se inicia sesión una vez por archivo (límite de inicios
+// de sesión de Supabase local) y cada prueba recibe las cookies de esa sesión.
+import { expect, test, type Browser, type BrowserContext } from '@playwright/test';
 
 import { messages } from '../../src/ui/messages/es-PE';
 
+import { createAccounts, signIn, type Account, type Accounts } from './fixtures/auth';
+
 const isMobile = (projectName: string) => projectName === 'mobile';
 
+type Cookies = Awaited<ReturnType<BrowserContext['cookies']>>;
+
+let accounts: Accounts;
+let memberCookies: Cookies;
+let adminCookies: Cookies;
+
+async function sessionCookies(browser: Browser, account: Account, landing: RegExp) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await signIn(page, account, landing);
+  const cookies = await context.cookies();
+  await context.close();
+  return cookies;
+}
+
+test.beforeAll(async ({ browser }) => {
+  accounts = createAccounts();
+  memberCookies = await sessionCookies(browser, await accounts.create('single'), /\/bandeja$/);
+  adminCookies = await sessionCookies(browser, await accounts.create('superadmin'), /\/admin$/);
+});
+
+test.afterAll(async () => {
+  await accounts.cleanup();
+});
+
 test.describe('Layout (app) con el menú lateral responsive', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.addCookies(memberCookies);
+  });
+
   test('/ redirige a /bandeja', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/bandeja$/);
@@ -79,6 +112,10 @@ test.describe('Layout (auth)', () => {
 });
 
 test.describe('Layout admin', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.addCookies(adminCookies);
+  });
+
   test('/admin muestra la franja Consola LinkUs', async ({ page }) => {
     await page.goto('/admin');
     await expect(page.getByText(messages.admin.consoleBanner)).toBeVisible();
@@ -87,6 +124,10 @@ test.describe('Layout admin', () => {
 });
 
 test.describe('Estados globales', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.addCookies(memberCookies);
+  });
+
   test('una ruta inexistente muestra la página no encontrada en es-PE', async ({ page }) => {
     const response = await page.goto('/ruta-que-no-existe');
     expect(response?.status()).toBe(404);
@@ -99,6 +140,10 @@ test.describe('Estados globales', () => {
 });
 
 test.describe('Documento y fuentes', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.addCookies(memberCookies);
+  });
+
   test('el html declara lang="es-PE"', async ({ page }) => {
     await page.goto('/bandeja');
     await expect(page.locator('html')).toHaveAttribute('lang', 'es-PE');

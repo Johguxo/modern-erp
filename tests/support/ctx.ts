@@ -13,6 +13,7 @@ export interface CtxOverrides {
   readonly permissions?: Iterable<Permission>;
   readonly timezone?: string;
   readonly requestId?: string;
+  readonly readOnly?: boolean;
 }
 
 export function makeCtx(overrides: CtxOverrides = {}): Ctx {
@@ -24,5 +25,6 @@ export function makeCtx(overrides: CtxOverrides = {}): Ctx {
     locale: 'es-PE',
     timezone: overrides.timezone ?? 'America/Lima',
     requestId: overrides.requestId ?? TEST_REQUEST_ID,
+    readOnly: overrides.readOnly ?? false,
   };
 }

@@ -19,6 +19,6 @@ export function createEntitlements(deps: { repo: EntitlementsRepository }): Enti
   return {
     canAddUser: async (tenantId) => userCapacity(await repo.loadSnapshot(tenantId)),
     hasFeature: async (tenantId, feature) => hasFeature(await repo.loadSnapshot(tenantId), feature),
-    isReadOnly: async (tenantId) => isReadOnly(await repo.loadSnapshot(tenantId)),
+    isReadOnly: async (tenantId) => isReadOnly(await repo.loadStatus(tenantId)),
   };
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { NotFoundError } from '@/shared/errors';
 
-import type { EntitlementSnapshot, PlanLimits } from '../domain/entitlements';
+import type { EntitlementSnapshot, PlanLimits, AccessStatus } from '../domain/entitlements';
 
 import { createEntitlements } from './entitlements';
 import type { EntitlementsRepository } from './ports';
@@ -25,6 +25,13 @@ class InMemoryEntitlementsRepository implements EntitlementsRepository {
     if (!found)
       return Promise.reject(new NotFoundError({ message: `Tenant not found: ${tenantId}` }));
     return Promise.resolve(found);
+  }
+
+  loadStatus(tenantId: string): Promise<AccessStatus> {
+    return this.loadSnapshot(tenantId).then(({ tenantStatus, subscription }) => ({
+      tenantStatus,
+      subscription: subscription ? { status: subscription.status } : null,
+    }));
   }
 }
 

@@ -34,9 +34,11 @@ const SDKS = {
   message: `Los SDK externos solo se usan en infrastructure/ o src/shared/adapters/, detrás de un puerto. ${ADR}`,
 };
 
+// Entradas públicas de un módulo: su index.ts y, para el cliente (formularios), su carpeta
+// contracts/ (solo esquemas Zod, sin base de datos). Nada más profundo.
 const DEEP_MODULE_IMPORT = {
-  regex: '(^|/)modules/[^/]+/.+',
-  message: `Otro módulo se usa solo por su index.ts (@/modules/<módulo>), nunca por sus carpetas internas. ${ADR}`,
+  regex: '(^|/)modules/[^/]+/(?!contracts$).+',
+  message: `Otro módulo se usa solo por su index.ts (@/modules/<módulo>) o por @/modules/<módulo>/contracts, nunca por sus carpetas internas. ${ADR}`,
 };
 
 const DB_ACCESS = {

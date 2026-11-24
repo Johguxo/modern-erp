@@ -56,7 +56,13 @@ const BLOCKING_TENANT: readonly TenantStatus[] = ['suspended', 'cancelled'];
 const BLOCKING_SUBSCRIPTION: readonly SubscriptionStatus[] = ['suspended', 'cancelled'];
 
 /** Cliente suspendido o cancelado, o sin suscripción vigente: solo lectura. */
-export function isReadOnly(snapshot: EntitlementSnapshot): boolean {
+/** Lo mínimo para decidir el modo solo lectura (sin límites ni conteos). */
+export interface AccessStatus {
+  readonly tenantStatus: TenantStatus;
+  readonly subscription: { readonly status: SubscriptionStatus } | null;
+}
+
+export function isReadOnly(snapshot: AccessStatus): boolean {
   if (BLOCKING_TENANT.includes(snapshot.tenantStatus)) return true;
   if (!snapshot.subscription) return true;
   return BLOCKING_SUBSCRIPTION.includes(snapshot.subscription.status);

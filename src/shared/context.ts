@@ -12,4 +12,6 @@ export interface Ctx {
   /** Zona horaria IANA del tenant (por ejemplo, America/Lima). */
   readonly timezone: string;
   readonly requestId: string;
+  /** Cliente suspendido, cancelado o sin suscripción vigente: solo lectura (ADR-006). */
+  readonly readOnly: boolean;
 }

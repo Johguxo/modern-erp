@@ -9,7 +9,12 @@ import { invitations, memberships, plans, subscriptions, tenants } from '@/db/sc
 import { NotFoundError } from '@/shared/errors';
 
 import type { EntitlementsRepository } from '../application/ports';
-import type { EntitlementSnapshot, SubscriptionStatus, TenantStatus } from '../domain/entitlements';
+import type {
+  AccessStatus,
+  EntitlementSnapshot,
+  SubscriptionStatus,
+  TenantStatus,
+} from '../domain/entitlements';
 import { PLAN_FEATURES, type PlanFeature } from '../domain/plan-features';
 
 function toFeatures(values: readonly string[]): PlanFeature[] {
@@ -20,6 +25,25 @@ function toFeatures(values: readonly string[]): PlanFeature[] {
 
 export function createDrizzleEntitlementsRepository(db: DbExecutor): EntitlementsRepository {
   return {
+    async loadStatus(tenantId: string): Promise<AccessStatus> {
+      const [row] = await db
+        .select({ tenantStatus: tenants.status, subscriptionStatus: subscriptions.status })
+        .from(tenants)
+        .leftJoin(
+          subscriptions,
+          and(eq(subscriptions.tenantId, tenants.id), ne(subscriptions.status, 'cancelled')),
+        )
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+      if (!row) throw new NotFoundError({ message: 'Tenant not found' });
+      return {
+        tenantStatus: row.tenantStatus as TenantStatus,
+        subscription: row.subscriptionStatus
+          ? { status: row.subscriptionStatus as SubscriptionStatus }
+          : null,
+      };
+    },
+
     async loadSnapshot(tenantId: string): Promise<EntitlementSnapshot> {
       const [row] = await db
         .select({
@@ -40,7 +64,7 @@ export function createDrizzleEntitlementsRepository(db: DbExecutor): Entitlement
         .where(eq(tenants.id, tenantId))
         .limit(1);
 
-      if (!row) throw new NotFoundError({ message: `Tenant not found: ${tenantId}` });
+      if (!row) throw new NotFoundError({ message: 'Tenant not found' });
 
       const [members] = await db
         .select({ value: count() })

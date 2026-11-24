@@ -16,11 +16,13 @@ import {
   disableMember,
   inviteUser,
   listMembers,
+  reactivateMember,
   resendInvitation,
   updateMemberRoles,
   type UserAdminDeps,
 } from '@/modules/identity';
 import { hashInvitationToken } from '@/modules/identity/domain/invitation';
+import { systemClock } from '@/shared/adapters/system-clock';
 import type { Ctx } from '@/shared/context';
 import { isDomainError } from '@/shared/errors';
 import type { AfterCommitTask } from '@/shared/ports/after-commit';
@@ -346,6 +348,43 @@ describe('invitación aceptada entre la lectura y el UPDATE (reenviar, anular)',
       .from(auditEvents)
       .where(and(eq(auditEvents.entityId, invitation.id), eq(auditEvents.action, action)));
     expect(events).toEqual([]);
+  });
+});
+
+describe('reactivar con una invitación pendiente del mismo correo', () => {
+  it('anula la invitación (no ocupa dos cupos) y reactiva aunque el plan esté lleno', async () => {
+    // admin + invitación pendiente = 2 cupos con max_users 2: reactivar libera la invitación.
+    const t = await makeTenant({ max_users: 2 });
+    const user = await fx.user();
+    const membership = await fx.membership(t.tenantId, user.id, {
+      roles: ['requester'],
+      status: 'disabled',
+    });
+    const invitation = await fx.invitation(t.tenantId, { email: user.email });
+
+    // Reloj real: la invitación (FAR_FUTURE) está vigente y, una vez anulada, el conteo de cupos
+    // de la base (now()) ya no la cuenta.
+    const before = Date.now();
+    await run(t.ctx, (deps) =>
+      reactivateMember(t.ctx, { membershipId: membership.id }, { ...deps, clock: systemClock }),
+    );
+
+    const [inv] = await getDbAdmin()
+      .select({ expiresAt: invitations.expiresAt, acceptedAt: invitations.acceptedAt })
+      .from(invitations)
+      .where(eq(invitations.id, invitation.id));
+    expect(inv?.acceptedAt).toBeNull();
+    expect(inv?.expiresAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(inv?.expiresAt.getTime()).toBeLessThanOrEqual(Date.now());
+    const [m] = await getDbAdmin()
+      .select({ status: memberships.status })
+      .from(memberships)
+      .where(eq(memberships.id, membership.id));
+    expect(m?.status).toBe('active');
+    const seats = await withTenant(t.ctx, (tx) =>
+      createUserAdminDeps(tx, extras({ sent: [], tasks: [] })).entitlements.canAddUser(t.tenantId),
+    );
+    expect(seats).toMatchObject({ allowed: false, used: 2, limit: 2 });
   });
 });
 

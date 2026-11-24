@@ -218,6 +218,85 @@ describe('reactivateMember', () => {
   });
 });
 
+describe('reactivateMember · invitación pendiente del mismo correo', () => {
+  it('anula la invitación vigente del correo (solo de este tenant) y audita la anulación', async () => {
+    const { fake } = setup();
+    const disabled = fake.addMember(TEST_TENANT_ID, {
+      userId: 'u-off',
+      email: 'ana@genrent.pe',
+      roles: ['requester'],
+      status: 'disabled',
+    });
+    const invitation = fake.addInvitation(TEST_TENANT_ID, { email: 'ana@genrent.pe' });
+    const other = fake.addInvitation(OTHER_TENANT, { email: 'ana@genrent.pe' });
+
+    await reactivateMember(admin, { membershipId: disabled.membershipId }, fake.deps);
+
+    expect(fake.invitations.find((i) => i.id === invitation.id)?.expiresAt).toEqual(
+      fake.clock.now(),
+    );
+    expect(fake.invitations.find((i) => i.id === other.id)?.expiresAt).toEqual(other.expiresAt);
+    expect(fake.audit.map((e) => [e.action, e.entityId])).toEqual([
+      ['invitation.cancelled', invitation.id],
+      ['membership.reactivated', disabled.membershipId],
+    ]);
+    expect(fake.audit[0]?.data).toEqual({ email: 'ana@genrent.pe', reason: 'member_reactivated' });
+  });
+
+  it('con el plan lleno sí reactiva: el cupo de la invitación pasa a la membresía', async () => {
+    const { fake } = setup();
+    const disabled = fake.addMember(TEST_TENANT_ID, {
+      userId: 'u-off',
+      email: 'ana@genrent.pe',
+      roles: ['requester'],
+      status: 'disabled',
+    });
+    fake.addInvitation(TEST_TENANT_ID, { email: 'ana@genrent.pe' });
+    fake.setCapacity({ allowed: false, limit: 3, used: 3, reason: 'limit_reached' });
+
+    await reactivateMember(admin, { membershipId: disabled.membershipId }, fake.deps);
+
+    expect(fake.members.at(-1)?.membershipStatus).toBe('active');
+  });
+
+  it('en solo lectura no reactiva aunque haya invitación, y no la anula', async () => {
+    const { fake } = setup();
+    const disabled = fake.addMember(TEST_TENANT_ID, {
+      userId: 'u-off',
+      email: 'ana@genrent.pe',
+      roles: ['requester'],
+      status: 'disabled',
+    });
+    const invitation = fake.addInvitation(TEST_TENANT_ID, { email: 'ana@genrent.pe' });
+    fake.setCapacity({ allowed: false, limit: 3, used: 1, reason: 'read_only' });
+
+    const error = await errorOf(
+      reactivateMember(admin, { membershipId: disabled.membershipId }, fake.deps),
+    );
+
+    expect(error.reason).toBe('tenant_read_only');
+    expect(fake.invitations[0]?.expiresAt).toEqual(invitation.expiresAt);
+    expect(fake.members.at(-1)?.membershipStatus).toBe('disabled');
+  });
+
+  it('una invitación ya vencida del correo no se toca', async () => {
+    const { fake } = setup();
+    const disabled = fake.addMember(TEST_TENANT_ID, {
+      userId: 'u-off',
+      email: 'ana@genrent.pe',
+      roles: ['requester'],
+      status: 'disabled',
+    });
+    const expiredAt = new Date(fake.clock.now().getTime() - 1000);
+    fake.addInvitation(TEST_TENANT_ID, { email: 'ana@genrent.pe', expiresAt: expiredAt });
+
+    await reactivateMember(admin, { membershipId: disabled.membershipId }, fake.deps);
+
+    expect(fake.invitations[0]?.expiresAt).toEqual(expiredAt);
+    expect(fake.audit.map((e) => e.action)).toEqual(['membership.reactivated']);
+  });
+});
+
 describe('resendInvitation y cancelInvitation', () => {
   it('reenviar renueva el token y el vencimiento de la misma fila y audita', async () => {
     const { fake } = setup();

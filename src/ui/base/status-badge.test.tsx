@@ -18,6 +18,8 @@ const EXPECTED_TONE: Record<BadgeStatus, StatusTone> = {
   awaiting_external: 'external',
   user_active: 'approved',
   user_disabled: 'neutral',
+  catalog_active: 'approved',
+  catalog_inactive: 'neutral',
   subscription_trial: 'external',
   subscription_active: 'approved',
   subscription_past_due: 'pending',

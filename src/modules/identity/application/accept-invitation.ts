@@ -113,11 +113,19 @@ export async function acceptInvitation(
   let tenantId: string;
   try {
     tenantId = await deps.store.transaction(async (uow) => {
-      // Se vuelve a validar con la fila bloqueada: dos aceptaciones simultáneas → una gana.
+      // Mismo orden de bloqueos que invitar/reenviar (cupos y luego la fila), para no caer en un
+      // deadlock con ellos. Luego se vuelve a validar con la fila bloqueada: dos aceptaciones
+      // simultáneas → una gana; un reenvío que cambió el token → invitation_invalid.
+      await uow.lockSeats(preview.invitation.tenantId);
       const invitation = await uow.lockInvitation(tokenHash);
       const now = deps.clock.now();
-      if (!invitation || !isInvitationLive(invitation, now)) throw invalid();
-      await uow.lockSeats(invitation.tenantId);
+      if (
+        !invitation ||
+        invitation.tenantId !== preview.invitation.tenantId ||
+        !isInvitationLive(invitation, now)
+      ) {
+        throw invalid();
+      }
 
       const account = await uow.findAccount(invitation.email);
       let userId: string;

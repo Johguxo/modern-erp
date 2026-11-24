@@ -4,15 +4,24 @@
 // Auth se reemplaza por fakes (no hay FK a auth.users).
 import { randomUUID } from 'node:crypto';
 
+import { makeCtx } from '@tests/support/ctx';
 import { CapturingLogger } from '@tests/support/fakes/capturing-logger';
 import { FakeAuthProvider } from '@tests/support/fakes/fake-auth-provider';
 import { FixedClock } from '@tests/support/fakes/fixed-clock';
 import { and, eq, sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
+import { withTenant } from '@/db';
 import { closeDatabases, getDbAdmin } from '@/db/admin';
 import { auditEvents, invitations, memberships, users } from '@/db/schema';
-import { acceptInvitation, createInvitationServices } from '@/modules/identity';
+import {
+  acceptInvitation,
+  createInvitationServices,
+  createUserAdminDeps,
+  resendInvitation,
+  type UserAdminDeps,
+} from '@/modules/identity';
+import type { InvitationAcceptStore } from '@/modules/identity/application/invitation-accept-ports';
 import { generateInvitationToken, hashInvitationToken } from '@/modules/identity/domain/invitation';
 import { isDomainError } from '@/shared/errors';
 import type { AuthAdmin } from '@/shared/ports/auth-admin';
@@ -66,7 +75,7 @@ async function tenantWithInvitation(opts: { email?: string; roles?: string[] } =
     tokenHash: hashInvitationToken(token),
     invitedBy: inviter.id,
   });
-  return { tenantId: tenant.id, token, email, invitationId: invitation.id };
+  return { tenantId: tenant.id, token, email, invitationId: invitation.id, inviterId: inviter.id };
 }
 
 async function membershipOf(tenantId: string, email: string) {
@@ -238,5 +247,93 @@ describe('aceptar invitación con el store de admin', () => {
       .from(invitations)
       .where(eq(invitations.id, inv.invitationId));
     expect(row?.acceptedAt).toBeNull();
+  });
+});
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Store de aceptar que espera `ms` con la fila de la invitación ya bloqueada. */
+function slowLockStore(store: InvitationAcceptStore, ms: number): InvitationAcceptStore {
+  return {
+    ...store,
+    transaction: (fn) =>
+      store.transaction((uow) =>
+        fn({
+          ...uow,
+          lockInvitation: async (tokenHash) => {
+            const row = await uow.lockInvitation(tokenHash);
+            await delay(ms);
+            return row;
+          },
+        }),
+      ),
+  };
+}
+
+/** Reenvía en withTenant (app_user + RLS), esperando `ms` tras leer la invitación pendiente. */
+async function slowResend(tenantId: string, userId: string, invitationId: string, ms: number) {
+  const ctx = makeCtx({ tenantId, userId, roles: ['admin'], permissions: ['users.manage'] });
+  return withTenant(ctx, (tx) => {
+    const base = createUserAdminDeps(tx, {
+      clock,
+      logger: new CapturingLogger(),
+      client: CLIENT,
+      afterCommit: () => undefined,
+      mailer: { send: () => Promise.resolve({ messageId: 'test' }) },
+      appUrl: 'http://localhost:3000',
+    });
+    const d: UserAdminDeps = {
+      ...base,
+      invitations: {
+        ...base.invitations,
+        findPendingById: async (t, id) => {
+          const row = await base.invitations.findPendingById(t, id);
+          await delay(ms);
+          return row;
+        },
+      },
+    };
+    return resendInvitation(ctx, { invitationId }, d);
+  });
+}
+
+describe('aceptar y reenviar la misma invitación a la vez (orden de bloqueos)', () => {
+  it('sin deadlock (40P01): una gana y la otra da NOT_FOUND o invitation_invalid, con datos consistentes', async () => {
+    const authUserId = randomUUID();
+    const existing = await fx.user({ authUserId });
+    const inv = await tenantWithInvitation({ email: existing.email });
+    const acceptDeps = deps({ signInAs: authUserId }).deps;
+
+    // Con el orden anterior (fila y luego cupos), aceptar retenía la fila mientras el reenvío
+    // retenía los cupos y esperaba la fila: Postgres abortaba una con 40P01.
+    const [accepted, resent] = await Promise.allSettled([
+      acceptInvitation(
+        { mode: 'password', token: inv.token, password: 'x' },
+        { ...acceptDeps, store: slowLockStore(acceptDeps.store, 300) },
+      ),
+      slowResend(inv.tenantId, inv.inviterId, inv.invitationId, 300),
+    ]);
+
+    const reasonOf = (r: PromiseSettledResult<unknown>) => {
+      const error: unknown = r.status === 'rejected' ? r.reason : undefined;
+      return isDomainError(error) ? [error.code, error.reason] : String(error);
+    };
+    const [row] = await getDbAdmin()
+      .select({ acceptedAt: invitations.acceptedAt, tokenHash: invitations.tokenHash })
+      .from(invitations)
+      .where(eq(invitations.id, inv.invitationId));
+
+    if (accepted.status === 'fulfilled') {
+      expect(reasonOf(resent)).toEqual(['NOT_FOUND', undefined]);
+      expect(row?.acceptedAt).toEqual(clock.now());
+      expect(row?.tokenHash).toBe(hashInvitationToken(inv.token));
+      expect(await membershipOf(inv.tenantId, existing.email)).toMatchObject({ status: 'active' });
+    } else {
+      expect(resent.status).toBe('fulfilled');
+      expect(reasonOf(accepted)).toEqual(['VALIDATION', 'invitation_invalid']);
+      expect(row?.acceptedAt).toBeNull();
+      expect(row?.tokenHash).not.toBe(hashInvitationToken(inv.token));
+      expect(await membershipOf(inv.tenantId, existing.email)).toBeUndefined();
+    }
   });
 });

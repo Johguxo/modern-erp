@@ -28,9 +28,14 @@ export interface InvitationPreviewRecord {
 
 /** Operaciones dentro de la transacción de aceptar (conexión dueño). */
 export interface AcceptUnitOfWork {
+  /**
+   * Bloqueo de cupos del tenant (el mismo que invitar, reenviar y reactivar). Se toma ANTES de
+   * lockInvitation: invitar/reenviar toman cupos y luego actualizan la fila; el orden inverso
+   * produce un deadlock (40P01).
+   */
+  lockSeats(tenantId: string): Promise<void>;
   /** SELECT … FOR UPDATE por token_hash: dos aceptaciones simultáneas se serializan. */
   lockInvitation(tokenHash: string): Promise<AcceptableInvitation | null>;
-  lockSeats(tenantId: string): Promise<void>;
   findAccount(email: string): Promise<Account | null>;
   createUser(input: { email: string; fullName: string; authUserId: string }): Promise<string>;
   linkAuthUser(userId: string, authUserId: string): Promise<void>;

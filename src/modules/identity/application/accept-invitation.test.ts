@@ -48,12 +48,18 @@ function setup(options: SetupOptions = {}) {
   };
   const audit = { record: vi.fn(() => Promise.resolve()) };
   const markAccepted = vi.fn(() => Promise.resolve());
+  const lockOrder: string[] = [];
   const uow: AcceptUnitOfWork = {
-    lockInvitation: () =>
-      Promise.resolve(
+    lockInvitation: () => {
+      lockOrder.push('invitation');
+      return Promise.resolve(
         options.lockedInvitation !== undefined ? options.lockedInvitation : invitation,
-      ),
-    lockSeats: () => Promise.resolve(),
+      );
+    },
+    lockSeats: (tenantId) => {
+      lockOrder.push(`seats:${tenantId}`);
+      return Promise.resolve();
+    },
     findAccount: () => Promise.resolve(options.account ?? null),
     createUser: vi.fn(() =>
       options.failInTx ? Promise.reject(new Error('db down')) : Promise.resolve('user-1'),
@@ -91,7 +97,7 @@ function setup(options: SetupOptions = {}) {
     logger: new CapturingLogger(),
     client: { ip: '203.0.113.7', userAgent: 'test' },
   };
-  return { deps, uow, audit, createUser, deleteUser, auth, markAccepted };
+  return { deps, uow, audit, createUser, deleteUser, auth, markAccepted, lockOrder };
 }
 
 const token = generateInvitationToken();
@@ -142,6 +148,17 @@ describe('acceptInvitation', () => {
 
     expect(isDomainError(error) && error.code).toBe('CONFLICT');
     expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it('toma el bloqueo de cupos (tenant de la vista previa) antes que la fila de la invitación', async () => {
+    const { deps, lockOrder } = setup();
+
+    await acceptInvitation(
+      { mode: 'new_account', token, fullName: 'Ana', password: 'clave-segura-1' },
+      deps,
+    );
+
+    expect(lockOrder).toEqual([`seats:${TENANT}`, 'invitation']);
   });
 
   it('cuenta desactivada → account_disabled', async () => {

@@ -4,4 +4,5 @@ export * as signInContract from './sign-in';
 export * as requestPasswordResetContract from './request-password-reset';
 export * as resetPasswordContract from './reset-password';
 export * as selectTenantContract from './select-tenant';
+export * as signOutContract from './sign-out';
 export { PASSWORD_MAX, PASSWORD_MIN } from './reset-password';

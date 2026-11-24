@@ -1,7 +1,7 @@
 'use client';
 
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/ui/components/sheet';
 import { messages } from '@/ui/messages/es-PE';
@@ -14,7 +14,7 @@ const ICON_BUTTON =
   'inline-flex size-11 items-center justify-center rounded-md text-surface focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:outline-none';
 
 /** Barra superior del celular con el menú en un panel lateral (Sheet). */
-export function MobileNav({ items }: { items: NavItem[] }) {
+export function MobileNav({ items, account }: { items: NavItem[]; account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex h-14 items-center justify-between bg-ink px-4 md:hidden">
@@ -39,6 +39,7 @@ export function MobileNav({ items }: { items: NavItem[] }) {
           <nav aria-label={messages.nav.mainLabel}>
             <NavLinks items={items} onNavigate={() => setOpen(false)} />
           </nav>
+          {account ? <div className="mt-6">{account}</div> : null}
         </SheetContent>
       </Sheet>
     </div>

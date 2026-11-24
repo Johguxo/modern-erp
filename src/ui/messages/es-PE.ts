@@ -27,7 +27,29 @@ export const messages = {
   },
   auth: {
     signInTitle: 'Iniciar sesión',
-    comingSoon: 'Disponible pronto.',
+    signInSubmit: 'Ingresar',
+    email: 'Correo',
+    password: 'Contraseña',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    noAccess: 'Tu cuenta no tiene acceso a ninguna empresa. Pide una invitación al administrador.',
+    recoverTitle: 'Recuperar contraseña',
+    recoverDescription: 'Te enviaremos un enlace para crear una nueva contraseña.',
+    recoverSubmit: 'Enviar enlace',
+    recoverSent:
+      'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
+    backToSignIn: 'Volver a iniciar sesión',
+    resetTitle: 'Nueva contraseña',
+    resetDescription: (min: number) => `Usa al menos ${min} caracteres.`,
+    resetSubmit: 'Guardar contraseña',
+    resetMissingToken: 'Abre el enlace que te enviamos por correo para restablecer tu contraseña.',
+    chooseTenantTitle: 'Elige una empresa',
+    chooseTenantDescription: 'Tienes acceso a varias empresas.',
+    signOut: 'Cerrar sesión',
+    signedInAs: 'Sesión iniciada como',
+  },
+  readOnly: {
+    banner:
+      'Tu empresa está en modo solo lectura: puedes consultar, pero no crear ni modificar. Contacta al administrador de LinkUs.',
   },
   inbox: {
     title: 'Bandeja de solicitudes',

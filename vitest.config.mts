@@ -9,10 +9,13 @@ const alias = {
   '@': path.resolve(import.meta.dirname, 'src'),
 };
 
-/** DATABASE_URL y DATABASE_URL_ADMIN de process.env, si vienen, mandan sobre TEST_ENV. */
+/**
+ * DATABASE_URL, DATABASE_URL_ADMIN y SUPABASE_SERVICE_ROLE_KEY de process.env, si vienen, mandan
+ * sobre TEST_ENV (la clave permite probar el adaptador de Storage contra Supabase local).
+ */
 function databaseOverrides(): Record<string, string> {
   const overrides: Record<string, string> = {};
-  for (const key of ['DATABASE_URL', 'DATABASE_URL_ADMIN'] as const) {
+  for (const key of ['DATABASE_URL', 'DATABASE_URL_ADMIN', 'SUPABASE_SERVICE_ROLE_KEY'] as const) {
     const value = process.env[key];
     if (value) overrides[key] = value;
   }

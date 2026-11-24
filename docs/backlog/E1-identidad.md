@@ -56,7 +56,7 @@ Estado: en revisión · Issue: [#11](https://github.com/Johguxo/modern-erp/issue
 
 ### E1-H5 · Configuración de la empresa
 **Criterios de aceptación**
-- [ ] `/configuracion/empresa`: nombre visible, logo (subida a `FileStorage`), color principal, moneda. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
-- [ ] El logo y el color se aplican en el menú lateral.
+- [x] `/configuracion/empresa`: nombre visible, logo (subida a `FileStorage`), color principal, moneda. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
+- [x] El logo y el color se aplican en el menú lateral.
 
-Estado: pendiente · Issue: [#12](https://github.com/Johguxo/modern-erp/issues/12)
+Estado: en revisión · Issue: [#12](https://github.com/Johguxo/modern-erp/issues/12)

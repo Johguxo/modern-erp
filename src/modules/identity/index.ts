@@ -10,7 +10,9 @@ export {
   createSessionServices,
   createPlatformDeps,
   createPlatformStore,
+  createSettingsDeps,
   createUserAdminDeps,
+  type SettingsExtras,
   type PlatformExtras,
   type UserAdminExtras,
 } from './infrastructure/deps';
@@ -64,3 +66,12 @@ export {
   type AcceptInvitationDeps,
   type AcceptInvitationInput,
 } from './application/accept-invitation';
+export type { SettingsDeps } from './application/settings-ports';
+export {
+  getCompanyBrand,
+  getCompanySettings,
+  type CompanyBrandView,
+  type CompanySettingsView,
+} from './application/company-settings';
+export { updateCompanySettings } from './application/update-company-settings';
+export { removeCompanyLogo, uploadCompanyLogo } from './application/company-logo';

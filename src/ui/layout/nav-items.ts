@@ -14,6 +14,7 @@ export interface NavItem {
 export const APP_NAV: readonly NavItem[] = [
   { href: '/bandeja', label: messages.nav.inbox, permission: 'requests.read_own' },
   { href: '/configuracion/usuarios', label: messages.nav.users, permission: 'users.manage' },
+  { href: '/configuracion/empresa', label: messages.nav.company, permission: 'settings.manage' },
 ];
 
 /** Sin permisos (todavía no hay ctx) se muestran todos; con permisos, solo los permitidos. */

@@ -29,8 +29,12 @@ function client(): SupabaseClient {
   return cached;
 }
 
-export function createSupabaseFileStorage(options: { bucket: string }): PublicFileStorage {
-  const bucket = () => client().storage.from(options.bucket);
+export function createSupabaseFileStorage(options: {
+  bucket: string;
+  /** Para pruebas: un cliente falso con `storage`. Por defecto, el de la service role. */
+  client?: Pick<SupabaseClient, 'storage'>;
+}): PublicFileStorage {
+  const bucket = () => (options.client ?? client()).storage.from(options.bucket);
   return {
     async put({ tenantId, key, body, contentType }) {
       const { error } = await bucket().upload(objectPath(tenantId, key), body, {

@@ -38,7 +38,17 @@ export function readOnlySettingsExtras(): SettingsExtras {
   };
 }
 
-/** Marca del menú lateral, una vez por request. */
-export const getTenantBrand = cache((ctx: Ctx): Promise<CompanyBrandView> =>
-  withTenant(ctx, (tx) => getCompanyBrand(ctx, createSettingsDeps(tx, readOnlySettingsExtras()))),
-);
+/**
+ * Marca del menú lateral, una vez por request. Es un adorno: si falla (p. ej. falta la fila de
+ * tenant_settings), se registra y el menú sigue sin marca, en vez de tumbar toda la app.
+ */
+export const getTenantBrand = cache(async (ctx: Ctx): Promise<CompanyBrandView | null> => {
+  try {
+    return await withTenant(ctx, (tx) =>
+      getCompanyBrand(ctx, createSettingsDeps(tx, readOnlySettingsExtras())),
+    );
+  } catch (error) {
+    getLogger().warn({ err: error, tenantId: ctx.tenantId }, 'tenant brand unavailable');
+    return null;
+  }
+});

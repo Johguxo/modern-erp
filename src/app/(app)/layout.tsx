@@ -24,8 +24,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       items={visibleNavItems(APP_NAV, ctx.permissions)}
       banner={ctx.readOnly ? <ReadOnlyBanner /> : undefined}
       account={<AccountMenu email={email} signOut={signOut} />}
-      footer={<TenantBrand {...brand} />}
-      accentColor={brand.primaryColor}
+      footer={brand ? <TenantBrand {...brand} /> : undefined}
+      accentColor={brand?.primaryColor}
     >
       {children}
     </AppShell>

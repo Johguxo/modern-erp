@@ -87,7 +87,8 @@ export const messages = {
     currencyHint: 'Se usará en las nuevas solicitudes.',
     save: 'Guardar cambios',
     logoTitle: 'Logo',
-    logoHint: 'PNG, JPG o WebP de hasta 512 KB. Se muestra en el menú lateral.',
+    logoHint:
+      'PNG, JPG o WebP de hasta 512 KB. Se muestra en el menú lateral, sobre fondo oscuro como en la vista previa: usa un logo claro o con fondo transparente.',
     logoCurrent: 'Logo actual',
     logoNone: 'Aún no hay logo: en el menú se muestran las iniciales.',
     logoChoose: 'Archivo del logo',

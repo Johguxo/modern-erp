@@ -51,6 +51,8 @@ export async function uploadCompanyLogo(
   const current = await deps.settings.lock(ctx.tenantId);
   if (!current) throw new NotFoundError({ message: 'Tenant settings not found' });
 
+  // La subida ocurre con la fila bloqueada: es una sola fila y dura menos de un segundo (MVP).
+  // Si molesta, subir antes de bloquear (el archivo huérfano ya es aceptado).
   const key = logoKey(deps.ids.newId(), type);
   await deps.storage.put({
     tenantId: ctx.tenantId,

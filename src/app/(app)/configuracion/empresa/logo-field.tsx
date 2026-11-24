@@ -41,7 +41,8 @@ export function LogoField({
       setError(messages.validation.required);
       return;
     }
-    if (!ACCEPTED.includes(file.type)) {
+    // Algunos sistemas no informan el tipo (''): en ese caso decide el servidor por los bytes.
+    if (file.type !== '' && !ACCEPTED.includes(file.type)) {
       setError(messages.errors.reasons.logo_invalid_type());
       return;
     }

@@ -10,6 +10,7 @@ import {
   inviteUserContract,
   updateMemberRolesContract,
 } from '@/modules/identity/contracts';
+import type { Notice } from '@/ui/base/notice-banner';
 import { Button } from '@/ui/components/button';
 import {
   Dialog,
@@ -39,8 +40,6 @@ import { RolesField } from './roles-field';
 
 const t = messages.users;
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
-
-export type Notice = { readonly tone: 'success' | 'warning'; readonly text: string };
 
 export function InviteDialog({
   disabled,

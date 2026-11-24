@@ -7,6 +7,7 @@ import { hasPermission } from '@/shared/authorization';
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
 import { requireCtx } from '../../../_lib/session';
 import { parseListParams } from '../_catalog/list-params';
+import { redirectIfOutOfRange } from '../_catalog/redirect-out-of-range';
 
 import { EquipmentManager } from './equipment-manager';
 
@@ -23,6 +24,7 @@ export default async function EquipmentPage({
   const page = await withTenant(ctx, (tx) =>
     listEquipment(ctx, params, createCatalogDeps(tx, readOnlyCatalogExtras())),
   );
+  redirectIfOutOfRange('/configuracion/equipos', params, page.total);
   return (
     <EquipmentManager
       items={[...page.items]}

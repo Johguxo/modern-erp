@@ -104,7 +104,6 @@ export const messages = {
   },
   catalog: {
     title: 'Catálogo',
-    description: 'Productos, equipos y centros de costo que usan las solicitudes de almacén.',
     sectionsLabel: 'Secciones del catálogo',
     sections: {
       products: 'Productos',
@@ -118,7 +117,6 @@ export const messages = {
     statusOptions: { all: 'Todos', active: 'Activos', inactive: 'Inactivos' },
     noResultsTitle: 'Sin resultados',
     noResultsDescription: 'Prueba con otro texto o cambia el filtro de estado.',
-    clearFilters: 'Quitar filtros',
     import: 'Importar desde Excel',
     importSoon: 'Disponible pronto',
     actions: {
@@ -127,7 +125,6 @@ export const messages = {
       deactivate: 'Desactivar',
       cancel: 'Cancelar',
       save: 'Guardar',
-      create: 'Crear',
     },
     deactivateTitle: (name: string) => `¿Desactivar ${name}?`,
     deactivateDescription:

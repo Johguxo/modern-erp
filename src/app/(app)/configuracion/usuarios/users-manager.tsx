@@ -9,33 +9,20 @@ import { useState, useTransition } from 'react';
 import type { ListMembersOutput, MemberListItem } from '@/modules/identity';
 import type { Role } from '@/shared/permissions';
 import { DataTable } from '@/ui/base/data-table';
+import { NoticeBanner, type Notice } from '@/ui/base/notice-banner';
 import { PageHeader } from '@/ui/base/page-header';
 import { StatusBadge } from '@/ui/base/status-badge';
 import { Button } from '@/ui/components/button';
-import { FormError } from '@/ui/forms/form-error';
 import { formatDateTime } from '@/ui/format/date';
 import { messages } from '@/ui/messages/es-PE';
 
 import { cancelInvitationAction, reactivateMemberAction, resendInvitationAction } from './actions';
-import { DisableDialog, EditRolesDialog, InviteDialog, type Notice } from './member-dialogs';
+import { DisableDialog, EditRolesDialog, InviteDialog } from './member-dialogs';
 
 const t = messages.users;
 
 function roleLabels(roles: readonly Role[]): string {
   return roles.map((role) => messages.roles[role]).join(', ');
-}
-
-function NoticeBanner({ notice }: { notice: Notice | undefined }) {
-  if (!notice) return null;
-  if (notice.tone === 'warning') return <FormError className="mb-4" message={notice.text} />;
-  return (
-    <p
-      role="status"
-      className="mb-4 rounded-md border border-border bg-surface px-3 py-2 text-foreground"
-    >
-      {notice.text}
-    </p>
-  );
 }
 
 export function UsersManager({

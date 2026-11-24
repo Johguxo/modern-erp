@@ -41,7 +41,7 @@ import { trimDecimal, type CurrencyCode } from '@/ui/format/money';
 import { messages } from '@/ui/messages/es-PE';
 
 import { upsertProductAction } from '../_catalog/actions';
-import type { Notice } from '../_catalog/catalog-list-view';
+import type { Notice } from '@/ui/base/notice-banner';
 
 const t = messages.catalog;
 const f = t.fields;

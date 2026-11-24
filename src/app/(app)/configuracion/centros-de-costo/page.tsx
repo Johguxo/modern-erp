@@ -7,6 +7,7 @@ import { hasPermission } from '@/shared/authorization';
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
 import { requireCtx } from '../../../_lib/session';
 import { parseListParams } from '../_catalog/list-params';
+import { redirectIfOutOfRange } from '../_catalog/redirect-out-of-range';
 
 import { CostCentersManager } from './cost-centers-manager';
 
@@ -23,6 +24,7 @@ export default async function CostCentersPage({
   const page = await withTenant(ctx, (tx) =>
     listCostCenters(ctx, params, createCatalogDeps(tx, readOnlyCatalogExtras())),
   );
+  redirectIfOutOfRange('/configuracion/centros-de-costo', params, page.total);
   return (
     <CostCentersManager
       items={[...page.items]}

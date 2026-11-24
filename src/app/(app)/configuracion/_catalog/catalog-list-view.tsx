@@ -8,28 +8,13 @@ import type { ReactNode } from 'react';
 
 import { DataTable } from '@/ui/base/data-table';
 import { EmptyState } from '@/ui/base/empty-state';
+import { NoticeBanner, type Notice } from '@/ui/base/notice-banner';
 import { PageHeader } from '@/ui/base/page-header';
-import { FormError } from '@/ui/forms/form-error';
 import { messages } from '@/ui/messages/es-PE';
 
 import { CatalogFilters } from './catalog-filters';
 import { CatalogTabs, type CatalogSection } from './catalog-tabs';
 import { isPristine, pageCountOf, type ListParams } from './list-params';
-
-export type Notice = { readonly tone: 'success' | 'warning'; readonly text: string };
-
-export function NoticeBanner({ notice }: { notice: Notice | undefined }) {
-  if (!notice) return null;
-  if (notice.tone === 'warning') return <FormError className="mb-4" message={notice.text} />;
-  return (
-    <p
-      role="status"
-      className="mb-4 rounded-md border border-border bg-surface px-3 py-2 text-foreground"
-    >
-      {notice.text}
-    </p>
-  );
-}
 
 export function CatalogListView<T>({
   section,
@@ -71,7 +56,7 @@ export function CatalogListView<T>({
         />
       ) : (
         <>
-          <CatalogFilters params={params} />
+          <CatalogFilters key={params.q ?? ''} params={params} />
           <DataTable
             columns={columns}
             data={rows}

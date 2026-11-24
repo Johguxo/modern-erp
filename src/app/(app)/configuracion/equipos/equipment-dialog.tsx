@@ -31,7 +31,7 @@ import { useZodForm } from '@/ui/forms/use-zod-form';
 import { messages } from '@/ui/messages/es-PE';
 
 import { upsertEquipmentAction } from '../_catalog/actions';
-import type { Notice } from '../_catalog/catalog-list-view';
+import type { Notice } from '@/ui/base/notice-banner';
 
 const t = messages.catalog;
 const f = t.fields;

@@ -16,7 +16,7 @@ import {
 import { FormError } from '@/ui/forms/form-error';
 import { messages } from '@/ui/messages/es-PE';
 
-import type { Notice } from './catalog-list-view';
+import type { Notice } from '@/ui/base/notice-banner';
 
 const t = messages.catalog;
 
@@ -24,6 +24,7 @@ type SetActiveResult = { ok: true } | { ok: false; error: { message: string } };
 
 export function SetActiveControl({
   name,
+  code,
   active,
   disabled,
   setActive,
@@ -31,6 +32,8 @@ export function SetActiveControl({
 }: {
   /** Nombre del registro, para el título de la confirmación. */
   name: string;
+  /** Código único, para el nombre accesible del botón. */
+  code: string;
   active: boolean;
   disabled: boolean;
   setActive: (active: boolean) => Promise<SetActiveResult>;
@@ -56,7 +59,7 @@ export function SetActiveControl({
       <Button
         type="button"
         variant="outline"
-        aria-label={`${t.actions.activate} ${name}`}
+        aria-label={`${t.actions.activate} ${code}`}
         disabled={disabled || pending}
         onClick={() => run(true, (message) => onDone({ tone: 'warning', text: message }))}
       >
@@ -77,7 +80,7 @@ export function SetActiveControl({
         <Button
           type="button"
           variant="outline"
-          aria-label={`${t.actions.deactivate} ${name}`}
+          aria-label={`${t.actions.deactivate} ${code}`}
           disabled={disabled}
         >
           {t.actions.deactivate}

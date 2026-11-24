@@ -8,11 +8,12 @@ import { useState } from 'react';
 
 import type { CostCenterView } from '@/modules/catalog';
 import { StatusBadge } from '@/ui/base/status-badge';
+import type { Notice } from '@/ui/base/notice-banner';
 import { Button } from '@/ui/components/button';
 import { messages } from '@/ui/messages/es-PE';
 
 import { setCostCenterActiveAction } from '../_catalog/actions';
-import { CatalogListView, type Notice } from '../_catalog/catalog-list-view';
+import { CatalogListView } from '../_catalog/catalog-list-view';
 import type { ListParams } from '../_catalog/list-params';
 import { SetActiveControl } from '../_catalog/set-active-control';
 
@@ -32,10 +33,13 @@ export function CostCentersManager({
   readOnly: boolean;
 }) {
   const router = useRouter();
-  const [notice, setNotice] = useState<Notice>();
+  // El aviso pertenece a la lista donde se produjo: cambiar búsqueda, filtro o página lo oculta.
+  const listKey = `${params.q ?? ''}|${params.status}|${params.page}`;
+  const [shown, setShown] = useState<{ notice: Notice; listKey: string }>();
+  const notice = shown?.listKey === listKey ? shown.notice : undefined;
 
   const done = (next: Notice) => {
-    setNotice(next);
+    setShown({ notice: next, listKey });
     router.refresh();
   };
 
@@ -76,6 +80,7 @@ export function CostCentersManager({
             />
             <SetActiveControl
               name={costCenter.name}
+              code={costCenter.code}
               active={costCenter.active}
               disabled={readOnly}
               setActive={(active) => setCostCenterActiveAction({ id: costCenter.id, active })}

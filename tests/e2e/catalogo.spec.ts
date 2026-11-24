@@ -79,6 +79,15 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(rowOf(page, 'P-001')).toContainText(messages.status.catalog_active);
   // El producto de otro tenant no aparece.
   await expect(page.getByText('AJ-1')).toHaveCount(0);
+  for (const term of ['AJ', 'Producto ajeno']) {
+    await page.getByLabel(t.search, { exact: true }).fill(term);
+    await expect(page).toHaveURL(/q=/);
+    await expect(page.getByText(t.noResultsTitle)).toBeVisible();
+    await expect(page.getByText('AJ-1')).toHaveCount(0);
+  }
+  await page.getByLabel(t.search, { exact: true }).fill('');
+  await expect(page).not.toHaveURL(/q=/);
+  await expect(rowOf(page, 'P-001')).toBeVisible();
 
   // Código repetido: el error general del formulario, sin cerrar el diálogo.
   await page.getByRole('button', { name: t.products.new }).click();
@@ -123,7 +132,7 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(rowOf(page, 'P-002')).toBeVisible();
 
   // Desactivar con confirmación → "Inactivo".
-  await page.getByRole('button', { name: `${t.actions.deactivate} Cemento` }).click();
+  await page.getByRole('button', { name: `${t.actions.deactivate} P-002` }).click();
   await expect(dialog.getByRole('heading', { name: t.deactivateTitle('Cemento') })).toBeVisible();
   await dialog.getByRole('button', { name: t.deactivateConfirm }).click();
   await expect(dialog).toBeHidden();
@@ -197,14 +206,14 @@ test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', as
   await expect(menu.getByRole('link', { name: messages.nav.catalog })).toHaveCount(0);
   await page.keyboard.press('Escape');
 
-  for (const path of [
-    '/configuracion/productos',
-    '/configuracion/equipos',
-    '/configuracion/centros-de-costo',
-  ]) {
+  for (const [path, title] of [
+    ['/configuracion/productos', t.products.title],
+    ['/configuracion/equipos', t.equipment.title],
+    ['/configuracion/centros-de-costo', t.costCenters.title],
+  ] as const) {
     await page.goto(path);
     // Soft 404 conocido (como /configuracion/usuarios): el código HTTP es 200.
     await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
-    await expect(page.getByRole('heading', { level: 1, name: t.title })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: title })).toHaveCount(0);
   }
 });

@@ -8,13 +8,14 @@ import { useState } from 'react';
 
 import type { ProductView } from '@/modules/catalog';
 import { MoneyText } from '@/ui/base/money-text';
+import type { Notice } from '@/ui/base/notice-banner';
 import { StatusBadge } from '@/ui/base/status-badge';
 import { Button } from '@/ui/components/button';
 import type { CurrencyCode } from '@/ui/format/money';
 import { messages } from '@/ui/messages/es-PE';
 
 import { setProductActiveAction } from '../_catalog/actions';
-import { CatalogListView, type Notice } from '../_catalog/catalog-list-view';
+import { CatalogListView } from '../_catalog/catalog-list-view';
 import { ImportButton } from '../_catalog/import-button';
 import type { ListParams } from '../_catalog/list-params';
 import { SetActiveControl } from '../_catalog/set-active-control';
@@ -37,10 +38,13 @@ export function ProductsManager({
   readOnly: boolean;
 }) {
   const router = useRouter();
-  const [notice, setNotice] = useState<Notice>();
+  // El aviso pertenece a la lista donde se produjo: cambiar búsqueda, filtro o página lo oculta.
+  const listKey = `${params.q ?? ''}|${params.status}|${params.page}`;
+  const [shown, setShown] = useState<{ notice: Notice; listKey: string }>();
+  const notice = shown?.listKey === listKey ? shown.notice : undefined;
 
   const done = (next: Notice) => {
-    setNotice(next);
+    setShown({ notice: next, listKey });
     router.refresh();
   };
 
@@ -104,6 +108,7 @@ export function ProductsManager({
             />
             <SetActiveControl
               name={product.name}
+              code={product.code}
               active={product.active}
               disabled={readOnly}
               setActive={(active) => setProductActiveAction({ id: product.id, active })}

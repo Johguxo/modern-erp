@@ -4,7 +4,7 @@
 // la URL (?q=&status=); al cambiar cualquiera se borra ?page=. El input guarda su propio estado
 // para no perder lo que se escribe mientras la URL se actualiza.
 import type { Route } from 'next';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { STATUS_FILTERS } from '@/modules/catalog/contracts';
@@ -27,7 +27,6 @@ const DEBOUNCE_MS = 250;
 export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'status'> }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const searchId = useId();
   const statusId = useId();
   const [text, setText] = useState(params.q ?? '');
@@ -36,7 +35,8 @@ export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'sta
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const replace = (changes: { q?: string; status?: string }) => {
-    const next = new URLSearchParams(searchParams.toString());
+    // Lee la URL al ejecutarse (no al escribir), para no pisar un cambio posterior.
+    const next = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
       else next.delete(key);
@@ -66,7 +66,13 @@ export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'sta
       </div>
       <div className="grid gap-2 sm:w-48">
         <Label htmlFor={statusId}>{t.statusFilter}</Label>
-        <Select value={params.status} onValueChange={(value) => replace({ status: value })}>
+        <Select
+          value={params.status}
+          onValueChange={(value) => {
+            clearTimeout(timer.current);
+            replace({ status: value });
+          }}
+        >
           <SelectTrigger id={statusId} className="w-full">
             <SelectValue />
           </SelectTrigger>

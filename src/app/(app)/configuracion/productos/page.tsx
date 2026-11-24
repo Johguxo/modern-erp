@@ -8,6 +8,7 @@ import { getTenantBrand } from '../../../_lib/company';
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
 import { requireCtx } from '../../../_lib/session';
 import { parseListParams } from '../_catalog/list-params';
+import { redirectIfOutOfRange } from '../_catalog/redirect-out-of-range';
 
 import { ProductsManager } from './products-manager';
 
@@ -27,6 +28,7 @@ export default async function ProductsPage({
     ),
     getTenantBrand(ctx),
   ]);
+  redirectIfOutOfRange('/configuracion/productos', params, page.total);
   return (
     <ProductsManager
       items={[...page.items]}

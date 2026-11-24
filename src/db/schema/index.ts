@@ -1,3 +1,3 @@
-// Esquema Drizzle. Las tablas llegan por módulo desde E1 (`src/db/schema/<módulo>.ts`) y se
-// reexportan aquí. Toda tabla de negocio lleva tenant_id, índice y RLS (ver ADR-004).
-export {};
+// Esquema Drizzle: una carpeta por módulo (`src/db/schema/<módulo>.ts`) reexportada aquí.
+// Toda tabla de negocio lleva tenant_id, índice y RLS (ADR-004 §5 y §11).
+export * from './identity';

@@ -4,12 +4,12 @@ Referencia: `docs/arquitectura/adr-002-identidad-roles-planes.md`, `docs/dominio
 
 ### E1-H1 · Esquema de identidad
 **Criterios de aceptación**
-- [ ] Tablas `plans`, `tenants`, `subscriptions`, `tenant_settings`, `users`, `memberships`, `invitations`, `platform_admins`, `audit_events` con restricciones, índices y RLS.
-- [ ] `permissions.ts` con `ROLE_PERMISSIONS` (tabla de ADR-002) y función `permissionsFor(roles)`; prueba unitaria de la tabla completa.
-- [ ] Servicio `Entitlements`: `canAddUser(tenantId)`, `hasFeature(tenantId, feature)`, `isReadOnly(tenantId)`, considerando `overrides`.
-- [ ] Seed de planes.
+- [x] Tablas `plans`, `tenants`, `subscriptions`, `tenant_settings`, `users`, `memberships`, `invitations`, `platform_admins`, `audit_events` con restricciones, índices y RLS.
+- [x] `permissions.ts` con `ROLE_PERMISSIONS` (tabla de ADR-002) y función `permissionsFor(roles)`; prueba unitaria de la tabla completa.
+- [x] Servicio `Entitlements`: `canAddUser(tenantId)`, `hasFeature(tenantId, feature)`, `isReadOnly(tenantId)`, considerando `overrides`.
+- [x] Seed de planes.
 
-Estado: pendiente · Issue: [#8](https://github.com/Johguxo/modern-erp/issues/8)
+Estado: en revisión · Issue: [#8](https://github.com/Johguxo/modern-erp/issues/8)
 
 ### E1-H2 · Login con correo y contraseña
 **Como** usuario **quiero** entrar con mi correo y contraseña **para** usar la plataforma de mi empresa.
@@ -32,11 +32,12 @@ Estado: pendiente · Issue: [#9](https://github.com/Johguxo/modern-erp/issues/9)
 
 **Criterios de aceptación**
 - [ ] `/configuracion/usuarios`: lista (nombre, correo, roles, estado), invitar, editar roles, desactivar.
-- [ ] Invitar respeta `Entitlements.canAddUser`; si se supera el límite, mensaje claro con el límite del plan.
+- [ ] Invitar respeta `Entitlements.canAddUser` (dentro de la transacción de invitar, con `pg_advisory_xact_lock(hashtext('seats:' || tenant_id))` para que dos invitaciones simultáneas no superen el límite: `app_user` no puede bloquear `tenants` ni `subscriptions` con `FOR UPDATE`); si no se puede, mensaje claro según `reason` (límite del plan, solo lectura o sin suscripción).
 - [ ] La invitación envía correo (puerto `Mailer`) con link `/invitacion/[token]` que vence en 7 días; el token se guarda como hash.
 - [ ] Adaptador `Mailer` mínimo: en local los correos se ven en Mailpit (http://127.0.0.1:54324); en producción, Resend con texto simple. Las plantillas con diseño (React Email) llegan en E5-H2.
 - [ ] Aceptar invitación: si el correo no tiene cuenta, crea contraseña; si ya tiene, solo agrega la membresía.
 - [ ] Un admin no puede quitarse a sí mismo el rol `admin` si es el último admin.
+- [ ] `invitations.invited_by` y el actor de `audit_events` se toman del `ctx`, nunca de lo que envía el cliente.
 - [ ] Cada acción queda en `audit_events`.
 
 Estado: pendiente · Issue: [#10](https://github.com/Johguxo/modern-erp/issues/10)

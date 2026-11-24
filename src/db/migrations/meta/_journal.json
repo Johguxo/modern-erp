@@ -8,6 +8,34 @@
       "when": 1795456270413,
       "tag": "0000_init_roles_extensions",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795467636766,
+      "tag": "0001_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795467645302,
+      "tag": "0002_identity_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795467646934,
+      "tag": "0003_seed_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795468693528,
+      "tag": "0004_audit_actor_check",
+      "breakpoints": true
     }
   ]
 }

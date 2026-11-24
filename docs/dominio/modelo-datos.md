@@ -20,7 +20,7 @@
 |---|---|---|
 | `plans` | `code` (unique), `name`, `max_users` int null, `max_warehouses` int null, `storage_mb` int, `features` text[], `active` | Global (sin tenant). Seed: `starter`, `business`, `enterprise` |
 | `tenants` | `name`, `slug` (unique), `status` (`active`,`suspended`,`cancelled`) | |
-| `subscriptions` | `tenant_id`, `plan_id`, `status` (`trial`,`active`,`past_due`,`suspended`,`cancelled`), `starts_at`, `ends_at`, `price_amount` numeric(14,2), `price_currency`, `overrides` jsonb | Una activa por tenant (índice parcial unique) |
+| `subscriptions` | `tenant_id`, `plan_id`, `status` (`trial`,`active`,`past_due`,`suspended`,`cancelled`), `starts_at`, `ends_at`, `price_amount` numeric(14,2), `price_currency`, `overrides` jsonb | Una **vigente** (no cancelada) por tenant (índice parcial unique) |
 | `tenant_settings` | `tenant_id` (PK), `brand` jsonb, `currency` (`PEN`), `timezone` (`America/Lima`), `locale` (`es-PE`), `login_methods` text[], `email_domains` text[], `notification_channels` text[], `role_labels` jsonb, `inventory` jsonb, `integrations` jsonb | |
 | `users` | `auth_user_id` uuid unique, `email` (unique, en minúsculas), `full_name`, `phone`, `status` (`active`,`disabled`) | Identidad propia, separada de Supabase Auth |
 | `memberships` | `tenant_id`, `user_id`, `roles` text[], `status` (`active`,`disabled`) | unique(`tenant_id`,`user_id`) |
@@ -102,9 +102,12 @@ tenants ─┬─ subscriptions ── plans
          └─ audit_events
 ```
 
-## Datos semilla (`pnpm db:seed`)
+## Datos de referencia (migración)
 
-- Planes `starter`, `business`, `enterprise`.
+- Planes `starter`, `business`, `enterprise` en `src/db/migrations/0003_seed_plans.sql` (producción también los necesita). Valores provisionales: `max_users` 10 / 30 / ilimitado, `max_warehouses` 1 / 3 / ilimitado, `storage_mb` 1024 / 5120 / 20480; el precio va en cada suscripción.
+
+## Datos semilla (`pnpm db:seed`, solo demo)
+
 - Tenant **"Genrent (demo)"** con plan `business`, almacén por defecto, centros de costo, 20 productos y 5 equipos de ejemplo (los del prototipo: `FLT-9009`, `ACE-1540`, `COR-3310`, `EMP-0712`, `GEN-045`…), política "SOF estándar" (Almacén → Gerencia local) y usuarios de prueba por rol.
 - Tenant **"Empresa prueba"** para verificar el aislamiento.
 - Un SuperAdmin cuyo correo viene de la variable `SEED_SUPERADMIN_EMAIL`.

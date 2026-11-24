@@ -51,7 +51,10 @@ export function createResendMailer(
   };
 }
 
-export function createMailpitMailer(config: { url: string; from: string }, deps: MailerDeps): Mailer {
+export function createMailpitMailer(
+  config: { url: string; from: string },
+  deps: MailerDeps,
+): Mailer {
   const from = parseMailFrom(config.from);
   const doFetch = deps.fetch ?? fetch;
   const endpoint = new URL('/api/v1/send', config.url).toString();

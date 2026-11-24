@@ -11,7 +11,7 @@ import { createSupabaseAuthAdmin } from '@/shared/adapters/supabase-auth-admin';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 
-function isLocalDatabase(url: string): boolean {
+function isLocalHost(url: string): boolean {
   try {
     return LOCAL_HOSTS.has(new URL(url).hostname);
   } catch {
@@ -23,11 +23,15 @@ async function main(): Promise<number> {
   const allowProduction = process.argv.includes('--allow-production');
   const env = getEnv();
   const seed = parseSeedEnv();
-  const local = env.NODE_ENV !== 'production' && isLocalDatabase(env.DATABASE_URL_ADMIN);
+  // Local solo si la base y el Auth de Supabase son locales.
+  const local =
+    env.NODE_ENV !== 'production' &&
+    isLocalHost(env.DATABASE_URL_ADMIN) &&
+    isLocalHost(env.NEXT_PUBLIC_SUPABASE_URL);
 
   if (!local && !allowProduction) {
     process.stderr.write(
-      'La base no es local. Si de verdad quieres crear el SuperAdmin ahí, vuelve a correr con --allow-production.\n',
+      'La base o el Auth de Supabase no son locales. Si de verdad quieres crear el SuperAdmin ahí, vuelve a correr con --allow-production.\n',
     );
     return 1;
   }
@@ -63,7 +67,8 @@ async function main(): Promise<number> {
 main().then(
   (code) => process.exit(code),
   (error: unknown) => {
-    process.stderr.write(`No se pudo crear el SuperAdmin: ${String(error)}\n`);
+    const reason = error instanceof Error ? error.message : 'error desconocido';
+    process.stderr.write(`No se pudo crear el SuperAdmin: ${reason}\n`);
     process.exit(1);
   },
 );

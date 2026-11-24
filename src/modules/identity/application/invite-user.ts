@@ -6,15 +6,11 @@ import type { Ctx } from '@/shared/context';
 import { ConflictError } from '@/shared/errors';
 import type { Role } from '@/shared/permissions';
 
-import {
-  generateInvitationToken,
-  hashInvitationToken,
-  invitationExpiresAt,
-  isInvitationLive,
-} from '../domain/invitation';
+import { isInvitationLive } from '../domain/invitation';
 
 import { recordAudit } from './audit';
 import { scheduleInvitationEmail } from './invitation-email';
+import { issueInvitation } from './issue-invitation';
 import { assertCanAddUser } from './seats';
 import type { UserAdminDeps } from './user-admin-ports';
 
@@ -37,25 +33,14 @@ export async function inviteUser(
     assertCanAddUser(await deps.entitlements.canAddUser(ctx.tenantId));
   }
 
-  const token = generateInvitationToken();
-  const tokenHash = hashInvitationToken(token);
-  const fields = {
+  const { invitationId, token, tokenHash } = await issueInvitation(deps.invitations, {
+    tenantId: ctx.tenantId,
+    email: input.email,
     roles: input.roles,
-    tokenHash,
-    expiresAt: invitationExpiresAt(now),
     invitedBy: ctx.userId,
-  };
-  let invitationId: string;
-  if (pending) {
-    await deps.invitations.renew(ctx.tenantId, pending.id, fields);
-    invitationId = pending.id;
-  } else {
-    invitationId = await deps.invitations.create({
-      tenantId: ctx.tenantId,
-      email: input.email,
-      ...fields,
-    });
-  }
+    now,
+    pending,
+  });
 
   await recordAudit(
     ctx,

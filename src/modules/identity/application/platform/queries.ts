@@ -32,6 +32,7 @@ export interface TenantListItem {
 
 export interface TenantDetail extends Omit<TenantListItem, 'subscription'> {
   readonly currency: 'PEN' | 'USD';
+  readonly timezone: string;
   readonly createdAt: Date;
   /** La vigente o la última cancelada. */
   readonly subscription: TenantSubscriptionView | null;

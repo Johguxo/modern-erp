@@ -46,13 +46,13 @@ Estado: en revisión · Issue: [#10](https://github.com/Johguxo/modern-erp/issue
 **Como** SuperAdmin de LinkUs **quiero** crear un cliente con su plan y su primer admin **para** activar nuevas empresas sin tocar la base de datos.
 
 **Criterios de aceptación**
-- [ ] `/admin/clientes`: tabla con nombre, plan, estado de suscripción, usuarios activos / límite.
-- [ ] `/admin/clientes/nuevo`: nombre, slug, plan, ajustes (`max_users`), moneda, correo del primer admin. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
-- [ ] Caso de uso `platform.createTenant` en una transacción: tenant, settings, suscripción e invitación al primer admin. Las historias que crean tablas le agregan su paso: almacén por defecto (E2-H1), secuencia `SOF` (E3-H1) y política "SOF estándar" (E4-H1).
-- [ ] `/admin/clientes/[id]`: cambiar plan, estado de suscripción y ajustes.
-- [ ] Solo accesible para usuarios en `platform_admins`; auditoría de cada acción.
+- [x] `/admin/clientes`: tabla con nombre, plan, estado de suscripción, usuarios activos / límite.
+- [x] `/admin/clientes/nuevo`: nombre, slug, plan, ajustes (`max_users`), moneda, correo del primer admin. (El prefijo y el siguiente número de SOF se agregan en E3-H1.)
+- [x] Caso de uso `platform.createTenant` en una transacción: tenant, settings, suscripción e invitación al primer admin. Las historias que crean tablas le agregan su paso: almacén por defecto (E2-H1), secuencia `SOF` (E3-H1) y política "SOF estándar" (E4-H1).
+- [x] `/admin/clientes/[id]`: cambiar plan, estado de suscripción y ajustes.
+- [x] Solo accesible para usuarios en `platform_admins`; auditoría de cada acción.
 
-Estado: pendiente · Issue: [#11](https://github.com/Johguxo/modern-erp/issues/11)
+Estado: en revisión · Issue: [#11](https://github.com/Johguxo/modern-erp/issues/11)
 
 ### E1-H5 · Configuración de la empresa
 **Criterios de aceptación**

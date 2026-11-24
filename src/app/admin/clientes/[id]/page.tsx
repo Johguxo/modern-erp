@@ -42,7 +42,7 @@ export default async function TenantPage({
         href="/admin/clientes"
         className="mb-4 inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground hover:text-foreground"
       >
-        ← {messages.admin.back}
+        <span aria-hidden="true">←</span>&nbsp;{messages.admin.back}
       </Link>
       <PageHeader
         title={tenant.name}

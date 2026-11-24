@@ -110,7 +110,8 @@ export const messages = {
       adminEmail: 'Correo del primer administrador',
       adminEmailHint: 'Le enviaremos una invitación que vence en 7 días.',
       status: 'Estado de la suscripción',
-      statusHint: 'Suspendida o cancelada deja al cliente en solo lectura.',
+      statusHint:
+        'Suspendida o cancelada deja al cliente en solo lectura. Mientras siga cancelada, los cambios de plan y límite no se guardan: reactívala para cambiarlos.',
       create: 'Crear cliente',
       save: 'Guardar cambios',
       select: 'Selecciona',

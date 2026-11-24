@@ -187,7 +187,7 @@ function unitOfWork(tx: DbTransaction, setupSteps: readonly TenantSetupStepFacto
         .select({ id: tenants.id })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
-        .for('update')
+        .for('no key update')
         .limit(1);
       return rows.length > 0;
     },
@@ -311,6 +311,7 @@ export function createDrizzlePlatformStore(
           slug: tenants.slug,
           createdAt: tenants.createdAt,
           currency: tenantSettings.currency,
+          timezone: tenantSettings.timezone,
           activeMembers: activeMembersCount,
         })
         .from(tenants)
@@ -349,6 +350,7 @@ export function createDrizzlePlatformStore(
         slug: tenant.slug,
         createdAt: tenant.createdAt,
         currency: tenant.currency === 'USD' ? 'USD' : 'PEN',
+        timezone: tenant.timezone ?? 'America/Lima',
         activeMembers: Number(tenant.activeMembers),
         liveInvitations: live?.value ?? 0,
         subscription,

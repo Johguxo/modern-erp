@@ -219,7 +219,12 @@ describe('inviteTenantAdmin', () => {
     expect(result.invitationId).toBe(existing.id);
     expect(fake.capacityCalls).toHaveLength(0);
     expect(fake.invitations[0]?.tokenHash).not.toBe('old-hash');
-    expect(fake.audit[0]?.action).toBe('invitation.renewed');
+    expect(fake.audit[0]).toMatchObject({
+      action: 'invitation.renewed',
+      // Pasa a admin: queda el rastro de los roles que tenía.
+      data: { email: 'jefa@acme.pe', from: { roles: ['requester'] }, to: { roles: ['admin'] } },
+    });
+    expect(fake.invitations[0]?.roles).toEqual(['admin']);
   });
 
   it('cupo lleno → tenant_seats_full; solo lectura → tenant_inactive', async () => {

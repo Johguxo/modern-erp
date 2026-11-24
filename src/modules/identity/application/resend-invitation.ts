@@ -4,15 +4,11 @@ import { requirePermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 import { NotFoundError } from '@/shared/errors';
 
-import {
-  generateInvitationToken,
-  hashInvitationToken,
-  invitationExpiresAt,
-  isInvitationLive,
-} from '../domain/invitation';
+import { isInvitationLive } from '../domain/invitation';
 
 import { recordAudit } from './audit';
 import { scheduleInvitationEmail } from './invitation-email';
+import { issueInvitation } from './issue-invitation';
 import { assertCanAddUser } from './seats';
 import type { UserAdminDeps } from './user-admin-ports';
 
@@ -32,13 +28,13 @@ export async function resendInvitation(
     assertCanAddUser(await deps.entitlements.canAddUser(ctx.tenantId));
   }
 
-  const token = generateInvitationToken();
-  const tokenHash = hashInvitationToken(token);
-  await deps.invitations.renew(ctx.tenantId, invitation.id, {
+  const { token, tokenHash } = await issueInvitation(deps.invitations, {
+    tenantId: ctx.tenantId,
+    email: invitation.email,
     roles: invitation.roles,
-    tokenHash,
-    expiresAt: invitationExpiresAt(now),
     invitedBy: ctx.userId,
+    now,
+    pending: invitation,
   });
   await recordAudit(
     ctx,

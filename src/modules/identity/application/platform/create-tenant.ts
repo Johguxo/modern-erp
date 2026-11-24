@@ -8,10 +8,11 @@ import { planOverridesSchema } from '../../domain/entitlements';
 import { withMaxUsers } from '../../domain/subscription';
 import { isReservedSlug } from '../../domain/tenant-slug';
 import { scheduleInvitationEmail } from '../invitation-email';
+import { issueInvitation } from '../issue-invitation';
 
 import { recordPlatformAudit } from './audit';
 import type { PlatformDeps } from './ports';
-import { assertPlatformAdmin, issueAdminInvitation } from './shared';
+import { assertPlatformAdmin } from './shared';
 
 export interface CreateTenantInput {
   readonly name: string;
@@ -54,11 +55,13 @@ export async function createTenant(
     for (const step of uow.setupSteps) await step.run({ tenantId });
 
     // Sin revisar cupo: el cliente es nuevo, está activo y max_users ≥ 1.
-    const invitation = await issueAdminInvitation(uow, {
+    const invitation = await issueInvitation(uow.invitations, {
       tenantId,
       email: input.adminEmail,
+      roles: ['admin'],
       invitedBy: ctx.userId,
       now,
+      pending: null,
     });
 
     await recordPlatformAudit(

@@ -41,7 +41,6 @@ import { SubscriptionBadge } from '../subscription-badge';
 
 const t = messages.admin;
 const f = t.form;
-const CONSOLE_TIME_ZONE = 'America/Lima';
 
 export type DetailNotice = 'created' | 'createdEmailFailed';
 type Notice = { readonly tone: 'success' | 'warning'; readonly text: string };
@@ -131,7 +130,7 @@ export function TenantDetailView({
                   <p className="text-sm text-muted-foreground">
                     {invitation.expired
                       ? t.detail.expired
-                      : t.detail.expires(formatDateTime(invitation.expiresAt, CONSOLE_TIME_ZONE))}
+                      : t.detail.expires(formatDateTime(invitation.expiresAt, tenant.timezone))}
                   </p>
                 </li>
               ))}

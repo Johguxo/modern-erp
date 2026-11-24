@@ -5,10 +5,11 @@ import { ConflictError } from '@/shared/errors';
 
 import { isInvitationLive } from '../../domain/invitation';
 import { scheduleInvitationEmail } from '../invitation-email';
+import { issueInvitation } from '../issue-invitation';
 
 import { recordPlatformAudit } from './audit';
 import type { PlatformDeps } from './ports';
-import { assertPlatformAdmin, assertTenantCanAddUser, issueAdminInvitation } from './shared';
+import { assertPlatformAdmin, assertTenantCanAddUser, assertTenantWritable } from './shared';
 
 export async function inviteTenantAdmin(
   ctx: PlatformCtx,
@@ -25,16 +26,20 @@ export async function inviteTenantAdmin(
     if (member?.membershipStatus === 'active') {
       throw new ConflictError({ reason: 'already_member', message: 'Email is already a member' });
     }
+    // Un cliente en solo lectura no puede aceptar: no se envía un enlace que luego fallaría.
+    await assertTenantWritable(uow, input.tenantId);
     const pending = await uow.invitations.findPendingByEmail(input.tenantId, input.email);
     if (!pending || !isInvitationLive(pending, now)) {
       await assertTenantCanAddUser(uow, input.tenantId);
     }
 
-    const invitation = await issueAdminInvitation(uow, {
+    const invitation = await issueInvitation(uow.invitations, {
       tenantId: input.tenantId,
       email: input.email,
+      roles: ['admin'],
       invitedBy: ctx.userId,
       now,
+      pending,
     });
     await recordPlatformAudit(
       ctx,
@@ -43,7 +48,10 @@ export async function inviteTenantAdmin(
         action: invitation.renewed ? 'invitation.renewed' : 'invitation.created',
         entityType: 'invitation',
         entityId: invitation.invitationId,
-        data: { email: input.email, roles: ['admin'] },
+        // Al renovar, la invitación pasa a admin: se guardan los roles que tenía.
+        data: pending
+          ? { email: input.email, from: { roles: [...pending.roles] }, to: { roles: ['admin'] } }
+          : { email: input.email, roles: ['admin'] },
       },
       uow,
       deps,

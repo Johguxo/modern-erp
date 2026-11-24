@@ -54,6 +54,8 @@ export interface TenantInvitationRecord {
 
 export interface TenantDetailRecord extends Omit<TenantSummaryRecord, 'subscription'> {
   readonly currency: 'PEN' | 'USD';
+  /** Zona IANA del cliente, para mostrar sus fechas. */
+  readonly timezone: string;
   readonly createdAt: Date;
   /** La vigente, o la última cancelada. */
   readonly subscription: SubscriptionRecord | null;
@@ -81,7 +83,7 @@ export interface PlatformUnitOfWork {
     status: SubscriptionStatus;
     overrides: Readonly<Record<string, unknown>>;
   }): Promise<string>;
-  /** SELECT … FOR UPDATE del tenant: false si no existe. */
+  /** SELECT … FOR NO KEY UPDATE del tenant (no bloquea inserts con FK): false si no existe. */
   lockTenant(tenantId: string): Promise<boolean>;
   /** La vigente si hay; si no, la más reciente (cancelada); null si nunca tuvo. */
   latestSubscription(

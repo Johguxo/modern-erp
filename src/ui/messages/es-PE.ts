@@ -80,6 +80,14 @@ export const messages = {
       max_users: (p: Params) =>
         `Tu plan permite hasta ${p.max ?? '?'} usuarios. Pide al administrador ampliar el plan.`,
       stale_version: () => 'Alguien modificó este documento. Recarga la página.',
+      tenant_read_only: () =>
+        'Tu empresa está en modo solo lectura. Contacta al administrador de LinkUs.',
+      invalid_credentials: () => 'Correo o contraseña incorrectos.',
+      too_many_attempts: () => 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
+      reset_link_invalid: () =>
+        'El enlace venció o ya se usó. Pide uno nuevo desde "¿Olvidaste tu contraseña?".',
+      same_password: () => 'La nueva contraseña debe ser distinta de la anterior.',
+      weak_password: () => 'Elige una contraseña más segura.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

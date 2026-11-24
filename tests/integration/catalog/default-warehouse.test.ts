@@ -153,8 +153,15 @@ describe('backfill de la migración 0006', () => {
     await defaultWarehouseSetupStep(getDbAdmin()).run({ tenantId: withDefault.id });
     const before = await warehousesOf(withDefault.id);
 
-    await getDbAdmin().execute(sql.raw(backfill));
-    await getDbAdmin().execute(sql.raw(backfill));
+    // Acotado a estos dos tenants: el backfill real toca todos, y en paralelo otras pruebas crean
+    // y borran tenants (la FK fallaría en una carrera).
+    const scoped = backfill.replace(
+      'where not exists',
+      `where t.id in ('${legacy.id}', '${withDefault.id}') and not exists`,
+    );
+    expect(scoped).not.toBe(backfill);
+    await getDbAdmin().execute(sql.raw(scoped));
+    await getDbAdmin().execute(sql.raw(scoped));
 
     const created = await warehousesOf(legacy.id);
     expect(created).toHaveLength(1);

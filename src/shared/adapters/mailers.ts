@@ -22,6 +22,30 @@ export interface MailerConfig {
   readonly from: string;
   readonly resendApiKey?: string;
   readonly mailpitUrl?: string;
+  /** NODE_ENV === 'production': Mailpit solo se usa si además APP_URL es local. */
+  readonly production?: boolean;
+  /** APP_URL; en producción, Mailpit solo vale para un build local (E2E), nunca desplegado. */
+  readonly appUrl?: string;
+}
+
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+function isLocalUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const { hostname } = new URL(value);
+    return LOCAL_HOSTS.has(hostname) || hostname.endsWith('.localhost');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mailpit atrapa los correos en local: en un despliegue de producción los correos reales se
+ * perderían ahí. En producción se ignora MAILPIT_URL salvo en un build local (APP_URL local).
+ */
+export function mailpitAllowed(config: MailerConfig): boolean {
+  return !config.production || isLocalUrl(config.appUrl);
 }
 
 export interface MailerDeps {
@@ -91,14 +115,20 @@ export function createUnconfiguredMailer(deps: Pick<MailerDeps, 'logger'>): Mail
   };
 }
 
-/** Resend si hay RESEND_API_KEY; si no, Mailpit si hay MAILPIT_URL; si no, ninguno. */
+/**
+ * Resend si hay RESEND_API_KEY; si no, Mailpit si hay MAILPIT_URL (y se permite, ver
+ * mailpitAllowed); si no, ninguno.
+ */
 export function mailerKind(config: MailerConfig): 'resend' | 'mailpit' | 'none' {
   if (config.resendApiKey) return 'resend';
-  if (config.mailpitUrl) return 'mailpit';
+  if (config.mailpitUrl && mailpitAllowed(config)) return 'mailpit';
   return 'none';
 }
 
 export function createMailer(config: MailerConfig, deps: MailerDeps): Mailer {
+  if (config.mailpitUrl && !config.resendApiKey && !mailpitAllowed(config)) {
+    deps.logger.warn({}, 'MAILPIT_URL ignored in production; set RESEND_API_KEY');
+  }
   switch (mailerKind(config)) {
     case 'resend':
       return createResendMailer({ apiKey: config.resendApiKey ?? '', from: config.from }, deps);

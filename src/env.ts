@@ -27,7 +27,10 @@ export const envSchema = z.object({
   DATABASE_URL: required(postgresUrl),
   DATABASE_URL_ADMIN: required(postgresUrl),
   RESEND_API_KEY: optional(z.string().min(1)),
-  /** Solo desarrollo: API HTTP de Mailpit (Supabase local). Sin Resend ni Mailpit no se envía nada. */
+  /**
+   * Solo desarrollo: API HTTP de Mailpit (Supabase local). Sin Resend ni Mailpit no se envía nada.
+   * Con NODE_ENV=production se ignora salvo que APP_URL sea local (build local para E2E).
+   */
   MAILPIT_URL: optional(z.url()),
   MAIL_FROM: required(
     z.string().regex(/^.+<[^<>\s@]+@[^<>\s@]+>$/, 'debe tener el formato "Nombre <correo>"'),

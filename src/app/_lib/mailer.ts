@@ -12,7 +12,13 @@ export function getMailer(): Mailer {
   if (!cached) {
     const env = getEnv();
     cached = createMailer(
-      { from: env.MAIL_FROM, resendApiKey: env.RESEND_API_KEY, mailpitUrl: env.MAILPIT_URL },
+      {
+        from: env.MAIL_FROM,
+        resendApiKey: env.RESEND_API_KEY,
+        mailpitUrl: env.MAILPIT_URL,
+        production: env.NODE_ENV === 'production',
+        appUrl: env.APP_URL,
+      },
       { render: renderEmailText, logger: getLogger() },
     );
   }

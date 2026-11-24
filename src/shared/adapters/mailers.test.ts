@@ -22,6 +22,49 @@ describe('mailerKind', () => {
     expect(mailerKind({ from, mailpitUrl: 'http://m' })).toBe('mailpit');
     expect(mailerKind({ from })).toBe('none');
   });
+
+  it('en producción ignora MAILPIT_URL (sin Resend → none), salvo un build local', () => {
+    const mailpitUrl = 'http://127.0.0.1:54324';
+    expect(
+      mailerKind({ from, mailpitUrl, production: true, appUrl: 'https://app.linkus.pe' }),
+    ).toBe('none');
+    expect(mailerKind({ from, mailpitUrl, production: true })).toBe('none');
+    expect(
+      mailerKind({ from, mailpitUrl, production: true, appUrl: 'http://localhost:3000' }),
+    ).toBe('mailpit');
+    expect(
+      mailerKind({ from, mailpitUrl, production: false, appUrl: 'https://app.linkus.pe' }),
+    ).toBe('mailpit');
+    expect(
+      mailerKind({
+        from,
+        mailpitUrl,
+        resendApiKey: 're_x',
+        production: true,
+        appUrl: 'https://app.linkus.pe',
+      }),
+    ).toBe('resend');
+  });
+
+  it('en producción con solo MAILPIT_URL: avisa en el log y no envía a Mailpit', async () => {
+    const logger = new CapturingLogger();
+    const fetchSpy = vi.fn();
+    const mailer = createMailer(
+      {
+        from,
+        mailpitUrl: 'http://127.0.0.1:54324',
+        production: true,
+        appUrl: 'https://app.linkus.pe',
+      },
+      { render, logger, fetch: fetchSpy },
+    );
+
+    await expect(mailer.send(message)).rejects.toThrow('Mailer not configured');
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(logger.find('MAILPIT_URL ignored in production; set RESEND_API_KEY')?.level).toBe(
+      'warn',
+    );
+  });
 });
 
 describe('parseMailFrom', () => {

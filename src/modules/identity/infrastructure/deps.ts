@@ -5,9 +5,14 @@ import { getDbAdmin } from '@/db/admin';
 
 import { createEntitlements, type Entitlements } from '../application/entitlements';
 import type { SessionRepository } from '../application/session-ports';
+import type { UserAdminDeps } from '../application/user-admin-ports';
 
+import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
+import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
+import { createDrizzleMemberRepository } from './drizzle-member-repository';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
+import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
 /** Entitlements sobre una conexión (transacción de withTenant o getDbAdmin()). */
 export function createEntitlementsFor(db: DbExecutor): Entitlements {
@@ -25,5 +30,27 @@ export function createSessionServices(db: DbExecutor = getDbAdmin()): {
   return {
     sessions: createDrizzleSessionRepository(db),
     entitlements: createEntitlementsFor(db),
+  };
+}
+
+/** Lo que la entrega aporta a la gestión de usuarios (además de la transacción). */
+export type UserAdminExtras = Pick<
+  UserAdminDeps,
+  'clock' | 'logger' | 'client' | 'afterCommit' | 'mailer' | 'appUrl'
+>;
+
+/**
+ * Dependencias de la gestión de usuarios (E1-H3) sobre la transacción de withTenant: todos los
+ * repositorios usan esa transacción (RLS del tenant activo) y filtran por tenantId.
+ */
+export function createUserAdminDeps(tx: DbExecutor, extras: UserAdminExtras): UserAdminDeps {
+  return {
+    members: createDrizzleMemberRepository(tx),
+    invitations: createDrizzleInvitationRepository(tx),
+    locks: createDrizzleTenantLocks(tx),
+    tenants: createDrizzleTenantDirectory(tx),
+    audit: createDrizzleAuditLog(tx),
+    entitlements: createEntitlementsFor(tx),
+    ...extras,
   };
 }

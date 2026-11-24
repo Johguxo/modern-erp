@@ -4,16 +4,11 @@ import { and, eq } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import { memberships, platformAdmins, tenantSettings, tenants, users } from '@/db/schema';
-import { TENANT_ROLES, type Role } from '@/shared/permissions';
 
 import type { SessionRepository, TenantAccess } from '../application/session-ports';
 import type { EntryAccess } from '../domain/entry';
 
-function toRoles(values: readonly string[]): Role[] {
-  return values.filter((value): value is Role =>
-    (TENANT_ROLES as readonly string[]).includes(value),
-  );
-}
+import { toRoles } from './roles';
 
 export function createDrizzleSessionRepository(db: DbExecutor): SessionRepository {
   return {

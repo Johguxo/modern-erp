@@ -131,6 +131,17 @@ export const messages = {
         'La nueva contraseña debe ser distinta de la anterior. Pide un enlace nuevo para intentarlo otra vez.',
       weak_password: () =>
         'Elige una contraseña más segura. Pide un enlace nuevo para intentarlo otra vez.',
+      no_subscription: () =>
+        'Tu empresa no tiene una suscripción vigente. Contacta al administrador de LinkUs.',
+      already_member: () => 'Este correo ya pertenece a un usuario activo de tu empresa.',
+      last_admin: () =>
+        'La empresa debe tener al menos un administrador activo. Asigna otro administrador antes de hacer este cambio.',
+      cannot_disable_self: () => 'No puedes desactivar tu propio usuario.',
+      invitation_invalid: () =>
+        'La invitación no es válida o ya venció. Pide al administrador que te envíe una nueva.',
+      email_in_use: () =>
+        'Ya existe una cuenta con este correo. Recarga la página e ingresa con tu contraseña.',
+      account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

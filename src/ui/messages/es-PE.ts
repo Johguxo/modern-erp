@@ -74,9 +74,76 @@ export const messages = {
   },
   admin: {
     consoleBanner: 'Consola LinkUs',
+    nav: { tenants: 'Clientes' },
     title: 'Clientes',
+    description: 'Empresas que usan la plataforma, su plan y sus usuarios.',
     emptyTitle: 'Aún no hay clientes',
-    emptyDescription: 'Aquí verás las empresas que usan la plataforma.',
+    emptyDescription: 'Crea el primero y enviaremos la invitación a su administrador.',
+    newTenant: 'Nuevo cliente',
+    createFirst: 'Crear el primero',
+    back: 'Volver a clientes',
+    columns: {
+      name: 'Nombre',
+      plan: 'Plan',
+      status: 'Suscripción',
+      users: 'Usuarios activos / límite',
+    },
+    noSubscription: 'Sin suscripción',
+    unlimited: 'Sin límite',
+    usage: (active: number, limit: number | null) =>
+      limit === null ? `${active} / sin límite` : `${active} / ${limit}`,
+    pendingInvitations: (count: number) =>
+      count === 1 ? '+1 invitación pendiente' : `+${count} invitaciones pendientes`,
+    form: {
+      name: 'Nombre de la empresa',
+      slug: 'Identificador (slug)',
+      slugHint: 'Minúsculas, números y guiones. No se puede cambiar después.',
+      plan: 'Plan',
+      planOption: (name: string, maxUsers: number | null) =>
+        maxUsers === null
+          ? `${name} · usuarios ilimitados`
+          : `${name} · hasta ${maxUsers} usuarios`,
+      maxUsers: 'Límite de usuarios',
+      maxUsersHint: 'Déjalo vacío para usar el límite del plan.',
+      currency: 'Moneda',
+      currencies: { PEN: 'Soles (PEN)', USD: 'Dólares (USD)' },
+      adminEmail: 'Correo del primer administrador',
+      adminEmailHint: 'Le enviaremos una invitación que vence en 7 días.',
+      status: 'Estado de la suscripción',
+      statusHint: 'Suspendida o cancelada deja al cliente en solo lectura.',
+      create: 'Crear cliente',
+      save: 'Guardar cambios',
+      select: 'Selecciona',
+    },
+    newTitle: 'Nuevo cliente',
+    newDescription: 'Crea la empresa, su suscripción y la invitación a su administrador.',
+    detail: {
+      subscriptionTitle: 'Suscripción',
+      usersTitle: 'Usuarios',
+      usage: (active: number, limit: number | null) =>
+        limit === null
+          ? `${active} usuarios activos (sin límite)`
+          : `${active} de ${limit} usuarios activos`,
+      invitationsTitle: 'Invitaciones pendientes',
+      invitationsEmpty: 'No hay invitaciones pendientes.',
+      expires: (date: string) => `Vence: ${date}`,
+      expired: 'Vencida',
+      inviteTitle: 'Invitar administrador',
+      inviteDescription:
+        'Si el administrador no recibió el correo o el correo estaba mal, envía una invitación nueva. Al mismo correo se renueva la anterior.',
+      inviteSubmit: 'Enviar invitación',
+      currency: (currency: string) => `Moneda: ${currency}`,
+    },
+    notices: {
+      created: 'Cliente creado. Enviamos la invitación a su administrador.',
+      createdEmailFailed:
+        'Cliente creado, pero no pudimos enviar el correo. Reenvía la invitación desde aquí.',
+      saved: 'Suscripción actualizada.',
+      unchanged: 'No había cambios que guardar.',
+      invited: 'Invitación enviada.',
+      emailFailed:
+        'La invitación quedó guardada, pero no pudimos enviar el correo. Inténtalo de nuevo.',
+    },
   },
   auth: {
     signInTitle: 'Iniciar sesión',
@@ -153,6 +220,12 @@ export const messages = {
     awaiting_external: 'Espera aprobación externa',
     user_active: 'Activo',
     user_disabled: 'Desactivado',
+    subscription_trial: 'Prueba',
+    subscription_active: 'Activa',
+    subscription_past_due: 'Pago pendiente',
+    subscription_suspended: 'Suspendida',
+    subscription_cancelled: 'Cancelada',
+    subscription_none: 'Sin suscripción',
   },
   states: {
     loading: 'Cargando…',
@@ -211,6 +284,13 @@ export const messages = {
       // se le lleva a recuperar la contraseña (con la sesión de ese correo, el enlace solo une).
       email_in_use: () =>
         'Ya existe una cuenta con este correo. Recupera tu contraseña desde "¿Olvidaste tu contraseña?", inicia sesión y vuelve a abrir este enlace de invitación.',
+      slug_taken: () => 'Ya existe un cliente con este identificador. Elige otro.',
+      slug_reserved: () => 'Este identificador está reservado. Elige otro.',
+      plan_unavailable: () => 'El plan elegido no está disponible.',
+      tenant_seats_full: (p: Params) =>
+        `El cliente alcanzó su límite de ${p.max ?? '?'} usuarios. Sube el límite en la suscripción.`,
+      tenant_inactive: () =>
+        'El cliente está en solo lectura o sin suscripción vigente. Reactiva su suscripción primero.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',

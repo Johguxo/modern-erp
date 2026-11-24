@@ -24,3 +24,8 @@ export function visibleNavItems(
   if (!permissions) return [...items];
   return items.filter((item) => !item.permission || permissions.has(item.permission));
 }
+
+/** Menú de la consola LinkUs (E1-H4): solo SuperAdmins llegan a /admin. */
+export const ADMIN_NAV: readonly NavItem[] = [
+  { href: '/admin/clientes', label: messages.admin.nav.tenants },
+];

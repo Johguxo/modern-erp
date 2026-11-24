@@ -13,3 +13,13 @@ export function requirePermission(ctx: Pick<Ctx, 'permissions'>, permission: Per
     throw new ForbiddenError({ message: `Missing permission: ${permission}` });
   }
 }
+
+/** Lanza ForbiddenError si el ctx no tiene ninguno de los permisos. */
+export function requireAnyPermission(
+  ctx: Pick<Ctx, 'permissions'>,
+  permissions: readonly Permission[],
+): void {
+  if (!permissions.some((permission) => hasPermission(ctx, permission))) {
+    throw new ForbiddenError({ message: `Missing any permission: ${permissions.join(', ')}` });
+  }
+}

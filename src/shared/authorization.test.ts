@@ -2,7 +2,7 @@
 import { makeCtx } from '@tests/support/ctx';
 import { describe, expect, it } from 'vitest';
 
-import { hasPermission, requirePermission } from './authorization';
+import { hasPermission, requireAnyPermission, requirePermission } from './authorization';
 import { ForbiddenError } from './errors';
 
 describe('hasPermission / requirePermission', () => {
@@ -29,5 +29,27 @@ describe('hasPermission / requirePermission', () => {
     const adminWithoutPermission = makeCtx({ roles: ['admin'], permissions: [] });
 
     expect(hasPermission(adminWithoutPermission, 'users.manage')).toBe(false);
+  });
+});
+
+describe('requireAnyPermission', () => {
+  it('no lanza si el ctx tiene al menos uno', () => {
+    const ctx = makeCtx({ permissions: ['requests.create'] });
+
+    expect(() => requireAnyPermission(ctx, ['catalog.manage', 'requests.create'])).not.toThrow();
+  });
+
+  it('lanza ForbiddenError si no tiene ninguno', () => {
+    const ctx = makeCtx({ permissions: ['approvals.decide'] });
+
+    expect(() => requireAnyPermission(ctx, ['catalog.manage', 'requests.create'])).toThrow(
+      ForbiddenError,
+    );
+  });
+
+  it('lanza con una lista vacía', () => {
+    expect(() => requireAnyPermission(makeCtx({ permissions: ['catalog.manage'] }), [])).toThrow(
+      ForbiddenError,
+    );
   });
 });

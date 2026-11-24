@@ -8,7 +8,7 @@ import type { InvitationAcceptStore } from '../application/invitation-accept-por
 import type { PlatformDeps, PlatformStore } from '../application/platform/ports';
 import type { SessionRepository } from '../application/session-ports';
 import type { SettingsDeps } from '../application/settings-ports';
-import type { UserAdminDeps } from '../application/user-admin-ports';
+import type { AuditLog, UserAdminDeps } from '../application/user-admin-ports';
 
 import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
@@ -19,6 +19,11 @@ import { createDrizzlePlatformStore, type TenantSetupStepFactory } from './drizz
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
 import { createDrizzleSettingsRepository } from './drizzle-settings-repository';
 import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
+
+/** Auditoría sobre una conexión (transacción de withTenant): solo insert, con RLS del tenant activo. */
+export function createAuditLogFor(db: DbExecutor): AuditLog {
+  return createDrizzleAuditLog(db);
+}
 
 /** Entitlements sobre una conexión (transacción de withTenant o getDbAdmin()). */
 export function createEntitlementsFor(db: DbExecutor): Entitlements {

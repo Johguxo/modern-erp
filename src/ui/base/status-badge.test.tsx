@@ -16,6 +16,8 @@ const EXPECTED_TONE: Record<BadgeStatus, StatusTone> = {
   cancelled: 'neutral',
   awaiting_my_approval: 'pending',
   awaiting_external: 'external',
+  user_active: 'approved',
+  user_disabled: 'neutral',
 };
 
 const STATUSES = Object.keys(messages.status) as BadgeStatus[];

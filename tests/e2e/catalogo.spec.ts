@@ -1,0 +1,210 @@
+// E2-H2 · Catálogo (productos, equipos y centros de costo) en escritorio y en celular (390×844):
+// vacío, crear, código repetido, editar con el código de solo lectura, buscar (sin ver datos de
+// otro tenant), desactivar con confirmación y filtrar por estado; un usuario sin catalog.manage
+// no ve el ítem y recibe "no encontrada". Inicios de sesión por proyecto: admin 1, solicitante 1.
+import type { Locator, Page } from '@playwright/test';
+
+import { messages } from '../../src/ui/messages/es-PE';
+
+import { expect, signIn, test } from './fixtures/auth';
+
+const t = messages.catalog;
+
+/** El menú visible según el ancho: lateral en escritorio, panel en el celular. */
+async function openMenu(page: Page) {
+  const isMobile = (page.viewportSize()?.width ?? 1280) < 768;
+  if (isMobile) {
+    await page.getByRole('button', { name: messages.nav.openMenu }).click();
+    return page.getByRole('dialog');
+  }
+  return page.locator('aside');
+}
+
+const rowOf = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text });
+
+/** design-tokens.md: botones de al menos 44 px de alto. */
+async function expectTouchTarget(locator: Locator) {
+  const box = await locator.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+}
+
+/** Sin scroll horizontal de la página (la tabla se desplaza dentro de su contenedor). */
+async function expectNoPageOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+}
+
+const notice = (page: Page, text: string) => page.getByRole('status').filter({ hasText: text });
+
+test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  const other = await accounts.create('single');
+  await accounts.addProduct(other.tenants[0]?.id ?? '', 'AJ-1', 'Producto ajeno');
+  await signIn(page, admin, /\/bandeja$/);
+
+  // El ítem "Catálogo" lleva a Productos.
+  let menu = await openMenu(page);
+  await menu.getByRole('link', { name: messages.nav.catalog }).click();
+  await expect(page).toHaveURL(/\/configuracion\/productos$/);
+  await expect(page.getByRole('heading', { level: 1, name: t.products.title })).toBeVisible();
+
+  // Vacío: crear y un importar deshabilitado con el motivo escrito.
+  await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
+  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
+  await expect(page.getByText(t.importSoon)).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // Crear P-001 con precio "12.5": la moneda se propone (soles) y se muestra "S/ 12.50".
+  const newProduct = page.getByRole('button', { name: t.products.new });
+  await expectTouchTarget(newProduct);
+  await newProduct.click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel(t.fields.currency, { exact: true })).toBeDisabled();
+  await dialog.getByLabel(t.fields.code, { exact: true }).fill('P-001');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Tubo PVC');
+  await dialog.getByLabel(t.fields.unit, { exact: true }).fill('und');
+  await dialog.getByLabel(t.fields.price, { exact: true }).fill('12.5');
+  await expect(dialog.getByLabel(t.fields.currency, { exact: true })).toContainText(
+    messages.admin.form.currencies.PEN,
+  );
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(dialog).toBeHidden();
+  await expect(notice(page, t.notices.created)).toBeVisible();
+  await expect(rowOf(page, 'P-001')).toContainText(/S\/\s12\.50/);
+  await expect(rowOf(page, 'P-001')).toContainText(messages.status.catalog_active);
+  // El producto de otro tenant no aparece.
+  await expect(page.getByText('AJ-1')).toHaveCount(0);
+
+  // Código repetido: el error general del formulario, sin cerrar el diálogo.
+  await page.getByRole('button', { name: t.products.new }).click();
+  await dialog.getByLabel(t.fields.code, { exact: true }).fill('p-001');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Otro tubo');
+  await dialog.getByLabel(t.fields.unit, { exact: true }).fill('UND');
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(
+    dialog
+      .getByRole('alert')
+      .filter({ hasText: messages.errors.reasons.code_taken({ code: 'P-001' }) }),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: t.actions.cancel }).click();
+  await expect(dialog).toBeHidden();
+
+  // Crear P-002 (sin precio).
+  await page.getByRole('button', { name: t.products.new }).click();
+  await dialog.getByLabel(t.fields.code, { exact: true }).fill('P-002');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Cemento');
+  await dialog.getByLabel(t.fields.unit, { exact: true }).fill('BOL');
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(dialog).toBeHidden();
+  await expect(rowOf(page, 'P-002')).toBeVisible();
+
+  // Editar P-001: el código es de solo lectura; el cambio se guarda.
+  const edit = page.getByRole('button', { name: `${t.actions.edit} P-001` });
+  await expectTouchTarget(edit);
+  await edit.click();
+  await expect(dialog.getByRole('heading', { name: t.products.editTitle('P-001') })).toBeVisible();
+  await expect(dialog.getByLabel(t.fields.code, { exact: true })).toHaveAttribute('readonly', '');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Tubo PVC grueso');
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(dialog).toBeHidden();
+  await expect(notice(page, t.notices.updated)).toBeVisible();
+  await expect(rowOf(page, 'P-001')).toContainText('Tubo PVC grueso');
+  await expect(rowOf(page, 'P-001')).toContainText(/S\/\s12\.50/);
+
+  // Buscar P-002 deja solo ese producto.
+  await page.getByLabel(t.search, { exact: true }).fill('P-002');
+  await expect(page).toHaveURL(/q=P-002/);
+  await expect(rowOf(page, 'P-001')).toHaveCount(0);
+  await expect(rowOf(page, 'P-002')).toBeVisible();
+
+  // Desactivar con confirmación → "Inactivo".
+  await page.getByRole('button', { name: `${t.actions.deactivate} Cemento` }).click();
+  await expect(dialog.getByRole('heading', { name: t.deactivateTitle('Cemento') })).toBeVisible();
+  await dialog.getByRole('button', { name: t.deactivateConfirm }).click();
+  await expect(dialog).toBeHidden();
+  await expect(notice(page, t.notices.deactivated)).toBeVisible();
+  await expect(rowOf(page, 'P-002')).toContainText(messages.status.catalog_inactive);
+
+  // El filtro "Activos" lo oculta; "Inactivos" lo muestra con "Activar".
+  await page.getByLabel(t.search, { exact: true }).fill('');
+  await expect(rowOf(page, 'P-001')).toBeVisible();
+  await page.getByLabel(t.statusFilter, { exact: true }).click();
+  await page.getByRole('option', { name: t.statusOptions.active, exact: true }).click();
+  await expect(page).toHaveURL(/status=active/);
+  await expect(rowOf(page, 'P-002')).toHaveCount(0);
+  await expect(rowOf(page, 'P-001')).toBeVisible();
+  await page.getByLabel(t.statusFilter, { exact: true }).click();
+  await page.getByRole('option', { name: t.statusOptions.inactive, exact: true }).click();
+  await expect(page).toHaveURL(/status=inactive/);
+  await expect(rowOf(page, 'P-001')).toHaveCount(0);
+  await expect(rowOf(page, 'P-002').getByRole('button', { name: /Activar/ })).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // Equipos: pestaña activa, crear, importar deshabilitado.
+  const tabs = page.getByRole('navigation', { name: t.sectionsLabel });
+  await tabs.getByRole('link', { name: t.sections.equipment }).click();
+  await expect(page).toHaveURL(/\/configuracion\/equipos$/);
+  await expect(tabs.getByRole('link', { name: t.sections.equipment })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  menu = await openMenu(page);
+  await expect(menu.getByRole('link', { name: messages.nav.catalog })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await page.keyboard.press('Escape');
+  await expect(page.getByText(t.equipment.emptyTitle)).toBeVisible();
+  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
+  await page.getByRole('button', { name: t.equipment.new }).click();
+  await dialog.getByLabel(t.fields.code, { exact: true }).fill('EQ-01');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Grúa torre');
+  await dialog.getByLabel(t.fields.type, { exact: true }).fill('Pesado');
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(dialog).toBeHidden();
+  await expect(rowOf(page, 'EQ-01')).toContainText('Grúa torre');
+  await expect(rowOf(page, 'EQ-01')).toContainText('Pesado');
+  await expectNoPageOverflow(page);
+
+  // Centros de costo: sin importar.
+  await tabs.getByRole('link', { name: t.sections.costCenters }).click();
+  await expect(page).toHaveURL(/\/configuracion\/centros-de-costo$/);
+  await expect(page.getByText(t.costCenters.emptyTitle)).toBeVisible();
+  await expect(page.getByRole('button', { name: t.import })).toHaveCount(0);
+  await page.getByRole('button', { name: t.costCenters.new }).click();
+  await dialog.getByLabel(t.fields.code, { exact: true }).fill('CC-01');
+  await dialog.getByLabel(t.fields.name, { exact: true }).fill('Obra Norte');
+  await dialog.getByRole('button', { name: t.actions.save }).click();
+  await expect(dialog).toBeHidden();
+  await expect(rowOf(page, 'CC-01')).toContainText('Obra Norte');
+  await expectNoPageOverflow(page);
+});
+
+test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  const requester = await accounts.addMember(admin.tenants[0]?.id ?? '', ['requester']);
+  await signIn(page, requester, /\/bandeja$/);
+
+  const menu = await openMenu(page);
+  await expect(menu.getByRole('link', { name: messages.nav.catalog })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  for (const path of [
+    '/configuracion/productos',
+    '/configuracion/equipos',
+    '/configuracion/centros-de-costo',
+  ]) {
+    await page.goto(path);
+    // Soft 404 conocido (como /configuracion/usuarios): el código HTTP es 200.
+    await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: t.title })).toHaveCount(0);
+  }
+});

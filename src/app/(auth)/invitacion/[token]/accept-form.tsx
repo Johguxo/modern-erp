@@ -37,6 +37,9 @@ function useGoToInbox() {
 
 function NewAccountForm({ token, email }: { token: string; email: string }) {
   const goToInbox = useGoToInbox();
+  // CONFLICT: el correo ya tiene cuenta (email_in_use o el modo cambió). Se ofrece recuperar la
+  // contraseña; recargar no saca del formulario si la cuenta de Auth no tiene usuario en la app.
+  const [accountExists, setAccountExists] = useState(false);
   const form = useZodForm(acceptInvitationContract.newAccountFormSchema, {
     fullName: '',
     password: '',
@@ -45,6 +48,7 @@ function NewAccountForm({ token, email }: { token: string; email: string }) {
   const onSubmit = form.handleSubmit(async (values) => {
     const result = await acceptInvitationAction({ mode: 'new_account', token, ...values });
     if (!result.ok) {
+      setAccountExists(result.error.code === 'CONFLICT');
       applyActionError(form.setError, result.error);
       return;
     }
@@ -86,6 +90,11 @@ function NewAccountForm({ token, email }: { token: string; email: string }) {
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {t.submitNewAccount}
         </Button>
+        {accountExists ? (
+          <Link href="/recuperar" className="text-center text-primary hover:underline">
+            {messages.auth.forgotPassword}
+          </Link>
+        ) : null}
       </form>
     </Form>
   );

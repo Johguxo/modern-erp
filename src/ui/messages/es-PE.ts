@@ -207,8 +207,10 @@ export const messages = {
       cannot_disable_self: () => 'No puedes desactivar tu propio usuario.',
       invitation_invalid: () =>
         'La invitación no es válida o ya venció. Pide al administrador que te envíe una nueva.',
+      // Cuenta en Auth sin usuario de la plataforma: recargar vuelve al mismo formulario, así que
+      // se le lleva a recuperar la contraseña (con la sesión de ese correo, el enlace solo une).
       email_in_use: () =>
-        'Ya existe una cuenta con este correo. Recarga la página e ingresa con tu contraseña.',
+        'Ya existe una cuenta con este correo. Recupera tu contraseña desde "¿Olvidaste tu contraseña?", inicia sesión y vuelve a abrir este enlace de invitación.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',

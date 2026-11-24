@@ -14,6 +14,7 @@ import type {
 } from '../application/invitation-accept-ports';
 
 import { createDrizzleAuditLog } from './drizzle-audit-log';
+import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
 import { toRoles } from './roles';
 
 const invitationColumns = {
@@ -65,6 +66,8 @@ function unitOfWork(tx: DbTransaction): AcceptUnitOfWork {
     async lockSeats(tenantId) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext('seats:' || ${tenantId}))`);
     },
+
+    loadAccessStatus: (tenantId) => createDrizzleEntitlementsRepository(tx).loadStatus(tenantId),
 
     findAccount: (email) => findAccount(tx, email),
 

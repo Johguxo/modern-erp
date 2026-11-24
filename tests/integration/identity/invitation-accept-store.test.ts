@@ -61,8 +61,10 @@ function deps(options: { signInAs?: string; session?: AuthSession } = {}) {
   };
 }
 
-async function tenantWithInvitation(opts: { email?: string; roles?: string[] } = {}) {
-  const tenant = await fx.tenant();
+async function tenantWithInvitation(
+  opts: { email?: string; roles?: string[]; tenantStatus?: 'active' | 'suspended' } = {},
+) {
+  const tenant = await fx.tenant({ status: opts.tenantStatus ?? 'active' });
   await fx.subscription(tenant.id, 'starter');
   const inviter = await fx.user();
   await fx.membership(tenant.id, inviter.id, { roles: ['admin'] });
@@ -220,6 +222,29 @@ describe('aceptar invitación con el store de admin', () => {
     ).catch((e: unknown) => e);
 
     expect(isDomainError(error) && error.reason).toBe('account_disabled');
+    const [row] = await getDbAdmin()
+      .select({ acceptedAt: invitations.acceptedAt })
+      .from(invitations)
+      .where(eq(invitations.id, inv.invitationId));
+    expect(row?.acceptedAt).toBeNull();
+  });
+
+  it('empresa en solo lectura (suspendida) → FORBIDDEN tenant_read_only, sin membresía ni accepted_at y se borra la cuenta creada', async () => {
+    const inv = await tenantWithInvitation({ tenantStatus: 'suspended' });
+    const { deps: d, deleteUser, createdAuthId } = deps();
+
+    const error = await acceptInvitation(
+      { mode: 'new_account', token: inv.token, fullName: 'Ana', password: 'clave-segura-1' },
+      d,
+    ).catch((e: unknown) => e);
+
+    expect(isDomainError(error) && [error.code, error.reason]).toEqual([
+      'FORBIDDEN',
+      'tenant_read_only',
+    ]);
+    expect(deleteUser).toHaveBeenCalledWith(createdAuthId);
+    expect(await membershipOf(inv.tenantId, inv.email)).toBeUndefined();
+    expect(await getDbAdmin().select().from(users).where(eq(users.email, inv.email))).toEqual([]);
     const [row] = await getDbAdmin()
       .select({ acceptedAt: invitations.acceptedAt })
       .from(invitations)

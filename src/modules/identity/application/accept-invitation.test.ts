@@ -34,6 +34,8 @@ interface SetupOptions {
   session?: AuthSession | null;
   createUserResult?: CreateAuthUserResult;
   signIn?: SignInResult;
+  /** La empresa está en solo lectura al aceptar. */
+  readOnly?: boolean;
 }
 
 function setup(options: SetupOptions = {}) {
@@ -60,6 +62,12 @@ function setup(options: SetupOptions = {}) {
       lockOrder.push(`seats:${tenantId}`);
       return Promise.resolve();
     },
+    loadAccessStatus: () =>
+      Promise.resolve(
+        options.readOnly
+          ? { tenantStatus: 'suspended' as const, subscription: { status: 'active' as const } }
+          : { tenantStatus: 'active' as const, subscription: { status: 'active' as const } },
+      ),
     findAccount: () => Promise.resolve(options.account ?? null),
     createUser: vi.fn(() =>
       options.failInTx ? Promise.reject(new Error('db down')) : Promise.resolve('user-1'),
@@ -159,6 +167,19 @@ describe('acceptInvitation', () => {
     );
 
     expect(lockOrder).toEqual([`seats:${TENANT}`, 'invitation']);
+  });
+
+  it('empresa en solo lectura → FORBIDDEN tenant_read_only, sin marcar y borrando la cuenta creada', async () => {
+    const { deps, markAccepted, deleteUser } = setup({ readOnly: true });
+
+    const error = await acceptInvitation(
+      { mode: 'new_account', token, fullName: 'Ana', password: 'clave-segura-1' },
+      deps,
+    ).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ code: 'FORBIDDEN', reason: 'tenant_read_only' });
+    expect(markAccepted).not.toHaveBeenCalled();
+    expect(deleteUser).toHaveBeenCalledWith('auth-new');
   });
 
   it('cuenta desactivada → account_disabled', async () => {

@@ -3,6 +3,7 @@
 // auditada con el invitado como actor.
 //   - Sesión con el mismo correo → solo se une.
 //   - Cuenta existente sin sesión → su contraseña (inicia sesión con el correo de la invitación).
+//   - Empresa en solo lectura → tenant_read_only (se revisa dentro de la transacción).
 //   - Cuenta nueva → se crea en Auth con el correo confirmado; si la transacción falla después,
 //     se borra (compensación).
 // Al final la acción fija la empresa activa con { tenantId, authUserId }.
@@ -18,6 +19,7 @@ import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 import type { Logger } from '@/shared/ports/logger';
 
+import { isReadOnly } from '../domain/entitlements';
 import { hashInvitationToken, isInvitationLive } from '../domain/invitation';
 
 import type { Account, InvitationAcceptStore } from './invitation-accept-ports';
@@ -125,6 +127,10 @@ export async function acceptInvitation(
         !isInvitationLive(invitation, now)
       ) {
         throw invalid();
+      }
+      // Empresa suspendida, cancelada o sin suscripción vigente: no se suman miembros.
+      if (isReadOnly(await uow.loadAccessStatus(invitation.tenantId))) {
+        throw new ForbiddenError({ reason: 'tenant_read_only', message: 'Tenant is read-only' });
       }
 
       const account = await uow.findAccount(invitation.email);

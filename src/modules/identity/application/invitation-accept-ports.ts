@@ -2,6 +2,8 @@
 // implementación usa la conexión dueño (getDbAdmin), acotada por token_hash, y audita la escritura.
 import type { Role } from '@/shared/permissions';
 
+import type { AccessStatus } from '../domain/entitlements';
+
 import type { AuditLog } from './user-admin-ports';
 
 export interface AcceptableInvitation {
@@ -36,6 +38,8 @@ export interface AcceptUnitOfWork {
   lockSeats(tenantId: string): Promise<void>;
   /** SELECT … FOR UPDATE por token_hash: dos aceptaciones simultáneas se serializan. */
   lockInvitation(tokenHash: string): Promise<AcceptableInvitation | null>;
+  /** Estado del tenant y su suscripción, para no aceptar en modo solo lectura. */
+  loadAccessStatus(tenantId: string): Promise<AccessStatus>;
   findAccount(email: string): Promise<Account | null>;
   createUser(input: { email: string; fullName: string; authUserId: string }): Promise<string>;
   linkAuthUser(userId: string, authUserId: string): Promise<void>;

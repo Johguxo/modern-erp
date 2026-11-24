@@ -49,6 +49,8 @@ export interface Accounts {
    * fila de users, sus membresías y su cuenta de Auth.
    */
   trackEmail(email: string): void;
+  /** E1-H4: tenant que crea la app (consola): `cleanup` lo busca por slug y lo borra. */
+  trackTenantSlug(slug: string): void;
   /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
   setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
@@ -77,6 +79,7 @@ export function createAccounts(): Accounts {
   const userIds: string[] = [];
   const tenantIds: string[] = [];
   const trackedEmails: string[] = [];
+  const trackedSlugs: string[] = [];
 
   async function authAccount(): Promise<Omit<Account, 'tenants'>> {
     const tag = shortId();
@@ -145,6 +148,10 @@ export function createAccounts(): Accounts {
       return { ...account, tenants: [{ id: tenantId, name: row?.name ?? '' }] };
     },
 
+    trackTenantSlug(slug) {
+      trackedSlugs.push(slug);
+    },
+
     trackEmail(email) {
       trackedEmails.push(email.toLowerCase());
     },
@@ -158,6 +165,11 @@ export function createAccounts(): Accounts {
 
     async cleanup() {
       try {
+        if (trackedSlugs.length > 0) {
+          const created = await sql<{ id: string }[]>`
+            select id from tenants where slug in ${sql(trackedSlugs)}`;
+          for (const row of created) if (!tenantIds.includes(row.id)) tenantIds.push(row.id);
+        }
         if (trackedEmails.length > 0) {
           const created = await sql<{ id: string; auth_user_id: string | null }[]>`
             select id, auth_user_id from users where email in ${sql(trackedEmails)}`;
@@ -190,6 +202,7 @@ export function createAccounts(): Accounts {
         userIds.length = 0;
         authUserIds.length = 0;
         trackedEmails.length = 0;
+        trackedSlugs.length = 0;
         await sql.end();
       }
     },

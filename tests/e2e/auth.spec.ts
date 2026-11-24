@@ -118,13 +118,13 @@ test.describe('iniciar sesión', () => {
     expect(cookie?.value).toMatch(new RegExp(`^v1\\.${second?.id}\\.`));
   });
 
-  test('si tiene 0 empresas y es SuperAdmin, va a /admin (Consola LinkUs)', async ({
+  test('si tiene 0 empresas y es SuperAdmin, va a /admin/clientes (Consola LinkUs)', async ({
     page,
     accounts,
   }) => {
     const account = await accounts.create('superadmin');
 
-    await signIn(page, account, /\/admin$/);
+    await signIn(page, account, /\/admin\/clientes$/);
 
     await expect(page.getByText(messages.admin.consoleBanner)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: messages.admin.title })).toBeVisible();

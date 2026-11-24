@@ -27,7 +27,11 @@ async function sessionCookies(browser: Browser, account: Account, landing: RegEx
 test.beforeAll(async ({ browser }) => {
   accounts = createAccounts();
   memberCookies = await sessionCookies(browser, await accounts.create('single'), /\/bandeja$/);
-  adminCookies = await sessionCookies(browser, await accounts.create('superadmin'), /\/admin$/);
+  adminCookies = await sessionCookies(
+    browser,
+    await accounts.create('superadmin'),
+    /\/admin\/clientes$/,
+  );
 });
 
 test.afterAll(async () => {

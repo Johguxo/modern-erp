@@ -11,6 +11,7 @@ import {
   auditEvents,
   invitations,
   memberships,
+  platformAdmins,
   plans,
   subscriptions,
   tenantSettings,
@@ -32,8 +33,12 @@ export const randomSlug = (): string => `t-${shortId()}`;
 export const randomEmail = (): string => `u-${shortId()}@test.linkus.pe`;
 
 export interface IdentityFixtures {
-  tenant(opts?: { status?: TenantStatus; slug?: string }): Promise<{ id: string; slug: string }>;
-  user(opts?: { email?: string; status?: 'active' | 'disabled' }): Promise<{
+  tenant(opts?: {
+    status?: TenantStatus;
+    slug?: string;
+    name?: string;
+  }): Promise<{ id: string; slug: string }>;
+  user(opts?: { email?: string; status?: 'active' | 'disabled'; authUserId?: string }): Promise<{
     id: string;
     email: string;
   }>;
@@ -51,7 +56,9 @@ export interface IdentityFixtures {
     planCode: 'starter' | 'business' | 'enterprise',
     opts?: { status?: SubscriptionStatus; overrides?: unknown },
   ): Promise<{ id: string }>;
-  settings(tenantId: string): Promise<void>;
+  settings(tenantId: string, opts?: { timezone?: string }): Promise<void>;
+  /** Marca al usuario como SuperAdmin (platform_admins). */
+  platformAdmin(userId: string): Promise<void>;
   auditEvent(tenantId: string, opts?: { action?: string }): Promise<{ id: string }>;
   /** Registra un tenant creado por fuera del helper para borrarlo en cleanup. */
   trackTenant(id: string): void;
@@ -68,7 +75,7 @@ export function createIdentityFixtures(): IdentityFixtures {
       const slug = opts.slug ?? randomSlug();
       const [row] = await db()
         .insert(tenants)
-        .values({ name: `Tenant ${slug}`, slug, status: opts.status ?? 'active' })
+        .values({ name: opts.name ?? `Tenant ${slug}`, slug, status: opts.status ?? 'active' })
         .returning({ id: tenants.id });
       if (!row) throw new Error('tenant no creado');
       tenantIds.push(row.id);
@@ -79,7 +86,12 @@ export function createIdentityFixtures(): IdentityFixtures {
       const email = opts.email ?? randomEmail();
       const [row] = await db()
         .insert(users)
-        .values({ email, fullName: `User ${email}`, status: opts.status ?? 'active' })
+        .values({
+          email,
+          fullName: `User ${email}`,
+          status: opts.status ?? 'active',
+          authUserId: opts.authUserId ?? null,
+        })
         .returning({ id: users.id });
       if (!row) throw new Error('user no creado');
       userIds.push(row.id);
@@ -136,8 +148,14 @@ export function createIdentityFixtures(): IdentityFixtures {
       return row;
     },
 
-    async settings(tenantId) {
-      await db().insert(tenantSettings).values({ tenantId });
+    async settings(tenantId, opts = {}) {
+      await db()
+        .insert(tenantSettings)
+        .values({ tenantId, ...(opts.timezone ? { timezone: opts.timezone } : {}) });
+    },
+
+    async platformAdmin(userId) {
+      await db().insert(platformAdmins).values({ userId });
     },
 
     async auditEvent(tenantId, opts = {}) {
@@ -169,6 +187,7 @@ export function createIdentityFixtures(): IdentityFixtures {
         await admin.delete(tenantSettings).where(inArray(tenantSettings.tenantId, tenantIds));
       }
       if (userIds.length > 0) {
+        await admin.delete(platformAdmins).where(inArray(platformAdmins.userId, userIds));
         await admin.delete(memberships).where(inArray(memberships.userId, userIds));
         await admin.delete(invitations).where(inArray(invitations.invitedBy, userIds));
         await admin.delete(auditEvents).where(inArray(auditEvents.actorUserId, userIds));

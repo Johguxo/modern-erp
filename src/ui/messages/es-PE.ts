@@ -27,7 +27,29 @@ export const messages = {
   },
   auth: {
     signInTitle: 'Iniciar sesión',
-    comingSoon: 'Disponible pronto.',
+    signInSubmit: 'Ingresar',
+    email: 'Correo',
+    password: 'Contraseña',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    noAccess: 'Tu cuenta no tiene acceso a ninguna empresa. Pide una invitación al administrador.',
+    recoverTitle: 'Recuperar contraseña',
+    recoverDescription: 'Te enviaremos un enlace para crear una nueva contraseña.',
+    recoverSubmit: 'Enviar enlace',
+    recoverSent:
+      'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.',
+    backToSignIn: 'Volver a iniciar sesión',
+    resetTitle: 'Nueva contraseña',
+    resetDescription: (min: number) => `Usa al menos ${min} caracteres.`,
+    resetSubmit: 'Guardar contraseña',
+    resetMissingToken: 'Abre el enlace que te enviamos por correo para restablecer tu contraseña.',
+    chooseTenantTitle: 'Elige una empresa',
+    chooseTenantDescription: 'Tienes acceso a varias empresas.',
+    signOut: 'Cerrar sesión',
+    signedInAs: 'Sesión iniciada como',
+  },
+  readOnly: {
+    banner:
+      'Tu empresa está en modo solo lectura: puedes consultar, pero no crear ni modificar. Contacta al administrador de LinkUs.',
   },
   inbox: {
     title: 'Bandeja de solicitudes',
@@ -80,6 +102,16 @@ export const messages = {
       max_users: (p: Params) =>
         `Tu plan permite hasta ${p.max ?? '?'} usuarios. Pide al administrador ampliar el plan.`,
       stale_version: () => 'Alguien modificó este documento. Recarga la página.',
+      tenant_read_only: () =>
+        'Tu empresa está en modo solo lectura. Contacta al administrador de LinkUs.',
+      invalid_credentials: () => 'Correo o contraseña incorrectos.',
+      too_many_attempts: () => 'Demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
+      reset_link_invalid: () =>
+        'El enlace venció o ya se usó. Pide uno nuevo desde "¿Olvidaste tu contraseña?".',
+      same_password: () =>
+        'La nueva contraseña debe ser distinta de la anterior. Pide un enlace nuevo para intentarlo otra vez.',
+      weak_password: () =>
+        'Elige una contraseña más segura. Pide un enlace nuevo para intentarlo otra vez.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

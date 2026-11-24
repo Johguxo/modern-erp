@@ -1,11 +1,27 @@
 import type { ReactNode } from 'react';
 
+import { AccountMenu } from '@/ui/layout/account-menu';
 import { AppShell } from '@/ui/layout/app-shell';
 import { ConsoleBanner } from '@/ui/layout/console-banner';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+import { signOutAction } from '../(auth)/actions';
+import { requirePlatformAdmin } from '../_lib/session';
+
+// Server action en línea: una función normal no puede pasar a un componente cliente.
+async function signOut() {
+  'use server';
+  return signOutAction({});
+}
+
+// Solo SuperAdmins (platform_admins); el resto ve 404. La consola llega en E1-H4.
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const { email } = await requirePlatformAdmin();
   return (
-    <AppShell items={[]} banner={<ConsoleBanner />}>
+    <AppShell
+      items={[]}
+      banner={<ConsoleBanner />}
+      account={<AccountMenu email={email} signOut={signOut} />}
+    >
       {children}
     </AppShell>
   );

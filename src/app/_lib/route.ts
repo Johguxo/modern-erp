@@ -68,6 +68,8 @@ export function createRoute(deps: () => PipelineDeps, appUrl: () => string) {
         headers: request.headers,
         requestId,
         rawInput: input.value,
+        // GET/HEAD son lectura; el resto, escritura (bloqueada en solo lectura).
+        access: SAFE_METHODS.has(request.method) ? 'read' : 'write',
       });
       if (result.ok) return json({ data: result.data }, options.successStatus ?? 200, requestId);
       return json({ error: result.error }, HTTP_STATUS_BY_CODE[result.error.code], requestId);

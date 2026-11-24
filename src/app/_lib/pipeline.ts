@@ -56,6 +56,8 @@ export interface PipelineRequest {
   readonly headers: Headers;
   readonly requestId: string;
   readonly rawInput: unknown;
+  /** 'write' (por defecto) se bloquea si el tenant está en solo lectura (ADR-006). */
+  readonly access?: 'read' | 'write';
 }
 
 /**
@@ -83,6 +85,10 @@ export async function runPipeline<C extends Contract>(
       throw new ForbiddenError({ message: `Missing permission: ${permission}` });
     }
 
+    if (ctx.readOnly && (request.access ?? 'write') === 'write') {
+      throw new ForbiddenError({ reason: 'tenant_read_only', message: 'Tenant is read-only' });
+    }
+
     const parsed = contract.inputSchema.safeParse(request.rawInput);
     if (!parsed.success) {
       // Nunca se registra el input (puede tener datos personales): solo las rutas.
@@ -104,6 +110,54 @@ export async function runPipeline<C extends Contract>(
       // usuario puede reintentar sin duplicar datos. También descarta campos de más.
       return contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
     });
+    return { ok: true, data };
+  } catch (error) {
+    const actionError = toActionError(error, requestId, logger);
+    outcome = actionError.code;
+    return { ok: false, error: actionError };
+  } finally {
+    logger.info({ outcome, durationMs: Date.now() - started }, 'action finished');
+  }
+}
+
+export interface PublicPipelineDeps {
+  readonly logger: Logger;
+}
+
+export type PublicHandler<C extends Contract> = (args: {
+  readonly input: z.output<C['inputSchema']>;
+  readonly requestId: string;
+  readonly logger: Logger;
+}) => Promise<z.input<C['outputSchema']>>;
+
+/**
+ * Acciones sin ctx ni transacción (login, recuperar, restablecer, cerrar sesión, elegir empresa):
+ * mismo requestId, validación, mensajes es-PE y logs que runPipeline (ADR-006).
+ */
+export async function runPublicPipeline<C extends Contract>(
+  deps: PublicPipelineDeps,
+  contract: C,
+  handler: PublicHandler<C>,
+  request: Omit<PipelineRequest, 'access'>,
+): Promise<ActionResult<z.output<C['outputSchema']>>> {
+  const { requestId } = request;
+  const started = Date.now();
+  const logger = deps.logger.child({ requestId, action: request.name });
+  let outcome: ErrorCode | 'OK' = 'OK';
+  try {
+    const parsed = contract.inputSchema.safeParse(request.rawInput);
+    if (!parsed.success) {
+      throw new ValidationError({
+        fieldErrors: issuesToFieldErrors(parsed.error.issues),
+        message: `Invalid input: ${parsed.error.issues.map((i) => i.path.join('.')).join(', ')}`,
+      });
+    }
+    const output = await handler({
+      input: parsed.data as z.output<C['inputSchema']>,
+      requestId,
+      logger,
+    });
+    const data = contract.outputSchema.parse(output) as z.output<C['outputSchema']>;
     return { ok: true, data };
   } catch (error) {
     const actionError = toActionError(error, requestId, logger);

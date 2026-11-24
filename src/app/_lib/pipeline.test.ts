@@ -9,11 +9,17 @@ import { z } from 'zod';
 
 import type { DbTransaction } from '@/db';
 import type { Ctx } from '@/shared/context';
-import { ConflictError, NotFoundError } from '@/shared/errors';
+import { ConflictError, NotFoundError, UnauthenticatedError } from '@/shared/errors';
 import type { Permission } from '@/shared/permissions';
 import { messages } from '@/ui/messages/es-PE';
 
-import { runPipeline, type Handler, type PipelineDeps } from './pipeline';
+import {
+  runPipeline,
+  runPublicPipeline,
+  type Handler,
+  type PipelineDeps,
+  type PublicHandler,
+} from './pipeline';
 
 const REQUEST_ID = 'req-pipeline-0001';
 const PERSONAL_DATA = 'dni-77665544';
@@ -316,5 +322,140 @@ describe('runPipeline', () => {
     await run(deps, vi.fn<Handler<C>>());
 
     expect(logger.find('action finished')?.fields).toMatchObject({ outcome: 'UNAUTHENTICATED' });
+  });
+});
+
+// E1-H2 · Modo solo lectura: action() rechaza las escrituras con FORBIDDEN (tenant_read_only).
+describe('runPipeline en modo solo lectura', () => {
+  function runWithAccess(deps: PipelineDeps, handler: Handler<C>, access?: 'read' | 'write') {
+    return runPipeline(deps, contract, 'requests.create', handler, {
+      name: 'createThing',
+      headers: new Headers(),
+      requestId: REQUEST_ID,
+      rawInput: validInput,
+      access,
+    });
+  }
+
+  it.each([['write' as const], [undefined]])(
+    'action() rechaza las escrituras con FORBIDDEN (reason: tenant_read_only) con access %s',
+    async (access) => {
+      const { deps, tenantCalls } = setup({ ctx: makeCtx({ readOnly: true }) });
+      const handler = vi.fn<Handler<C>>();
+
+      const result = await runWithAccess(deps, handler, access);
+
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: messages.errors.reasons.tenant_read_only(),
+          fieldErrors: undefined,
+          requestId: REQUEST_ID,
+        },
+      });
+      expect(handler).not.toHaveBeenCalled();
+      expect(tenantCalls).toEqual([]);
+    },
+  );
+
+  it('en solo lectura, access read pasa', async () => {
+    const { deps } = setup({ ctx: makeCtx({ readOnly: true }) });
+
+    const result = await runWithAccess(
+      deps,
+      () => Promise.resolve({ id: '1', title: 't' }),
+      'read',
+    );
+
+    expect(result).toEqual({ ok: true, data: { id: '1', title: 't' } });
+  });
+
+  it('sin solo lectura, una escritura pasa', async () => {
+    const { deps } = setup({ ctx: makeCtx({ readOnly: false }) });
+
+    const result = await runWithAccess(deps, () => Promise.resolve({ id: '1', title: 't' }));
+
+    expect(result.ok).toBe(true);
+  });
+});
+
+// E1-H2 · publicAction(): sin ctx ni transacción, con la misma validación, errores y logs.
+describe('runPublicPipeline', () => {
+  function runPublic(
+    handler: PublicHandler<C>,
+    rawInput: unknown = validInput,
+    logger = new CapturingLogger(),
+  ) {
+    return runPublicPipeline({ logger }, contract, handler, {
+      name: 'auth.signIn',
+      headers: new Headers(),
+      requestId: REQUEST_ID,
+      rawInput,
+    });
+  }
+
+  it('no requiere ctx: llama al handler con el input validado, requestId y logger', async () => {
+    const handler = vi.fn<PublicHandler<C>>(({ input }) =>
+      Promise.resolve({ id: 'id-1', title: input.title, extra: 'x' } as never),
+    );
+
+    const result = await runPublic(handler, { ...validInput, sobra: 1 });
+
+    expect(result).toEqual({ ok: true, data: { id: 'id-1', title: 'Pedido' } });
+    const args = handler.mock.calls[0]?.[0];
+    expect(args?.input).toEqual(validInput);
+    expect(args?.requestId).toBe(REQUEST_ID);
+  });
+
+  it('input inválido → VALIDATION con mensajes es-PE y el handler no se llama', async () => {
+    const handler = vi.fn<PublicHandler<C>>();
+
+    const result = await runPublic(handler, { title: '', lines: [] });
+
+    expect(!result.ok && result.error.code).toBe('VALIDATION');
+    expect(!result.ok && result.error.fieldErrors).toEqual({
+      title: [messages.validation.required],
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('traduce errores de dominio con reason a mensajes es-PE (sin revelar si el correo existe)', async () => {
+    const result = await runPublic(() =>
+      Promise.reject(new UnauthenticatedError({ reason: 'invalid_credentials' })),
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'UNAUTHENTICATED',
+        message: 'Correo o contraseña incorrectos.',
+        fieldErrors: undefined,
+        requestId: REQUEST_ID,
+      },
+    });
+  });
+
+  it('un error inesperado → INTERNAL genérico, sin detalles técnicos', async () => {
+    const result = await runPublic(() => Promise.reject(new Error('gotrue 500 secret')));
+
+    expect(result).toEqual({
+      ok: false,
+      error: { code: 'INTERNAL', message: messages.errors.codes.INTERNAL, requestId: REQUEST_ID },
+    });
+  });
+
+  it("registra 'action finished' con requestId, nombre y outcome", async () => {
+    const logger = new CapturingLogger();
+    await runPublic(
+      () => Promise.reject(new UnauthenticatedError({ reason: 'invalid_credentials' })),
+      validInput,
+      logger,
+    );
+
+    const entry = logger.find('action finished');
+    expect(entry?.level).toBe('info');
+    expect(entry?.fields).toMatchObject({ outcome: 'UNAUTHENTICATED' });
+    expect(entry?.bindings).toMatchObject({ requestId: REQUEST_ID, action: 'auth.signIn' });
   });
 });

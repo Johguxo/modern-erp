@@ -203,3 +203,28 @@ describe('createRoute', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
   });
 });
+
+// E1-H2 · route() trata GET y HEAD como lectura: en solo lectura pasan; el resto → 403.
+describe('createRoute en modo solo lectura', () => {
+  const readOnlyCtx = () => makeCtx({ permissions: ['catalog.manage'], readOnly: true });
+
+  it('GET pasa con el tenant en solo lectura', async () => {
+    const response = await makeRoute({ ctx: readOnlyCtx() })()(new Request(`${ENDPOINT}?name=x`));
+
+    expect(response.status).toBe(200);
+  });
+
+  it('POST → 403 FORBIDDEN con el mensaje de solo lectura y sin llamar al handler', async () => {
+    const handler = vi.fn(echo);
+
+    const response = await makeRoute({ ctx: readOnlyCtx() })(handler)(
+      post(JSON.stringify({ name: 'x' })),
+    );
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({
+      error: { code: 'FORBIDDEN', message: messages.errors.reasons.tenant_read_only() },
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+});

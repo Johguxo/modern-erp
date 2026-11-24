@@ -12,3 +12,4 @@ playwright-report/
 test-results/
 src/db/migrations/
 .mcp.json
+supabase/templates/

@@ -20,6 +20,20 @@ function messageFor(
   return messages.errors.codes[code];
 }
 
+/** Un mensaje de campo que es una reason conocida (p. ej. same_password) se muestra en es-PE. */
+function translateFieldErrors(fieldErrors: FieldErrors, params: Record<string, string | number>) {
+  return Object.fromEntries(
+    Object.entries(fieldErrors).map(([path, list]) => [
+      path,
+      list.map((m) =>
+        Object.hasOwn(messages.errors.reasons, m)
+          ? messages.errors.reasons[m as keyof Reasons](params)
+          : m,
+      ),
+    ]),
+  );
+}
+
 export function toActionError(error: unknown, requestId: string, logger: Logger): ActionError {
   // redirect() y notFound() de Next se lanzan como errores: hay que dejarlos pasar.
   unstable_rethrow(error);
@@ -32,7 +46,7 @@ export function toActionError(error: unknown, requestId: string, logger: Logger)
       // Por código y no por instanceof (misma razón que la marca de DomainError).
       fieldErrors:
         error.code === 'VALIDATION' && 'fieldErrors' in error
-          ? (error.fieldErrors as FieldErrors)
+          ? translateFieldErrors(error.fieldErrors as FieldErrors, error.params)
           : undefined,
       requestId,
     };

@@ -13,6 +13,7 @@ export function AppShell({
   items,
   banner,
   footer,
+  account,
   children,
 }: {
   items: NavItem[];
@@ -20,6 +21,8 @@ export function AppShell({
   banner?: ReactNode;
   /** Pie del menú (marca del cliente, E1-H5). */
   footer?: ReactNode;
+  /** Cuenta de la sesión (correo y cerrar sesión). */
+  account?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -31,10 +34,11 @@ export function AppShell({
         <nav aria-label={messages.nav.mainLabel} className="flex-1">
           <NavLinks items={items} />
         </nav>
-        {footer ? <div className="px-3 text-xs text-nav-muted">{footer}</div> : null}
+        {account}
+        {footer ? <div className="mt-4 px-3 text-xs text-nav-muted">{footer}</div> : null}
       </aside>
       <div className="min-w-0 flex-1">
-        <MobileNav items={items} />
+        <MobileNav items={items} account={account} />
         {banner}
         <main className="p-4 md:px-10 md:py-8">{children}</main>
       </div>

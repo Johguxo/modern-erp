@@ -16,7 +16,7 @@ import type { Permission } from '@/shared/permissions';
 import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 import type { ActionResult } from '@/shared/result';
 
-import { unconfiguredCtxResolver } from './ctx-resolver';
+import { sessionCtxResolver } from './session';
 import { runPipeline, type Handler, type PipelineDeps } from './pipeline';
 
 export function createAction(deps: () => PipelineDeps) {
@@ -24,7 +24,8 @@ export function createAction(deps: () => PipelineDeps) {
     contract: C,
     permission: Permission | null,
     handler: Handler<C>,
-    options: { name?: string } = {},
+    /** access 'read' deja pasar en solo lectura; por defecto 'write' (ADR-006). */
+    options: { name?: string; access?: 'read' | 'write' } = {},
   ): (input: z.input<C['inputSchema']>) => Promise<ActionResult<z.output<C['outputSchema']>>> {
     return async (input) => {
       const requestHeaders = await headers();
@@ -35,15 +36,16 @@ export function createAction(deps: () => PipelineDeps) {
         headers: requestHeaders,
         requestId,
         rawInput: input,
+        access: options.access ?? 'write',
       });
     };
   };
 }
 
-/** Dependencias reales. E1-H2 reemplaza unconfiguredCtxResolver por el resolver con sesión. */
+/** Dependencias reales: el ctx sale de la sesión de Supabase + la cookie de empresa activa. */
 export function productionPipelineDeps(): PipelineDeps {
   return {
-    resolveCtx: unconfiguredCtxResolver,
+    resolveCtx: sessionCtxResolver,
     runInTenant: withTenant,
     clock: systemClock,
     ids: cryptoIdGenerator,

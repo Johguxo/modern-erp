@@ -40,13 +40,34 @@ describe('visibleNavItems', () => {
   });
 });
 
+describe('Nueva solicitud', () => {
+  const newRequest = APP_NAV.find((item) => (item.href as string) === '/solicitudes/nueva');
+
+  it('va después de la Bandeja y exige requests.create', () => {
+    expect(APP_NAV[1]).toBe(newRequest);
+    expect(newRequest?.permission).toBe('requests.create');
+  });
+
+  it('lo ve quien puede crear solicitudes y no quien solo aprueba o lee', () => {
+    const create = new Set<Permission>(['requests.create']);
+    const approve = new Set<Permission>(['requests.read_own', 'approvals.decide']);
+    expect(newRequest && visibleNavItems(APP_NAV, create)).toContain(newRequest);
+    expect(visibleNavItems(APP_NAV, approve)).not.toContain(newRequest);
+  });
+
+  it('se marca activo en su ruta', () => {
+    expect(newRequest && isNavItemActive(newRequest, '/solicitudes/nueva')).toBe(true);
+    expect(newRequest && isNavItemActive(newRequest, '/bandeja')).toBe(false);
+  });
+});
+
 describe('isNavItemActive', () => {
   const catalog = APP_NAV.find((item) => item.permission === 'catalog.manage');
 
   it('APP_NAV tiene Catálogo, protegido con catalog.manage, después de la Bandeja', () => {
     expect(catalog?.href).toBe('/configuracion/productos');
     expect(APP_NAV[0]?.href).toBe('/bandeja');
-    expect(APP_NAV[1]).toBe(catalog);
+    expect(APP_NAV[2]).toBe(catalog);
   });
 
   it('marca activo en la ruta del ítem y sus subrutas', () => {

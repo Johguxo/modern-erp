@@ -177,6 +177,14 @@ describe('DataTable (TanStack)', () => {
     expect(html).toContain(messages.dataTable.noResults);
   });
 
+  it('suma className al contenedor sin perder el borde por defecto', () => {
+    const html = renderToStaticMarkup(
+      <DataTable columns={columns} data={rows} className="rounded-none border-0" />,
+    );
+    expect(html).toMatch(/^<div class="[^"]*rounded-none[^"]*"/);
+    expect(html).not.toContain('rounded-xl');
+  });
+
   it('con una sola página no muestra la paginación', () => {
     const html = renderToStaticMarkup(<DataTable columns={columns} data={rows} />);
     expect(html).not.toContain('<nav');

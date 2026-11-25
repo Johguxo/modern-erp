@@ -32,15 +32,15 @@
 El menú tiene un solo ítem «Catálogo» (→ `/configuracion/productos`, activo en las tres rutas) y dentro, pestañas «Productos · Equipos · Centros de costo» (E2-H2).
 | Stock inicial | `/configuracion/stock` | `inventory.manage` | `inventory.importInitialStock(file)`, `inventory.listStock()` |
 | Aprobaciones | `/configuracion/aprobaciones` | `approval_policies.manage` | `approvals.getPolicy(docType)`, `approvals.updatePolicySteps()` |
-| Empresa | `/configuracion/empresa` | `settings.manage` | `identity.getSettings()`, `identity.updateSettings()` (marca, numeración) |
+| Empresa | `/configuracion/empresa` | `settings.manage` | `identity.getSettings()`, `identity.updateSettings()` (marca), `requests.getDocumentSequence()`, `requests.updateDocumentSequence()` (numeración de SOF) |
 
 ### Consola SuperAdmin
 
 | Pantalla | Ruta | Casos de uso |
 |---|---|---|
 | Clientes | `/admin/clientes` | `platform.listTenants()` |
-| Nuevo cliente | `/admin/clientes/nuevo` | `platform.createTenant({name, slug, planCode, maxUsers, currency, adminEmail})` (crea tenant, settings, suscripción e invitación; E2-H1, E3-H1 y E4-H1 agregan almacén por defecto, secuencia SOF y política SOF estándar con `tenantSetupSteps`) |
-| Detalle de cliente | `/admin/clientes/[id]` | `platform.getTenant()`, `platform.updateSubscription()`, `platform.inviteTenantAdmin()` |
+| Nuevo cliente | `/admin/clientes/nuevo` | `platform.createTenant({name, slug, planCode, maxUsers, currency, adminEmail})` + prefijo y siguiente número de SOF (crea tenant, settings, suscripción e invitación; E2-H1, E3-H1 y E4-H1 agregan almacén por defecto, secuencia SOF y política SOF estándar con `tenantSetupSteps`) |
+| Detalle de cliente | `/admin/clientes/[id]` | `platform.getTenant()`, `platform.updateSubscription()`, `platform.inviteTenantAdmin()`, `requests.platformGetDocumentSequence()`, `requests.platformUpdateDocumentSequence()` |
 
 ## Pantallas de fases siguientes (no implementar en el MVP)
 

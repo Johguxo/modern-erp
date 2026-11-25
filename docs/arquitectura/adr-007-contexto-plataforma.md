@@ -23,6 +23,7 @@ E1-H4 agrega la consola `/admin/clientes`: un SuperAdmin crea clientes y cambia 
 7. **Primer SuperAdmin:** `pnpm admin:create-superadmin` (idempotente). Fuera de local exige `--allow-production` y pone una contraseña aleatoria que no se muestra.
 
 ## Consecuencias
+- Otros módulos pueden tener acciones de plataforma propias (E3-H1: la numeración de SOF en `requests`): usan su propio store con la conexión dueño y, de identity, `createPlatformGuardFor(db)` / `assertPlatformAdmin` (revisión de SuperAdmin dentro de su transacción) y `recordPlatformAudit`. Identity no importa esos módulos; el alta compone su contrato y sus pasos en la entrega.
 - Toda consulta y escritura de la consola salta RLS: la seguridad depende de `requirePlatformAdmin`/`platformAction`, de la revisión dentro de la transacción y de los filtros por `tenantId`. Las reglas de ESLint impiden que `src/app` importe `@/db/admin`.
 - La consola muestra las fechas de cada cliente con su `tenant_settings.timezone`.
 - `tenants.status` no se edita en el MVP (suspender o reactivar el cliente es "Después", ADR-002 §5). El modo solo lectura sale del estado de la suscripción.

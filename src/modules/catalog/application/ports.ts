@@ -39,6 +39,8 @@ export interface MasterRepository<V extends MasterView, F extends object> {
   create(tenantId: string, input: F & { readonly code: string }): Promise<V>;
   update(tenantId: string, id: string, fields: F): Promise<V>;
   setActive(tenantId: string, id: string, active: boolean): Promise<void>;
+  /** Solo los activos del tenant entre `ids` (los demás no aparecen). Sin bloqueo. */
+  findActiveByIds(tenantId: string, ids: readonly string[]): Promise<V[]>;
 }
 
 export interface ProductFields {

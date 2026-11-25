@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
 import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 
+import { getCatalogRefs } from './get-catalog-refs';
 import { getDefaultWarehouse } from './get-default-warehouse';
 import { listProducts } from './list-products';
 import type {
@@ -62,6 +63,9 @@ function memoryRepo<V extends MasterView, F extends object>(): MasterRepository<
       const next = { ...repo.rows[index], ...fields } as unknown as V;
       repo.rows[index] = next;
       return Promise.resolve(next);
+    },
+    findActiveByIds(_tenantId: string, ids: readonly string[]) {
+      return Promise.resolve(repo.rows.filter((r) => r.active && ids.includes(r.id)));
     },
     setActive(_tenantId: string, id: string, active: boolean) {
       const index = repo.rows.findIndex((r) => r.id === id);
@@ -245,5 +249,42 @@ describe('lecturas', () => {
     await expect(
       getDefaultWarehouse(REQUESTER, { warehouses: { findDefault: () => Promise.resolve(null) } }),
     ).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe('getCatalogRefs', () => {
+  it('devuelve solo los activos pedidos, sin repetir ids', async () => {
+    const s = setup();
+    await upsertProduct(MANAGER, PRODUCT, s.productDeps);
+    await upsertCostCenter(MANAGER, { code: 'CC-1', name: 'Centro' }, s.costDeps);
+    const productId = s.products.rows[0]?.id ?? '';
+    const costCenterId = s.costCenters.rows[0]?.id ?? '';
+    const equipment = memoryRepo<never, never>();
+
+    const refs = await getCatalogRefs(
+      REQUESTER,
+      { productIds: [productId, productId], equipmentIds: [], costCenterIds: [costCenterId] },
+      { products: s.products, costCenters: s.costCenters, equipment },
+    );
+
+    expect(refs.products.map((p) => p.id)).toEqual([productId]);
+    expect(refs.costCenters.map((c) => c.id)).toEqual([costCenterId]);
+    expect(refs.equipment).toEqual([]);
+  });
+
+  it('no devuelve los inactivos y exige permiso de lectura', async () => {
+    const s = setup();
+    await upsertProduct(MANAGER, PRODUCT, s.productDeps);
+    const productId = s.products.rows[0]?.id ?? '';
+    await setProductActive(MANAGER, { id: productId, active: false }, s.productDeps);
+    const deps = {
+      products: s.products,
+      costCenters: s.costCenters,
+      equipment: memoryRepo<never, never>(),
+    };
+    const input = { productIds: [productId], equipmentIds: [], costCenterIds: [] };
+
+    expect((await getCatalogRefs(REQUESTER, input, deps)).products).toEqual([]);
+    await expect(getCatalogRefs(NOBODY, input, deps)).rejects.toThrow(ForbiddenError);
   });
 });

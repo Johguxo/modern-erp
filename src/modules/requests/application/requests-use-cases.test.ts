@@ -182,7 +182,14 @@ function memorySequences(initial: SequenceState): SequenceRepository & { state: 
   return repo;
 }
 
-function setup(options: { approvals?: ApprovalStarter; costCenters?: string[] } = {}) {
+function setup(
+  options: {
+    approvals?: ApprovalStarter;
+    costCenters?: string[];
+    products?: { current: CatalogProduct[] };
+  } = {},
+) {
+  const products = options.products ?? { current: PRODUCTS };
   const audit: Parameters<AuditLog['record']>[0][] = [];
   const requests = memoryRequests();
   const sequences = memorySequences({
@@ -194,7 +201,7 @@ function setup(options: { approvals?: ApprovalStarter; costCenters?: string[] } 
   const catalog: CatalogLookup = {
     refs: (_ctx, ids) =>
       Promise.resolve({
-        products: PRODUCTS.filter((p) => ids.productIds.includes(p.id)),
+        products: products.current.filter((p) => ids.productIds.includes(p.id)),
         equipmentIds: ids.equipmentIds.filter((id) => id === EQ),
         costCenterIds: ids.costCenterIds.filter((id) => (options.costCenters ?? [CC]).includes(id)),
       }),
@@ -394,6 +401,51 @@ describe('submitRequest', () => {
     expect(s.sequences.state).toMatchObject({ nextNumber: 144, lastIssuedNumber: 143 });
     expect(s.started).toEqual([draft.id]);
     expect(s.audit.map((a) => a.action)).toEqual(['request.created', 'request.submitted']);
+  });
+
+  it('al enviar los precios del borrador quedan congelados y los ids de línea no cambian', async () => {
+    const catalog = { current: PRODUCTS };
+    const s = setup({ products: catalog });
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    catalog.current = PRODUCTS.map((p) => (p.id === P1 ? { ...p, referencePrice: '99.0000' } : p));
+
+    const sent = await submitRequest(ME, { id: draft.id, version: draft.version }, s.deps);
+
+    expect(sent.lines.map((l) => l.id)).toEqual(draft.lines.map((l) => l.id));
+    expect(sent.lines.map((l) => l.unitPrice)).toEqual(['12.5000', '3.3333']);
+    expect(sent.totalAmount).toBe('33.33');
+  });
+
+  it('recalcula el total desde las líneas guardadas si el guardado difiere', async () => {
+    const s = setup();
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    const stored = s.requests.store.get(draft.id);
+    if (!stored) throw new Error('missing');
+    s.requests.store.set(draft.id, {
+      request: { ...stored.request, totalAmount: '1.00' },
+      lines: stored.lines,
+    });
+
+    const sent = await submitRequest(ME, { id: draft.id, version: draft.version }, s.deps);
+
+    expect(sent.totalAmount).toBe('33.33');
+  });
+
+  it.each([
+    ['el producto ya no está activo', (p: CatalogProduct) => p.id !== P1, 'product_not_available'],
+    ['el producto cambió de moneda', null, 'product_currency_mismatch'],
+  ])('%s → ValidationError en lines.0.productId y no consume número', async (_n, keep, reason) => {
+    const catalog = { current: PRODUCTS };
+    const s = setup({ products: catalog });
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    catalog.current = keep
+      ? PRODUCTS.filter(keep)
+      : PRODUCTS.map((p) => (p.id === P1 ? { ...p, currency: 'USD' as const } : p));
+
+    await expect(
+      submitRequest(ME, { id: draft.id, version: draft.version }, s.deps),
+    ).rejects.toMatchObject({ code: 'VALIDATION', fieldErrors: { 'lines.0.productId': [reason] } });
+    expect(s.sequences.state.nextNumber).toBe(143);
   });
 
   it('el siguiente envío recibe el siguiente número', async () => {

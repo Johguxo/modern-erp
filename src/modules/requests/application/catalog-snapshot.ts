@@ -50,29 +50,7 @@ export async function resolveDraft(
     });
   }
 
-  const equipmentIds = [
-    ...(input.header.equipmentId ? [input.header.equipmentId] : []),
-    ...input.lines.flatMap((line) => (line.equipmentId ? [line.equipmentId] : [])),
-  ];
-  const found = await catalog.refs(ctx, {
-    productIds: input.lines.map((line) => line.productId),
-    equipmentIds,
-    costCenterIds: input.header.costCenterId ? [input.header.costCenterId] : [],
-  });
-  const products = new Map<string, CatalogProduct>(found.products.map((p) => [p.id, p]));
-  const activeEquipment = new Set(found.equipmentIds);
-
-  const errors: Record<string, string[]> = {};
-  const fail = (field: string, reason: string) => {
-    (errors[field] ??= []).push(reason);
-  };
-
-  if (input.header.costCenterId && !found.costCenterIds.includes(input.header.costCenterId)) {
-    fail('costCenterId', 'cost_center_not_available');
-  }
-  if (input.header.equipmentId && !activeEquipment.has(input.header.equipmentId)) {
-    fail('equipmentId', 'equipment_not_available');
-  }
+  const { products, activeEquipment, errors, fail } = await lookupRefs(ctx, input, catalog);
 
   const lines: LineInsert[] = [];
   input.lines.forEach((draft, index) => {
@@ -110,15 +88,78 @@ export async function resolveDraft(
     });
   });
 
-  const fields = Object.keys(errors);
-  if (fields.length > 0) {
-    const firstField = fields[0] ?? '';
-    throw new ValidationError({
-      reason: errors[firstField]?.[0] ?? 'invalid',
-      fieldErrors: errors,
-      message: `Invalid request references: ${fields.join(', ')}`,
-    });
-  }
+  throwIfInvalid(errors);
 
   return { lines, totalAmount: sumTotal(lines.map((line) => line.subtotal)) };
+}
+
+interface RefsInput {
+  readonly currency: Currency;
+  readonly header: HeaderRefs;
+  readonly lines: readonly { readonly productId: string; readonly equipmentId: string | null }[];
+}
+
+async function lookupRefs(ctx: Ctx, input: RefsInput, catalog: CatalogLookup) {
+  const equipmentIds = [
+    ...(input.header.equipmentId ? [input.header.equipmentId] : []),
+    ...input.lines.flatMap((line) => (line.equipmentId ? [line.equipmentId] : [])),
+  ];
+  const found = await catalog.refs(ctx, {
+    productIds: input.lines.map((line) => line.productId),
+    equipmentIds,
+    costCenterIds: input.header.costCenterId ? [input.header.costCenterId] : [],
+  });
+  const products = new Map<string, CatalogProduct>(found.products.map((p) => [p.id, p]));
+  const activeEquipment = new Set(found.equipmentIds);
+
+  const errors: Record<string, string[]> = {};
+  const fail = (field: string, reason: string) => {
+    (errors[field] ??= []).push(reason);
+  };
+
+  if (input.header.costCenterId && !found.costCenterIds.includes(input.header.costCenterId)) {
+    fail('costCenterId', 'cost_center_not_available');
+  }
+  if (input.header.equipmentId && !activeEquipment.has(input.header.equipmentId)) {
+    fail('equipmentId', 'equipment_not_available');
+  }
+
+  return { products, activeEquipment, errors, fail };
+}
+
+function throwIfInvalid(errors: Record<string, string[]>): void {
+  const fields = Object.keys(errors);
+  if (fields.length === 0) return;
+  const firstField = fields[0] ?? '';
+  throw new ValidationError({
+    reason: errors[firstField]?.[0] ?? 'invalid',
+    fieldErrors: errors,
+    message: `Invalid request references: ${fields.join(', ')}`,
+  });
+}
+
+/**
+ * Al enviar: revalida que productos, equipos y centro de costo sigan activos y del tenant y que la
+ * moneda de cada producto coincida con la de la solicitud. No toma precios: los del borrador quedan
+ * congelados.
+ */
+export async function assertRefsStillValid(
+  ctx: Ctx,
+  input: RefsInput,
+  catalog: CatalogLookup,
+): Promise<void> {
+  const { products, activeEquipment, errors, fail } = await lookupRefs(ctx, input, catalog);
+  input.lines.forEach((line, index) => {
+    const path = `lines.${index}`;
+    if (line.equipmentId && !activeEquipment.has(line.equipmentId)) {
+      fail(`${path}.equipmentId`, 'equipment_not_available');
+    }
+    const product = products.get(line.productId);
+    if (!product) {
+      fail(`${path}.productId`, 'product_not_available');
+    } else if (product.currency !== null && product.currency !== input.currency) {
+      fail(`${path}.productId`, 'product_currency_mismatch');
+    }
+  });
+  throwIfInvalid(errors);
 }

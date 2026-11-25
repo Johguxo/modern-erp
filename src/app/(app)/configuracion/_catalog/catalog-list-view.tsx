@@ -56,7 +56,7 @@ export function CatalogListView<T>({
         />
       ) : (
         <>
-          <CatalogFilters key={params.q ?? ''} params={params} />
+          <CatalogFilters params={params} />
           <DataTable
             columns={columns}
             data={rows}

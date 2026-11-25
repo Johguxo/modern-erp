@@ -18,8 +18,10 @@ import { messages } from '@/ui/messages/es-PE';
 
 const t = messages.inbox;
 
-export function requestHref(item: Pick<InboxItem, 'id' | 'isOwnDraft'>): Route {
-  return (item.isOwnDraft ? `/solicitudes/${item.id}/editar` : `/solicitudes/${item.id}`) as Route;
+// En solo lectura no se puede editar: el borrador propio también abre el detalle.
+export function requestHref(item: Pick<InboxItem, 'id' | 'isOwnDraft'>, readOnly = false): Route {
+  const edit = item.isOwnDraft && !readOnly;
+  return (edit ? `/solicitudes/${item.id}/editar` : `/solicitudes/${item.id}`) as Route;
 }
 
 const header = (label: string) => (
@@ -31,11 +33,13 @@ export function RequestsTable({
   timeZone,
   page,
   pageCount,
+  readOnly,
 }: {
   items: InboxItem[];
   timeZone: string;
   page: number;
   pageCount: number;
+  readOnly: boolean;
 }) {
   const columns = useMemo<ColumnDef<InboxItem, unknown>[]>(
     () => [
@@ -44,7 +48,7 @@ export function RequestsTable({
         header: () => header(t.columns.number),
         cell: ({ row }) => (
           <Link
-            href={requestHref(row.original)}
+            href={requestHref(row.original, readOnly)}
             className="font-semibold text-primary hover:text-primary-hover"
           >
             {row.original.number ?? t.draftNumber}
@@ -88,7 +92,7 @@ export function RequestsTable({
         ),
       },
     ],
-    [timeZone],
+    [timeZone, readOnly],
   );
 
   return (
@@ -96,7 +100,7 @@ export function RequestsTable({
       className="min-w-0 rounded-none border-0 [&_table]:min-w-[760px]"
       columns={columns}
       data={items}
-      getRowHref={requestHref}
+      getRowHref={(item) => requestHref(item, readOnly)}
       page={page}
       pageCount={pageCount}
       emptyState={

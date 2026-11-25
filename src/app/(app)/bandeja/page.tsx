@@ -69,6 +69,11 @@ export default async function InboxPage({
     redirect(inboxHref({ tab: params.tab, q: params.q, page: pageCount }));
   }
 
+  // Sin resultados en una página > 1 (p. ej. ?q= nuevo con ?page= viejo): a la primera.
+  if (data.total === 0 && params.page > 1) {
+    redirect(inboxHref({ tab: params.tab, q: params.q, page: 1 }));
+  }
+
   const greeting = t.greeting(firstName(data.viewerName));
   if (data.total === 0 && isPristine(params)) {
     return (
@@ -103,13 +108,14 @@ export default async function InboxPage({
       >
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-4 sm:px-5">
           <InboxTabs active={params.tab} q={params.q} />
-          <InboxSearch key={params.q ?? ''} q={params.q} />
+          <InboxSearch q={params.q} />
         </div>
         <RequestsTable
           items={data.items}
           timeZone={ctx.timezone}
           page={params.page}
           pageCount={pageCount}
+          readOnly={ctx.readOnly}
         />
       </section>
     </div>

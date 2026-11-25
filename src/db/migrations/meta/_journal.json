@@ -57,6 +57,20 @@
       "when": 1795559804226,
       "tag": "0007_catalog_code_format",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795569224493,
+      "tag": "0008_import_jobs_payload",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795569225528,
+      "tag": "0009_import_jobs_worker_update",
+      "breakpoints": true
     }
   ]
 }

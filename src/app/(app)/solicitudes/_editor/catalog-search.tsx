@@ -124,7 +124,11 @@ export function CatalogSearch({
                   variant="outline"
                   className="border-primary px-3.5 font-semibold text-primary"
                   disabled={otherCurrency}
-                  aria-label={t.addItem(product.code, product.name)}
+                  aria-label={
+                    otherCurrency
+                      ? t.cannotAdd(product.code)
+                      : t.addItem(product.code, product.name)
+                  }
                   onClick={() => onAdd(product)}
                 >
                   {otherCurrency ? t.otherCurrency : t.add}

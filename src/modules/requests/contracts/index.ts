@@ -4,7 +4,6 @@ export * as createDraftContract from './create-draft';
 export * as updateDraftContract from './update-draft';
 export * as submitRequestContract from './submit-request';
 export * as getRequestContract from './get-request';
-export * as getEditableDraftContract from './get-editable-draft';
 export * as getDocumentSequenceContract from './get-document-sequence';
 export * as updateDocumentSequenceContract from './update-document-sequence';
 export * as platformGetDocumentSequenceContract from './platform-get-document-sequence';
@@ -20,11 +19,10 @@ export { PREFIX_MAX, formatDocumentNumber, normalizePrefix } from '../domain/num
 // Dinero y cantidades: el editor del cliente calcula el total en vivo con las mismas funciones
 // decimal.js (HALF_UP) que usa el servidor, nunca con number.
 export {
-  CURRENCIES,
   incrementQuantity,
   lineSubtotal,
   parseQuantity,
   sumTotal,
   type Currency,
 } from '../domain/money';
-export { NOTES_MAX, REASON_MAX } from '../domain/request';
+export { REASON_MAX } from '../domain/request';

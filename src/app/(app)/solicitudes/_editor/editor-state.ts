@@ -123,7 +123,15 @@ const withoutField = (errors: EditorErrors, field: string): EditorErrors => {
   };
 };
 
-/** Cambiar líneas mueve los índices: los errores por línea dejan de valer, se limpian todos. */
+/** Quita solo los errores de líneas (`lines` y `lines.*`); los de cabecera y el general se conservan. */
+const withoutLineErrors = (errors: EditorErrors): EditorErrors => ({
+  ...errors,
+  fields: Object.fromEntries(
+    Object.entries(errors.fields).filter(([k]) => k !== 'lines' && !k.startsWith('lines.')),
+  ),
+});
+
+/** Cambiar líneas mueve los índices: los errores por línea dejan de valer, se limpian. */
 const editedLines = (
   state: EditorState,
   lines: readonly EditorLine[],
@@ -132,7 +140,7 @@ const editedLines = (
   ...state,
   lines,
   nextKey,
-  errors: NO_ERRORS,
+  errors: withoutLineErrors(state.errors),
   notice: null,
 });
 
@@ -163,8 +171,11 @@ export function reducer(state: EditorState, action: EditorAction): EditorState {
         return {
           ...state,
           errors: {
-            ...NO_ERRORS,
-            fields: { lines: messages.errors.reasons.too_many_lines({ max: MAX_LINES }) },
+            ...state.errors,
+            fields: {
+              ...withoutLineErrors(state.errors).fields,
+              lines: messages.errors.reasons.too_many_lines({ max: MAX_LINES }),
+            },
           },
         };
       }

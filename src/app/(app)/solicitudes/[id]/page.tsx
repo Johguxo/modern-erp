@@ -5,11 +5,13 @@ import { z } from 'zod';
 
 import { withTenant } from '@/db';
 import { createGetRequestDeps, getRequest } from '@/modules/requests';
+import { hasPermission } from '@/shared/authorization';
 import { isDomainError } from '@/shared/errors';
 import { MoneyText } from '@/ui/base/money-text';
 import { PageHeader } from '@/ui/base/page-header';
 import { StatusBadge } from '@/ui/base/status-badge';
 import { Button } from '@/ui/components/button';
+import { trimDecimal } from '@/ui/format/money';
 import { messages } from '@/ui/messages/es-PE';
 
 import { requireCtx } from '../../../_lib/session';
@@ -20,15 +22,19 @@ const t = messages.requests.detail;
 // línea de tiempo. Quien no puede ver la solicitud (otro tenant, borrador ajeno) recibe 404.
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) notFound();
-
   const { ctx } = await requireCtx();
+  if (!z.uuid().safeParse(id).success) notFound();
   const request = await withTenant(ctx, (tx) =>
     getRequest(ctx, { id }, createGetRequestDeps(tx)),
   ).catch((error: unknown) => {
     if (isDomainError(error) && error.code === 'NOT_FOUND') notFound();
     throw error;
   });
+  const canEdit =
+    request.status === 'draft' &&
+    !ctx.readOnly &&
+    hasPermission(ctx, 'requests.create') &&
+    request.requesterId === ctx.userId;
   const lines = request.lines.filter((line) => line.status === 'active');
 
   return (
@@ -39,7 +45,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
         actions={
           <>
             <StatusBadge status={request.status} className="self-center" />
-            {request.status === 'draft' ? (
+            {canEdit ? (
               <Button asChild variant="outline">
                 <Link href={`/solicitudes/${request.id}/editar` as Route}>{t.editDraft}</Link>
               </Button>
@@ -65,7 +71,9 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
                   key={line.id}
                   className="flex flex-wrap justify-between gap-2 border-t border-row-divider py-2"
                 >
-                  <span>{t.itemLine(line.productCode, line.description, line.quantity)}</span>
+                  <span>
+                    {t.itemLine(line.productCode, line.description, trimDecimal(line.quantity, 0))}
+                  </span>
                   <MoneyText amount={line.subtotal} currency={request.currency} />
                 </li>
               ))}

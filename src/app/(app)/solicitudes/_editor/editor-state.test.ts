@@ -114,11 +114,15 @@ describe('reducer · líneas', () => {
     expect(state.lines.map((l) => l.code)).toEqual(['PER-2']);
   });
 
-  it('cualquier cambio de líneas limpia los errores y el aviso', () => {
+  it('cualquier cambio de líneas limpia solo los errores de líneas y el aviso', () => {
     const base: EditorState = {
       ...run([add(FIL)]),
       notice: 'Borrador guardado.',
-      errors: { reload: false, general: 'Revisa', fields: { 'lines.0.quantity': 'mal' } },
+      errors: {
+        reload: false,
+        general: 'Revisa',
+        fields: { 'lines.0.quantity': 'mal', lines: 'x', reason: 'Falta' },
+      },
     };
     const key = base.lines[0]?.key ?? '';
 
@@ -130,7 +134,11 @@ describe('reducer · líneas', () => {
       { type: 'removeLine', key } as const,
     ]) {
       const next = reducer(base, action);
-      expect(next.errors).toEqual({ reload: false, fields: {} });
+      expect(next.errors).toEqual({
+        reload: false,
+        general: 'Revisa',
+        fields: { reason: 'Falta' },
+      });
       expect(next.notice).toBeNull();
     }
   });

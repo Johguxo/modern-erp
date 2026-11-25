@@ -212,7 +212,7 @@ describe('DELETE de líneas solo con la solicitud en borrador (política restric
     expect(deleted).toHaveLength(2);
   });
 
-  it.each(['in_approval', 'changes_requested', 'approved', 'delivered', 'rejected'])(
+  it.each(['in_approval', 'changes_requested', 'approved', 'delivered', 'rejected', 'cancelled'])(
     'con la solicitud en %s no se borra ninguna línea',
     async (status) => {
       const requestId = await insertRequest(A, {
@@ -234,6 +234,44 @@ describe('DELETE de líneas solo con la solicitud en borrador (política restric
       expect(rows).toHaveLength(1);
     },
   );
+});
+
+describe('guarda de la secuencia (trigger document_sequences_guard, migración 0012)', () => {
+  const setSequence = (tenantId: string, userId: string, values: Record<string, number | null>) =>
+    withTenant({ tenantId, userId }, (tx) =>
+      tx
+        .update(documentSequences)
+        .set(values as Partial<typeof documentSequences.$inferInsert>)
+        .where(eq(documentSequences.tenantId, tenantId)),
+    );
+  const read = async (tenantId: string) => {
+    const [row] = await admin()
+      .select()
+      .from(documentSequences)
+      .where(eq(documentSequences.tenantId, tenantId));
+    return row;
+  };
+
+  it('no deja bajar ni anular el último emitido, ni dejar el siguiente en un número ya emitido', async () => {
+    const world = await seedRequestsWorld(fx);
+    await setSequence(world.tenantId, world.userId, { nextNumber: 11, lastIssuedNumber: 10 });
+    const fails = async (values: Record<string, number | null>) =>
+      expect((await capturePgError(() => setSequence(world.tenantId, world.userId, values))).code).toBe(
+        '23514',
+      );
+
+    await fails({ lastIssuedNumber: null });
+    await fails({ lastIssuedNumber: 9 });
+    await fails({ nextNumber: 10 });
+    await fails({ nextNumber: 5 });
+    await fails({ nextNumber: 9, lastIssuedNumber: 9 });
+    expect(await read(world.tenantId)).toMatchObject({ nextNumber: 11, lastIssuedNumber: 10 });
+
+    await setSequence(world.tenantId, world.userId, { nextNumber: 11 });
+    await setSequence(world.tenantId, world.userId, { nextNumber: 21 });
+    await setSequence(world.tenantId, world.userId, { nextNumber: 31, lastIssuedNumber: 30 });
+    expect(await read(world.tenantId)).toMatchObject({ nextNumber: 31, lastIssuedNumber: 30 });
+  });
 });
 
 describe('checks y unicidad', () => {

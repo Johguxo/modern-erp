@@ -4,6 +4,7 @@ export {
   createGetRequestDeps,
   createPlatformSequenceDeps,
   createRequestsDeps,
+  createSequenceDeps,
   type RequestsExtras,
 } from './infrastructure/deps';
 export {

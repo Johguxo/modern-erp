@@ -12,6 +12,7 @@ import type {
   GetRequestDeps,
   PlatformSequenceDeps,
   RequestsDeps,
+  SequenceDeps,
 } from '../application/ports';
 
 import { createCatalogLookup } from './catalog-lookup';
@@ -40,6 +41,18 @@ export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): Requ
     audit: createAuditLogFor(tx),
     client: extras.client,
     clock: extras.clock,
+  };
+}
+
+/** Solo la secuencia de numeración (configuración de la empresa): sin catálogo ni reloj. */
+export function createSequenceDeps(
+  tx: DbExecutor,
+  extras: { readonly client: ClientInfo },
+): SequenceDeps {
+  return {
+    sequences: createDrizzleDocumentSequenceRepository(tx),
+    audit: createAuditLogFor(tx),
+    client: extras.client,
   };
 }
 

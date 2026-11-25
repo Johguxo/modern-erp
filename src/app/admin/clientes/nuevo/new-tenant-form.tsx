@@ -7,11 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useRef } from 'react';
 
 import type { PlanOption } from '@/modules/identity';
-import {
-  CURRENCIES,
-  platformCreateTenantContract,
-  slugFromName,
-} from '@/modules/identity/contracts';
+import { CURRENCIES, slugFromName } from '@/modules/identity/contracts';
 import { Button } from '@/ui/components/button';
 import {
   Form,
@@ -35,20 +31,25 @@ import { FormError } from '@/ui/forms/form-error';
 import { useZodForm } from '@/ui/forms/use-zod-form';
 import { messages } from '@/ui/messages/es-PE';
 
+import { DocumentSequenceFields } from '../../../_components/document-sequence-fields';
 import { createTenantAction } from '../actions';
+import * as createTenantContract from '../create-tenant-contract';
 import { MaxUsersInput } from '../max-users-input';
 
 const f = messages.admin.form;
+const sequenceText = messages.sequence;
 
 export function NewTenantForm({ plans }: { plans: readonly PlanOption[] }) {
   const router = useRouter();
   const slugEdited = useRef(false);
-  const form = useZodForm(platformCreateTenantContract.inputSchema, {
+  const form = useZodForm(createTenantContract.inputSchema, {
     name: '',
     slug: '',
     planCode: plans[0]?.code ?? '',
     maxUsers: '',
     currency: 'PEN',
+    sequencePrefix: 'SOF-',
+    sequenceNextNumber: '1',
     adminEmail: '',
   });
 
@@ -176,6 +177,11 @@ export function NewTenantForm({ plans }: { plans: readonly PlanOption[] }) {
             </FormItem>
           )}
         />
+        <fieldset className="flex flex-col gap-4 rounded-md border border-border p-4">
+          <legend className="px-1 font-semibold">{sequenceText.title}</legend>
+          <p className="text-sm text-muted-foreground">{sequenceText.description}</p>
+          <DocumentSequenceFields />
+        </fieldset>
         <FormField
           control={form.control}
           name="adminEmail"

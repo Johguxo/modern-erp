@@ -8,6 +8,8 @@ import {
   updateCompanySettings,
   uploadCompanyLogo,
 } from '@/modules/identity';
+import { createSequenceDeps, updateDocumentSequence } from '@/modules/requests';
+import { updateDocumentSequenceContract } from '@/modules/requests/contracts';
 import {
   removeCompanyLogoContract,
   updateCompanySettingsContract,
@@ -48,4 +50,17 @@ export const removeCompanyLogoAction = action(
   ({ ctx, input, tx, shared }) =>
     removeCompanyLogo(ctx, input, createSettingsDeps(tx, settingsExtras(shared))),
   { name: 'identity.removeCompanyLogo' },
+);
+
+// Numeración del SOF (E3-H1): mismo permiso que el resto de la empresa; en solo lectura, bloqueada.
+export const updateDocumentSequenceAction = action(
+  updateDocumentSequenceContract,
+  'settings.manage',
+  ({ ctx, input, tx, shared }) =>
+    updateDocumentSequence(
+      ctx,
+      { prefix: input.sequencePrefix, nextNumber: input.sequenceNextNumber },
+      createSequenceDeps(tx, { client: shared.client }),
+    ),
+  { name: 'requests.updateDocumentSequence' },
 );

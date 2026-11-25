@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import type { PlanOption, TenantDetail } from '@/modules/identity';
+import type { SequenceView } from '@/modules/requests';
 import {
   platformInviteTenantAdminContract,
   platformUpdateSubscriptionContract,
@@ -35,7 +36,12 @@ import { useZodForm } from '@/ui/forms/use-zod-form';
 import { formatDateTime } from '@/ui/format/date';
 import { messages } from '@/ui/messages/es-PE';
 
-import { inviteTenantAdminAction, updateSubscriptionAction } from '../actions';
+import { DocumentSequenceForm } from '../../../_components/document-sequence-form';
+import {
+  inviteTenantAdminAction,
+  updateDocumentSequenceAction,
+  updateSubscriptionAction,
+} from '../actions';
 import { MaxUsersInput } from '../max-users-input';
 import { SubscriptionBadge } from '../subscription-badge';
 
@@ -68,10 +74,12 @@ function initialNoticeOf(notice: DetailNotice | undefined): Notice | undefined {
 export function TenantDetailView({
   tenant,
   plans,
+  sequence,
   initialNotice,
 }: {
   tenant: TenantDetail;
   plans: readonly PlanOption[];
+  sequence: SequenceView | null;
   initialNotice?: DetailNotice;
 }) {
   const router = useRouter();
@@ -138,6 +146,26 @@ export function TenantDetailView({
           )}
           <InviteAdminForm tenantId={tenant.tenantId} onDone={done} />
         </section>
+
+        {sequence ? (
+          <section
+            aria-labelledby="sequence-title"
+            className="rounded-xl border border-border bg-surface p-4 md:p-6 lg:col-span-2"
+          >
+            <h2 id="sequence-title" className="mb-1 text-lg font-semibold">
+              {messages.sequence.title}
+            </h2>
+            <p className="mb-4 text-muted-foreground">{messages.sequence.description}</p>
+            <div className="max-w-xl">
+              <DocumentSequenceForm
+                sequence={sequence}
+                onSave={(values) =>
+                  updateDocumentSequenceAction({ tenantId: tenant.tenantId, ...values })
+                }
+              />
+            </div>
+          </section>
+        ) : null}
       </div>
     </>
   );

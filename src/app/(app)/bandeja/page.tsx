@@ -1,4 +1,3 @@
-import type { Route } from 'next';
 import Link from 'next/link';
 
 import { hasPermission } from '@/shared/authorization';
@@ -19,7 +18,7 @@ export default async function InboxPage() {
         actions={
           hasPermission(ctx, 'requests.create') ? (
             <Button asChild>
-              <Link href={'/solicitudes/nueva' as Route}>{messages.inbox.newRequest}</Link>
+              <Link href="/solicitudes/nueva">{messages.inbox.newRequest}</Link>
             </Button>
           ) : undefined
         }

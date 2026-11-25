@@ -23,7 +23,7 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 export const APP_NAV: readonly NavItem[] = [
   { href: '/bandeja', label: messages.nav.inbox, permission: 'requests.read_own' },
   {
-    href: '/solicitudes/nueva' as Route,
+    href: '/solicitudes/nueva',
     label: messages.nav.newRequest,
     permission: 'requests.create',
   },

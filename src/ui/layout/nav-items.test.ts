@@ -41,7 +41,7 @@ describe('visibleNavItems', () => {
 });
 
 describe('Nueva solicitud', () => {
-  const newRequest = APP_NAV.find((item) => (item.href as string) === '/solicitudes/nueva');
+  const newRequest = APP_NAV.find((item) => item.href === '/solicitudes/nueva');
 
   it('va después de la Bandeja y exige requests.create', () => {
     expect(APP_NAV[1]).toBe(newRequest);

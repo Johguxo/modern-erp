@@ -95,6 +95,14 @@ describe('canView', () => {
     expect(canView(sent, viewer('u2', ['requests.read_own']))).toBe(false);
     expect(canView(sent, viewer('u2'))).toBe(false);
   });
+
+  it('el aprobador asignado ve lo enviado, pero nunca un borrador ajeno', () => {
+    const sent = { requesterId: 'u1', status: 'in_approval' as const };
+    const draft = { requesterId: 'u1', status: 'draft' as const };
+    expect(canView(sent, viewer('u2', ['requests.read_own']), { assigned: true })).toBe(true);
+    expect(canView(sent, viewer('u2', ['requests.read_own']), { assigned: false })).toBe(false);
+    expect(canView(draft, viewer('u2', ['requests.read_own']), { assigned: true })).toBe(false);
+  });
 });
 
 describe('snapshotOf', () => {

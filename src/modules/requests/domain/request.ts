@@ -91,16 +91,18 @@ export function assertSubmittable(parts: SubmittableParts): void {
 }
 
 /**
- * Un borrador solo lo ve su solicitante. Lo demás lo ve el solicitante o quien tiene
- * `requests.read_all`. (En E3-H3 se suman los aprobadores asignados.)
+ * Un borrador solo lo ve su solicitante. Lo demás lo ve el solicitante, quien tiene
+ * `requests.read_all` o el aprobador asignado (`opts.assigned`, que pone el puerto
+ * ApprovalAssignments).
  */
 export function canView(
   request: Pick<Request, 'requesterId' | 'status'>,
   ctx: Pick<Ctx, 'userId' | 'permissions'>,
+  opts: { readonly assigned?: boolean } = {},
 ): boolean {
   if (request.requesterId === ctx.userId) return true;
   if (request.status === 'draft') return false;
-  return hasPermission(ctx, 'requests.read_all');
+  return hasPermission(ctx, 'requests.read_all') || opts.assigned === true;
 }
 
 /** Copia plana de la línea para `request_line_revisions.snapshot` (jsonb; el dinero va como texto). */

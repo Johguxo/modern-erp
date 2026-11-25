@@ -4,6 +4,7 @@ export * as createDraftContract from './create-draft';
 export * as updateDraftContract from './update-draft';
 export * as submitRequestContract from './submit-request';
 export * as getRequestContract from './get-request';
+export * as getEditableDraftContract from './get-editable-draft';
 export * as getDocumentSequenceContract from './get-document-sequence';
 export * as updateDocumentSequenceContract from './update-document-sequence';
 export * as platformGetDocumentSequenceContract from './platform-get-document-sequence';

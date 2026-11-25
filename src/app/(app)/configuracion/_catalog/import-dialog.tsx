@@ -57,6 +57,7 @@ interface Preview {
   total: number;
   valid: number;
   failed: number;
+  errorsTotal: number;
   rows: { row: number; values: Record<string, string | null> }[];
   errors: RowError[];
 }
@@ -104,13 +105,19 @@ export function ImportDialog({ kind, readOnly }: { kind: ImportKind; readOnly: b
     }
     setError(undefined);
     startTransition(async () => {
-      const result = await previewImportAction(formData(file));
-      if (!result.ok) {
+      try {
+        const result = await previewImportAction(formData(file));
+        if (!result.ok) {
+          setPreview(null);
+          setError(result.error.message);
+          return;
+        }
+        setPreview(result.data);
+      } catch {
+        // La promesa de la server action se rechazó (red, despliegue nuevo): mensaje genérico.
         setPreview(null);
-        setError(result.error.message);
-        return;
+        setError(messages.errors.codes.INTERNAL);
       }
-      setPreview(result.data);
     });
   };
 
@@ -118,16 +125,20 @@ export function ImportDialog({ kind, readOnly }: { kind: ImportKind; readOnly: b
     if (!file) return;
     setError(undefined);
     startTransition(async () => {
-      const result = await confirmImportAction(formData(file));
-      if (!result.ok) {
-        setError(result.error.message);
-        return;
+      try {
+        const result = await confirmImportAction(formData(file));
+        if (!result.ok) {
+          setError(result.error.message);
+          return;
+        }
+        if (!result.data.queued) {
+          setError(t.queueFailed);
+          return;
+        }
+        router.push(`/configuracion/importaciones/${result.data.jobId}`);
+      } catch {
+        setError(messages.errors.codes.INTERNAL);
       }
-      if (!result.data.queued) {
-        setError(t.queueFailed);
-        return;
-      }
-      router.push(`/configuracion/importaciones/${result.data.jobId}`);
     });
   };
 
@@ -252,7 +263,6 @@ function PreviewSection({ kind, preview }: { kind: ImportKind; preview: Preview 
                 return (
                   <TableCell
                     key={column}
-                    aria-invalid={cellError ? true : undefined}
                     aria-describedby={cellError ? errorId(row.row, column) : undefined}
                     className={cn(cellError && 'bg-warning-bg text-warning-text')}
                   >
@@ -285,9 +295,9 @@ function PreviewSection({ kind, preview }: { kind: ImportKind; preview: Preview 
               </li>
             ))}
           </ul>
-          {preview.errors.length > listed.length ? (
+          {preview.errorsTotal > listed.length ? (
             <p className="text-sm text-muted-foreground">
-              {t.errorsMore(preview.errors.length - listed.length)}
+              {t.errorsMore(preview.errorsTotal - listed.length)}
             </p>
           ) : null}
         </div>

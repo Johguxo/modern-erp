@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 
 import type { Locator, Page } from '@playwright/test';
+import writeXlsxFile from 'write-excel-file/node';
 
 import { messages } from '../../src/ui/messages/es-PE';
 
@@ -233,10 +234,10 @@ test('el admin importa productos desde un CSV: plantilla, vista previa con el er
     .setInputFiles({ name: 'productos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   await dialog.getByRole('button', { name: imp.review }).click();
 
-  // Vista previa: totales y el error marcado en la fila 3 (texto y aria-invalid).
+  // Vista previa: totales y el error marcado en la fila 3 (texto del error, asociado a la celda).
   await expect(dialog.getByText(imp.previewTotals(3, 2, 1))).toBeVisible();
   const badRow = dialog.getByRole('row').filter({ hasText: 'IMP-2' });
-  await expect(badRow.locator('[aria-invalid="true"]')).toHaveCount(1);
+  await expect(badRow.locator('[aria-describedby]')).toHaveCount(1);
   await expect(badRow).toContainText(`${imp.fields.name}: ${imp.rowReasons.required()}`);
   await expect(
     dialog.getByRole('listitem').filter({ hasText: `${imp.rowColumn} 3 (IMP-2)` }),
@@ -273,6 +274,74 @@ test('el admin importa productos desde un CSV: plantilla, vista previa con el er
   await expect(
     dialog.getByRole('alert').filter({ hasText: messages.errors.reasons.file_unsupported() }),
   ).toBeVisible();
+});
+
+test('el admin importa productos desde un .xlsx: plantilla descargada, llenada y subida', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  await signIn(page, admin, /\/bandeja$/);
+  await page.goto('/configuracion/productos');
+  await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
+
+  const imp = t.importer;
+  await page.getByRole('button', { name: t.import }).click();
+  const dialog = page.getByRole('dialog');
+
+  // Se descarga la plantilla de productos (.xlsx).
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    dialog.getByRole('link', { name: imp.downloadTemplate }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('plantilla-productos.xlsx');
+  expect(
+    readFileSync(await download.path())
+      .subarray(0, 2)
+      .toString('latin1'),
+  ).toBe('PK');
+
+  // Se "llena" con los mismos encabezados de la plantilla; el precio va como número de Excel.
+  const header = ['Código *', 'Nombre *', 'Unidad *', 'Categoría', 'Precio referencial', 'Moneda'];
+  const text = (value: string) => ({ value, type: String });
+  const filled = await writeXlsxFile([
+    {
+      sheet: imp.template.sheets.products,
+      data: [
+        header.map(text),
+        [
+          text('XLS-1'),
+          text('Tubería de acero'),
+          text('und'),
+          text('Plomería'),
+          { value: 19.99, type: Number },
+          text('PEN'),
+        ],
+        [text('XLS-2'), text('Cemento'), text('BOL'), null, null, null],
+      ],
+    },
+  ]).toBuffer();
+  await dialog.getByLabel(imp.fileLabel).setInputFiles({
+    name: 'productos.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: Buffer.from(filled),
+  });
+  await dialog.getByRole('button', { name: imp.review }).click();
+
+  // Vista previa: las 2 filas son válidas y se ven tal como se escribieron (precio exacto).
+  await expect(dialog.getByText(imp.previewTotals(2, 2, 0))).toBeVisible();
+  const first = dialog.getByRole('row').filter({ hasText: 'XLS-1' });
+  await expect(first).toContainText('Tubería de acero');
+  await expect(first).toContainText('19.99');
+  await expect(dialog.getByRole('row').filter({ hasText: 'XLS-2' })).toContainText('Cemento');
+  await expectNoPageOverflow(page);
+
+  // Confirmar: el worker crea los 2 productos.
+  await dialog.getByRole('button', { name: imp.confirm }).click();
+  await expect(page).toHaveURL(/\/configuracion\/importaciones\/[0-9a-f-]{36}$/);
+  const card = (label: string) => page.locator('dl > div').filter({ hasText: label });
+  await expect(card(imp.job.cards.created)).toContainText('2', { timeout: 30_000 });
+  await expect(card(imp.job.cards.failed)).toContainText('0');
 });
 
 test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', async ({

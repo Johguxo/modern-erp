@@ -18,6 +18,8 @@ export const outputSchema = z.object({
   failed: z.number().int().nonnegative(),
   /** Las primeras filas del archivo, tal como vienen. */
   rows: z.array(importRowSchema),
+  /** Todos los errores encontrados (la lista de abajo trae solo los primeros). */
+  errorsTotal: z.number().int().nonnegative(),
   /** Hasta 500 errores, en orden de fila. */
   errors: z.array(rowErrorSchema),
 });

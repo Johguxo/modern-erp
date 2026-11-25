@@ -193,6 +193,21 @@ describe('previewImport', () => {
     expect(jobs.jobs.size).toBe(0);
   });
 
+  it('errorsTotal cuenta todos los errores aunque la lista traiga solo los primeros 500', async () => {
+    const body: SpreadsheetCell[][] = Array.from({ length: 600 }, (_, i) => [
+      `P-${i}`,
+      null,
+      'UND',
+      null,
+    ]);
+    const { deps, input } = createDeps(sheet(...body));
+
+    const result = await previewImport(MANAGER, input(), deps);
+
+    expect(result.errors).toHaveLength(IMPORT_LIMITS.maxStoredErrors);
+    expect(result.errorsTotal).toBe(600);
+  });
+
   it('sin catalog.manage → ForbiddenError (quien solo crea SOF no importa)', async () => {
     const { deps, input } = createDeps(sheet(['P-1', 'Tubo', 'UND', null]));
     await expect(previewImport(REQUESTER, input(), deps)).rejects.toThrow(ForbiddenError);

@@ -16,6 +16,8 @@ export interface ImportPreview {
   readonly total: number;
   readonly valid: number;
   readonly failed: number;
+  /** Todos los errores; `errors` trae solo los primeros. */
+  readonly errorsTotal: number;
   readonly rows: ImportRow[];
   readonly errors: RowError[];
 }
@@ -46,6 +48,7 @@ export async function previewImport(
     total: input.rows.length,
     valid: validation.valid.length,
     failed: validation.failedRows,
+    errorsTotal: validation.errors.length,
     rows: input.rows.slice(0, IMPORT_LIMITS.previewRows),
     errors: validation.errors.slice(0, IMPORT_LIMITS.maxStoredErrors),
   };

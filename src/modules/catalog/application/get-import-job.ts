@@ -48,6 +48,7 @@ export async function getImportJob(
     id: job.id,
     kind: job.kind,
     status: job.status,
+    // E5: limpieza de payload de jobs estancados
     stalled:
       job.status === 'pending' &&
       deps.clock.now().getTime() - job.createdAt.getTime() > IMPORT_STALL_MS,

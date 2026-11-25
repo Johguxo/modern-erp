@@ -24,7 +24,7 @@ export async function getRequest(
     found.request.status !== 'draft' &&
     !hasPermission(ctx, 'requests.read_all');
   const assigned = needsAssignment
-    ? (await deps.assignments.assignedRequestIds(ctx)).includes(found.request.id)
+    ? await deps.assignments.isAssigned(ctx, found.request.id)
     : false;
   if (!canView(found.request, ctx, { assigned })) {
     throw new NotFoundError({ message: 'Request not found' });

@@ -240,6 +240,7 @@ export async function insertRequest(
 
 export const NO_ASSIGNMENTS: ApprovalAssignments = {
   assignedRequestIds: () => Promise.resolve([]),
+  isAssigned: () => Promise.resolve(false),
   pendingRequestIds: () => Promise.resolve([]),
 };
 
@@ -247,6 +248,7 @@ export const NO_ASSIGNMENTS: ApprovalAssignments = {
 export function fakeAssignments(assigned: string[], pending: string[] = assigned) {
   return {
     assignedRequestIds: () => Promise.resolve(assigned),
+    isAssigned: (_ctx: Ctx, requestId: string) => Promise.resolve(assigned.includes(requestId)),
     pendingRequestIds: () => Promise.resolve(pending),
   } satisfies ApprovalAssignments;
 }

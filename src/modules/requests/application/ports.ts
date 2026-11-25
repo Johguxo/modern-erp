@@ -69,6 +69,8 @@ export interface ApprovalStarter {
 export interface ApprovalAssignments {
   /** Solicitudes donde el usuario del ctx es aprobador asignado (cualquier paso). */
   assignedRequestIds(ctx: Ctx): Promise<readonly string[]>;
+  /** ¿El usuario del ctx es aprobador asignado de esta solicitud (cualquier paso)? */
+  isAssigned(ctx: Ctx, requestId: string): Promise<boolean>;
   /** Solicitudes cuyo paso pendiente actual es del usuario del ctx. */
   pendingRequestIds(ctx: Ctx): Promise<readonly string[]>;
 }

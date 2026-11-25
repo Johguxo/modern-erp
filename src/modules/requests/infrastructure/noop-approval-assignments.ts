@@ -4,5 +4,6 @@ import type { ApprovalAssignments } from '../application/ports';
 
 export const noopApprovalAssignments: ApprovalAssignments = {
   assignedRequestIds: () => Promise.resolve([]),
+  isAssigned: () => Promise.resolve(false),
   pendingRequestIds: () => Promise.resolve([]),
 };

@@ -213,6 +213,7 @@ function setup(
   const started: string[] = [];
   const assignments: ApprovalAssignments = {
     assignedRequestIds: () => Promise.resolve(options.assigned ?? []),
+    isAssigned: (_ctx, requestId) => Promise.resolve((options.assigned ?? []).includes(requestId)),
     pendingRequestIds: () => Promise.resolve(options.assigned ?? []),
   };
   const deps: SubmitDeps & { sequences: typeof sequences; assignments: ApprovalAssignments } = {

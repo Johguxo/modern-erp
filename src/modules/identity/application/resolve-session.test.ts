@@ -7,6 +7,7 @@ import type { EntryAccess } from '../domain/entry';
 
 import type { Entitlements } from './entitlements';
 import { resolveEntry } from './resolve-entry';
+import { resolveJobCtx } from './resolve-job-ctx';
 import { resolveTenantSession } from './resolve-tenant-session';
 import type { SessionRepository, TenantAccess } from './session-ports';
 
@@ -37,6 +38,11 @@ class InMemorySessions implements SessionRepository {
   findTenantAccess(authUserId: string, tenantId: string): Promise<TenantAccess | null> {
     this.tenantCalls.push([authUserId, tenantId]);
     return Promise.resolve(authUserId === AUTH_USER ? (this.byTenant[tenantId] ?? null) : null);
+  }
+
+  findTenantAccessByUserId(userId: string, tenantId: string): Promise<TenantAccess | null> {
+    const access = this.byTenant[tenantId] ?? null;
+    return Promise.resolve(access && access.userId === userId ? access : null);
   }
 }
 
@@ -113,6 +119,55 @@ describe('resolveTenantSession', () => {
     });
 
     expect(ctx).toBeNull();
+  });
+});
+
+describe('resolveJobCtx', () => {
+  const jobInput = (userId = 'user-1', tenantId = TENANT_A) => ({
+    userId,
+    tenantId,
+    requestId: 'job-1',
+  });
+
+  it('arma el Ctx con el id del usuario (sin sesión de Auth) y sus permisos', async () => {
+    const ctx = await resolveJobCtx(jobInput(), {
+      sessions: new InMemorySessions({ [TENANT_A]: ACCESS }),
+      entitlements: entitlements(() => Promise.resolve(false)),
+    });
+
+    expect(ctx).toEqual({
+      tenantId: TENANT_A,
+      userId: 'user-1',
+      roles: ['requester', 'approver'],
+      permissions: permissionsFor(['requester', 'approver']),
+      locale: 'es-PE',
+      timezone: 'America/Bogota',
+      requestId: 'job-1',
+      readOnly: false,
+    });
+  });
+
+  it('usuario o membresía inactivos (o de otro tenant) → null', async () => {
+    const deps = {
+      sessions: new InMemorySessions({ [TENANT_A]: ACCESS }),
+      entitlements: entitlements(() => Promise.resolve(false)),
+    };
+    expect(await resolveJobCtx(jobInput('otro'), deps)).toBeNull();
+    expect(await resolveJobCtx(jobInput('user-1', TENANT_B), deps)).toBeNull();
+  });
+
+  it('refleja el solo lectura del tenant y falla cerrado si Entitlements lanza', async () => {
+    const sessions = new InMemorySessions({ [TENANT_A]: ACCESS });
+    const readOnly = await resolveJobCtx(jobInput(), {
+      sessions,
+      entitlements: entitlements(() => Promise.resolve(true)),
+    });
+    const broken = await resolveJobCtx(jobInput(), {
+      sessions,
+      entitlements: entitlements(() => Promise.reject(new Error('db down'))),
+    });
+    expect(readOnly?.readOnly).toBe(true);
+    expect(broken?.readOnly).toBe(true);
   });
 });
 

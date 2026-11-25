@@ -1,8 +1,10 @@
 // Ciclo de vida del worker (ADR-001 regla 8), separado de src/worker.ts para poder probarlo.
-// Crea las colas sin consumidores: cada consumidor llega con su historia (E5, E2-H3). Un
-// consumidor vacío daría por hechos jobs reales.
+// Crea las colas y registra los consumidores de cada historia (hoy `catalog.import`, E2-H3; los de
+// E5 llegan con ella). Una cola sin consumidor real no se registra: un consumidor vacío daría por
+// hechos jobs reales.
 import { closeDatabases } from './db/admin';
 import { getEnv } from './env';
+import { createImportJobHandler } from './modules/catalog';
 import { createPgBossRuntime, type JobRuntime } from './shared/adapters/pg-boss-job-queue';
 import { getLogger } from './shared/adapters/pino-logger';
 import { QUEUES } from './shared/ports/job-queue';
@@ -27,6 +29,7 @@ export async function startWorker(
 
   await runtime.start();
   await runtime.ensureQueues(QUEUES);
+  await runtime.work('catalog.import', createImportJobHandler({ logger }));
   logger.info({ queues: QUEUES }, 'worker started');
 
   let stopping: Promise<void> | undefined;

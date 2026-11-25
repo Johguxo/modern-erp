@@ -2,7 +2,7 @@
 // Usa el rol dueño (DATABASE_URL_ADMIN) y su propio esquema (`pgboss`). pg-boss usa advisory
 // locks: en producción la conexión debe ser directa o del pooler en modo sesión (5432).
 //
-// Encolar desde la web (E5): se hace DESPUÉS del commit de la transacción del request. Riesgo
+// Encolar desde la web: se hace DESPUÉS del commit de la transacción del request. Riesgo
 // aceptado: si el proceso muere entre el commit y el envío, se pierde ese aviso (el recordatorio
 // diario lo cubre). Encolar dentro de la misma transacción queda como mejora futura.
 import { PgBoss } from 'pg-boss';
@@ -80,5 +80,69 @@ export function createPgBossRuntime(options: JobRuntimeOptions): JobRuntime {
   };
 }
 
-// Encolar desde la web (E5) necesitará su propia instancia de solo envío (sin supervise ni
-// schedule) iniciada una vez por proceso; se diseña en esa historia.
+export interface JobProducerOptions {
+  readonly connectionString: string;
+  readonly schema?: string;
+  readonly logger: Logger;
+  readonly applicationName?: string;
+}
+
+export interface JobProducer extends JobQueue {
+  /** Cierra la conexión (si llegó a abrirse). Idempotente. */
+  stop(): Promise<void>;
+}
+
+/**
+ * Productor de solo envío para la web (E2-H3): una instancia por proceso, perezosa (no conecta
+ * hasta el primer envío), sin supervise, sin schedule, sin migraciones y con un pool chico. El
+ * esquema y las colas los crea el worker al arrancar (`ensureQueues`); si aún no existen, el envío
+ * falla y el trabajo queda pendiente (la pantalla lo muestra como "no se pudo iniciar").
+ */
+export function createPgBossProducer(options: JobProducerOptions): JobProducer {
+  const { logger } = options;
+  let started: Promise<PgBoss> | undefined;
+
+  const connect = (): Promise<PgBoss> => {
+    started ??= (async () => {
+      const boss = new PgBoss({
+        connectionString: options.connectionString,
+        schema: options.schema ?? 'pgboss',
+        application_name: options.applicationName ?? 'linkus-web-producer',
+        max: 2,
+        supervise: false,
+        schedule: false,
+        migrate: false,
+        createSchema: false,
+      });
+      boss.on('error', (error: unknown) => logger.error({ err: error }, 'job producer error'));
+      await boss.start();
+      return boss;
+    })();
+    // Si el arranque falla, el siguiente envío vuelve a intentarlo.
+    started.catch(() => {
+      started = undefined;
+    });
+    return started;
+  };
+
+  return {
+    enqueue: async (name, payload, enqueueOptions = {}) => {
+      const boss = await connect();
+      return boss.send(name, payload, {
+        startAfter: enqueueOptions.startAfter,
+        singletonKey: enqueueOptions.singletonKey,
+        singletonSeconds: enqueueOptions.singletonSeconds,
+      });
+    },
+    stop: async () => {
+      const current = started;
+      started = undefined;
+      if (!current) return;
+      try {
+        await (await current).stop({ graceful: true, timeout: 5_000 });
+      } catch {
+        // Ya estaba cerrado o nunca abrió.
+      }
+    },
+  };
+}

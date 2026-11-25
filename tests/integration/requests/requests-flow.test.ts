@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDatabases, getDbAdmin } from '@/db/admin';
-import { auditEvents, requestLines } from '@/db/schema';
+import { auditEvents, documentSequences, products, requestLines } from '@/db/schema';
 import {
   createDraft,
   getRequest,
@@ -164,6 +164,55 @@ describe('envío', () => {
     expect(sent.number).toMatch(/^SOF-\d{4}$/);
     const again = await runRequests(A.ctx, (deps) => getRequest(A.ctx, { id: draft.id }, deps));
     expect(again.number).toBe(sent.number);
+  });
+
+  it('el precio del catálogo que cambia entre guardar y enviar no afecta al SOF: conserva precio e ids', async () => {
+    const world = await seedRequestsWorld(fx);
+    const draft = await create(world);
+    await getDbAdmin()
+      .update(products)
+      .set({ referencePrice: '99.0000' })
+      .where(eq(products.id, world.productIds.filter));
+
+    const sent = await runRequests(world.ctx, (deps) =>
+      submitRequest(world.ctx, { id: draft.id, version: draft.version }, deps),
+    );
+
+    expect(sent.lines.map((l) => l.id)).toEqual(draft.lines.map((l) => l.id));
+    expect(sent.lines.map((l) => [l.unitPrice, l.subtotal])).toEqual(
+      draft.lines.map((l) => [l.unitPrice, l.subtotal]),
+    );
+    expect(sent.totalAmount).toBe('33.33');
+  });
+
+  it('un número ya usado por otra solicitud → CONFLICT number_taken y no consume número', async () => {
+    const world = await seedRequestsWorld(fx, { prefix: 'A1', nextNumber: 1 });
+    const first = await create(world);
+    const sent = await runRequests(world.ctx, (deps) =>
+      submitRequest(world.ctx, { id: first.id, version: first.version }, deps),
+    );
+    expect(sent.number).toBe('A10001');
+    await getDbAdmin()
+      .update(documentSequences)
+      .set({ prefix: 'A', nextNumber: 10001 })
+      .where(eq(documentSequences.tenantId, world.tenantId));
+    const second = await create(world);
+
+    await expect(
+      runRequests(world.ctx, (deps) =>
+        submitRequest(world.ctx, { id: second.id, version: second.version }, deps),
+      ),
+    ).rejects.toMatchObject({ code: 'CONFLICT', reason: 'number_taken' });
+
+    const [sequence] = await getDbAdmin()
+      .select()
+      .from(documentSequences)
+      .where(eq(documentSequences.tenantId, world.tenantId));
+    expect(sequence).toMatchObject({ nextNumber: 10001, lastIssuedNumber: 1 });
+    const current = await runRequests(world.ctx, (deps) =>
+      getRequest(world.ctx, { id: second.id }, deps),
+    );
+    expect(current).toMatchObject({ status: 'draft', number: null });
   });
 
   it('un SOF enviado ya no se edita ni se vuelve a enviar', async () => {

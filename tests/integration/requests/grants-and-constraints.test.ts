@@ -256,9 +256,9 @@ describe('guarda de la secuencia (trigger document_sequences_guard, migración 0
     const world = await seedRequestsWorld(fx);
     await setSequence(world.tenantId, world.userId, { nextNumber: 11, lastIssuedNumber: 10 });
     const fails = async (values: Record<string, number | null>) =>
-      expect((await capturePgError(() => setSequence(world.tenantId, world.userId, values))).code).toBe(
-        '23514',
-      );
+      expect(
+        (await capturePgError(() => setSequence(world.tenantId, world.userId, values))).code,
+      ).toBe('23514');
 
     await fails({ lastIssuedNumber: null });
     await fails({ lastIssuedNumber: 9 });

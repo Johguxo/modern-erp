@@ -31,14 +31,14 @@ Estado: en revisión · Issue: [#17](https://github.com/Johguxo/modern-erp/issue
 **Como** usuario **quiero** ver mis solicitudes y las que esperan mi aprobación **para** saber qué me toca hacer.
 
 **Criterios de aceptación**
-- [ ] `/bandeja` fiel al prototipo `Main.dc.html`: tarjetas de resumen, pestañas, tabla y botón "+ Nueva solicitud".
-- [ ] Visibilidad: con `requests.read_all` ve todas las del tenant; si no, solo las propias y aquellas donde es aprobador asignado.
-- [ ] "Esperan mi aprobación" = documentos con un paso `pending` donde el usuario es asignado y aún no decidió.
-- [ ] Búsqueda por número o texto, paginación del servidor (25), orden por última actualización.
-- [ ] Pastillas de estado con texto (design tokens).
-- [ ] Rendimiento: < 1 s con 5,000 solicitudes en el seed de carga.
+- [x] `/bandeja` fiel al prototipo `Main.dc.html`: tarjetas de resumen, pestañas, tabla y botón "+ Nueva solicitud".
+- [x] Visibilidad: con `requests.read_all` ve todas las del tenant; si no, solo las propias y aquellas donde es aprobador asignado.
+- [x] "Esperan mi aprobación" = documentos con un paso `pending` donde el usuario es asignado y aún no decidió.
+- [x] Búsqueda por número o texto, paginación del servidor (25), orden por última actualización.
+- [x] Pastillas de estado con texto (design tokens).
+- [x] Rendimiento: < 1 s con 5,000 solicitudes en el seed de carga.
 
-Estado: pendiente · Issue: [#18](https://github.com/Johguxo/modern-erp/issues/18)
+Estado: en revisión · Issue: [#18](https://github.com/Johguxo/modern-erp/issues/18)
 
 ### E3-H4 · Detalle del SOF (pantalla 3, lectura)
 **Criterios de aceptación**

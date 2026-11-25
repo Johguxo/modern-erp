@@ -14,7 +14,7 @@
 
 | # | Pantalla | Prototipo | Ruta | Permiso | Casos de uso |
 |---|---|---|---|---|---|
-| 1 | Bandeja de solicitudes | `Main.dc.html` | `/bandeja` (también `/` redirige aquí) | `requests.read_own` | `requests.listRequests({filter, page})`, `approvals.countPendingForUser()` |
+| 1 | Bandeja de solicitudes | `Main.dc.html` | `/bandeja` (también `/` redirige aquí) | `requests.read_own` | `requests.listRequests({tab, q, page})` (página, total y conteos de las tarjetas; «aprobador asignado» y «Esperan mi aprobación» vía el puerto `ApprovalAssignments`, que implementa E4-H2) |
 | 2 | Nuevo SOF | `NuevoSOF.dc.html` | `/solicitudes/nueva` | `requests.create` | `catalog.searchProducts(q)`, `catalog.listEquipment()`, `catalog.listCostCenters()`, `requests.createDraft()`, `requests.updateDraft()`, `requests.submit()`, `approvals.previewRoute(docType, total)` |
 | 2b | Editar borrador | `NuevoSOF.dc.html` | `/solicitudes/[id]/editar` | dueño del borrador | igual que 2 |
 | 3 | Detalle del SOF | `DetalleSOF.dc.html` | `/solicitudes/[id]` | `requests.read_*` | `requests.getRequest(id)`, `approvals.getTimeline(requestId)`, `approvals.decide({stepId, decision, comment})`, `requests.correctLine()`, `requests.deliver()`, `requests.cancel()`, `documents.getPdfUrl(requestId)` |
@@ -65,7 +65,7 @@ El menú tiene un solo ítem «Catálogo» (→ `/configuracion/productos`, acti
 
 **1. Bandeja**
 - Pestañas: Todas · Esperan mi aprobación · En aprobación · Aprobadas (más Borradores y Rechazadas en un filtro "Más").
-- Tarjetas de resumen con los conteos de las tres primeras pestañas.
+- Tarjetas de resumen según el prototipo: Esperan mi aprobación · En aprobación · Aprobadas esta semana (desde el lunes 00:00 en la zona del tenant). Pestañas: Todas · Esperan mi aprobación · En aprobación · Aprobadas, y «Más» con Borradores y Rechazadas. Búsqueda por número o motivo (no por solicitante). Saludo solo con el nombre (sin el área del prototipo).
 - Tabla: N°, Tipo, Solicitante, Equipo/área, Monto, Estado (pastilla de color **con texto**), Actualizado. Clic en la fila abre el detalle.
 - Búsqueda por número o texto; paginación del servidor (25 por página).
 

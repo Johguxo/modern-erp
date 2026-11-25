@@ -49,12 +49,12 @@ describe('EmptyState', () => {
       <EmptyState
         title="Aún no hay solicitudes"
         description="Cuando crees o recibas solicitudes, aparecerán aquí."
-        action={<a href="/solicitudes/nueva">Crear la primera</a>}
+        action={<a href="/ejemplo">Crear la primera</a>}
       />,
     );
     expect(html).toContain('>Aún no hay solicitudes</p>');
     expect(html).toContain('>Cuando crees o recibas solicitudes, aparecerán aquí.</p>');
-    expect(html).toContain('<a href="/solicitudes/nueva">Crear la primera</a>');
+    expect(html).toContain('<a href="/ejemplo">Crear la primera</a>');
   });
 
   it('sin descripción ni acción solo muestra el título', () => {

@@ -24,6 +24,7 @@ export { createDraft, type CreateDraftInput } from './application/create-draft';
 export { updateDraft, type UpdateDraftInput } from './application/update-draft';
 export { submitRequest, type SubmitRequestInput } from './application/submit-request';
 export { getRequest } from './application/get-request';
+export { getEditableDraft } from './application/get-editable-draft';
 export { getDocumentSequence } from './application/get-document-sequence';
 export { updateDocumentSequence } from './application/update-document-sequence';
 export { platformGetDocumentSequence } from './application/platform-get-document-sequence';

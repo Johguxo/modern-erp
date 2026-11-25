@@ -17,15 +17,15 @@ Estado: en revisión · Issue: [#16](https://github.com/Johguxo/modern-erp/issue
 **Como** solicitante **quiero** armar un SOF eligiendo repuestos del catálogo **para** no escribir códigos ni precios a mano.
 
 **Criterios de aceptación**
-- [ ] `/solicitudes/nueva` y `/solicitudes/[id]/editar` fieles al prototipo `NuevoSOF.dc.html`.
-- [ ] Buscador de catálogo con resultados en vivo (código, nombre, stock, precio, "Agregar"); agregar uno existente suma 1.
-- [ ] Ítems editables (cantidad, equipo por línea, quitar); total en vivo.
-- [ ] "Guardar borrador" y "Enviar a aprobación" (mínimo 1 ítem, cantidades > 0).
-- [ ] Panel "Ruta de aprobación" con los pasos que aplicarán (usa `approvals.previewRoute`; mientras E4 no exista, muestra la política sin resolver usuarios).
-- [ ] Funciona en el celular (390 px).
-- [ ] E2E: crear borrador, editarlo y enviarlo.
+- [x] `/solicitudes/nueva` y `/solicitudes/[id]/editar` fieles al prototipo `NuevoSOF.dc.html`.
+- [x] Buscador de catálogo con resultados en vivo (código, nombre, stock, precio, "Agregar"); agregar uno existente suma 1.
+- [x] Ítems editables (cantidad, equipo por línea, quitar); total en vivo.
+- [x] "Guardar borrador" y "Enviar a aprobación" (mínimo 1 ítem, cantidades > 0).
+- [x] Panel "Ruta de aprobación" con los pasos que aplicarán (usa `approvals.previewRoute`; mientras E4 no exista, muestra la política sin resolver usuarios).
+- [x] Funciona en el celular (390 px).
+- [x] E2E: crear borrador, editarlo y enviarlo.
 
-Estado: pendiente · Issue: [#17](https://github.com/Johguxo/modern-erp/issues/17)
+Estado: en revisión · Issue: [#17](https://github.com/Johguxo/modern-erp/issues/17)
 
 ### E3-H3 · Bandeja (pantalla 1)
 **Como** usuario **quiero** ver mis solicitudes y las que esperan mi aprobación **para** saber qué me toca hacer.

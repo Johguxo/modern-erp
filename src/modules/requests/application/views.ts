@@ -24,7 +24,8 @@ export interface RequestView {
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;
-  readonly lines: readonly RequestLineView[];
+  /** Mutable para encajar con la salida de los contratos Zod. */
+  readonly lines: RequestLineView[];
 }
 
 const iso = (date: Date | null): string | null => (date ? date.toISOString() : null);

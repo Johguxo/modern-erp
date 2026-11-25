@@ -1,5 +1,5 @@
 // Ítems del menú lateral. Cada ítem puede exigir un permiso; el filtro se activa cuando exista
-// el ctx con sesión (E1-H2). Las rutas nuevas se agregan con su historia (E3-H2: Nueva solicitud).
+// el ctx con sesión (E1-H2). Las rutas nuevas se agregan con su historia.
 import type { Route } from 'next';
 
 import type { Permission } from '@/shared/permissions';
@@ -22,6 +22,11 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
 
 export const APP_NAV: readonly NavItem[] = [
   { href: '/bandeja', label: messages.nav.inbox, permission: 'requests.read_own' },
+  {
+    href: '/solicitudes/nueva',
+    label: messages.nav.newRequest,
+    permission: 'requests.create',
+  },
   {
     href: '/configuracion/productos',
     label: messages.nav.catalog,

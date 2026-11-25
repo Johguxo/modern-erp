@@ -10,6 +10,8 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md` §2–§4 y §8.
 - [ ] `previewRoute(docType, total)` devuelve los pasos y aprobadores que aplicarían.
 - [ ] `platform.createTenant` (E1-H4) crea la política "SOF estándar": paso 1 "Almacén" (rol `warehouse`) y paso 2 "Gerencia local" (rol `approver`); el admin del cliente la ajusta después.
 
+> Nota (E3-H2): `approvals.previewRoute` ya existe con el puerto `PolicySource.activeFor(ctx, {docType, total})` y un adaptador provisional (`standardPolicySource`, `STANDARD_SOF_POLICY`). Aquí se reemplaza ese adaptador por el repositorio de políticas (aplicando `min_amount` y resolviendo aprobadores) y se reutiliza `STANDARD_SOF_POLICY` como semilla en `createTenant`; la UI del panel no cambia.
+
 Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/21)
 
 ### E4-H2 · Instancia y decisión
@@ -23,6 +25,8 @@ Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Reenvío tras `changes_requested` crea pasos nuevos desde el primero; los eventos anteriores se conservan.
 - [ ] Botones en la pantalla 3 y contador en la bandeja.
 - [ ] Eventos en `approval_events` y registro en `audit_events`.
+
+> Nota (E3-H1/H2): `submitRequest` llama al puerto `ApprovalStarter` (hoy `noopApprovalStarter`). Aquí se reemplaza por el real. Los SOF enviados antes de esta historia quedaron en `in_approval` sin instancia: crearles su instancia (o confirmar que no hay ninguno en producción).
 
 Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
 

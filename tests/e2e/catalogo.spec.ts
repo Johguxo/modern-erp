@@ -2,6 +2,8 @@
 // vacío, crear, código repetido, editar con el código de solo lectura, buscar (sin ver datos de
 // otro tenant), desactivar con confirmación y filtrar por estado; un usuario sin catalog.manage
 // no ve el ítem y recibe "no encontrada". Inicios de sesión por proyecto: admin 1, solicitante 1.
+import { readFileSync } from 'node:fs';
+
 import type { Locator, Page } from '@playwright/test';
 
 import { messages } from '../../src/ui/messages/es-PE';
@@ -193,6 +195,86 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expectNoPageOverflow(page);
 });
 
+test('el admin importa productos desde un CSV: plantilla, vista previa con el error y resultado', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  await signIn(page, admin, /\/bandeja$/);
+  await page.goto('/configuracion/productos');
+  await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
+
+  const imp = t.importer;
+  await page.getByRole('button', { name: t.import }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: imp.title.products })).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // La plantilla se descarga como .xlsx.
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    dialog.getByRole('link', { name: imp.downloadTemplate }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('plantilla-productos.xlsx');
+  const templatePath = await download.path();
+  expect(readFileSync(templatePath).subarray(0, 2).toString('latin1')).toBe('PK');
+
+  // CSV de 3 filas con punto y coma: la fila 3 no tiene nombre.
+  const csv = [
+    'codigo;nombre;unidad;precio',
+    'IMP-1;Tubo PVC;und;12.50',
+    'IMP-2;;UND;',
+    'IMP-3;Cemento;BOL;',
+    '',
+  ].join('\n');
+  await expect(dialog.getByRole('button', { name: imp.review })).toBeDisabled();
+  await dialog
+    .getByLabel(imp.fileLabel)
+    .setInputFiles({ name: 'productos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await dialog.getByRole('button', { name: imp.review }).click();
+
+  // Vista previa: totales y el error marcado en la fila 3 (texto y aria-invalid).
+  await expect(dialog.getByText(imp.previewTotals(3, 2, 1))).toBeVisible();
+  const badRow = dialog.getByRole('row').filter({ hasText: 'IMP-2' });
+  await expect(badRow.locator('[aria-invalid="true"]')).toHaveCount(1);
+  await expect(badRow).toContainText(`${imp.fields.name}: ${imp.rowReasons.required()}`);
+  await expect(
+    dialog.getByRole('listitem').filter({ hasText: `${imp.rowColumn} 3 (IMP-2)` }),
+  ).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // Confirmar: el worker procesa y la página de resultado se actualiza sola.
+  await dialog.getByRole('button', { name: imp.confirm }).click();
+  await expect(page).toHaveURL(/\/configuracion\/importaciones\/[0-9a-f-]{36}$/);
+  const card = (label: string) => page.locator('dl > div').filter({ hasText: label });
+  await expect(card(imp.job.cards.created)).toContainText('2', { timeout: 30_000 });
+  await expect(card(imp.job.cards.failed)).toContainText('1');
+  await expect(card(imp.job.cards.updated)).toContainText('0');
+  await expect(page.getByText(messages.status.import_completed)).toBeVisible();
+  const errorRow = page.getByRole('row').filter({ hasText: 'IMP-2' });
+  await expect(errorRow).toContainText('3');
+  await expect(errorRow).toContainText(`${imp.fields.name}: ${imp.rowReasons.required()}`);
+  await expectNoPageOverflow(page);
+
+  // Los productos válidos están en la lista; el inválido no.
+  await page.getByRole('link', { name: imp.job.back }).click();
+  await expect(page).toHaveURL(/\/configuracion\/productos$/);
+  await expect(rowOf(page, 'IMP-1')).toContainText('Tubo PVC');
+  await expect(rowOf(page, 'IMP-1')).toContainText(/S\/\s12\.50/);
+  await expect(rowOf(page, 'IMP-3')).toContainText('Cemento');
+  await expect(rowOf(page, 'IMP-2')).toHaveCount(0);
+
+  // Un archivo que no es .xlsx ni .csv se rechaza con un mensaje claro y no se importa nada.
+  await page.getByRole('button', { name: t.import }).click();
+  await dialog
+    .getByLabel(imp.fileLabel)
+    .setInputFiles({ name: 'notas.txt', mimeType: 'text/plain', buffer: Buffer.from('hola') });
+  await dialog.getByRole('button', { name: imp.review }).click();
+  await expect(
+    dialog.getByRole('alert').filter({ hasText: messages.errors.reasons.file_unsupported() }),
+  ).toBeVisible();
+});
+
 test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', async ({
   page,
   accounts,
@@ -215,4 +297,13 @@ test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', as
     await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: title })).toHaveCount(0);
   }
+
+  // La plantilla y la página de resultado de importación tampoco existen para él.
+  const template = await page.request.get('/configuracion/productos/plantilla');
+  expect(template.status()).toBe(404);
+  const result = await page.goto(
+    '/configuracion/importaciones/00000000-0000-4000-8000-000000000000',
+  );
+  expect(result?.status()).toBe(200);
+  await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
 });

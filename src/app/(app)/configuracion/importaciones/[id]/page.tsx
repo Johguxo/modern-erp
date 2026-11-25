@@ -11,7 +11,6 @@ import { DateText } from '@/ui/base/date-text';
 import { PageHeader } from '@/ui/base/page-header';
 import { StatusBadge, type BadgeStatus } from '@/ui/base/status-badge';
 import { buttonVariants } from '@/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/components/card';
 import {
   Table,
   TableBody,
@@ -131,16 +130,10 @@ function Result({
       <p>{t.total(summary.total)}</p>
       <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map(({ key, value }) => (
-          <Card key={key} className="gap-2 py-4">
-            <CardHeader className="px-4">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                <dt>{t.cards[key]}</dt>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4">
-              <dd className="text-3xl font-bold">{value}</dd>
-            </CardContent>
-          </Card>
+          <div key={key} className="rounded-xl border border-border bg-card p-4">
+            <dt className="text-sm font-medium text-muted-foreground">{t.cards[key]}</dt>
+            <dd className="mt-1 text-3xl font-bold">{value}</dd>
+          </div>
         ))}
       </dl>
 

@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  createDraftContract,
+  platformUpdateDocumentSequenceContract,
+  submitRequestContract,
+  updateDocumentSequenceContract,
+  updateDraftContract,
+} from './index';
+
+const ID = '11111111-1111-4111-8111-111111111111';
+const PRODUCT = '22222222-2222-4222-8222-222222222222';
+
+describe('createDraftContract', () => {
+  const parse = (value: unknown) => createDraftContract.inputSchema.safeParse(value);
+
+  it('acepta un borrador mínimo y normaliza cantidad, notas y vacíos', () => {
+    const result = parse({
+      costCenterId: '',
+      reason: '  ',
+      lines: [{ productId: PRODUCT, quantity: ' 2.5 ', notes: ' ' }],
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      costCenterId: null,
+      equipmentId: null,
+      reason: null,
+      lines: [{ productId: PRODUCT, quantity: '2.500', equipmentId: null, notes: null }],
+    });
+  });
+
+  it('no acepta precios, subtotales ni total del cliente: se descartan', () => {
+    const result = parse({
+      lines: [{ productId: PRODUCT, quantity: '1', unitPrice: '0.01', subtotal: '0.01' }],
+      totalAmount: '0.01',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      costCenterId: null,
+      equipmentId: null,
+      reason: null,
+      lines: [{ productId: PRODUCT, quantity: '1.000', equipmentId: null, notes: null }],
+    });
+  });
+
+  it.each(['0', '-1', '1.2345', 'abc', '', '1e3'])('rechaza la cantidad %j', (quantity) => {
+    expect(parse({ lines: [{ productId: PRODUCT, quantity }] }).success).toBe(false);
+  });
+
+  it('la cantidad no puede ser number', () => {
+    expect(parse({ lines: [{ productId: PRODUCT, quantity: 2 }] }).success).toBe(false);
+  });
+
+  it('rechaza más de 200 líneas y un motivo de más de 500 caracteres', () => {
+    const line = { productId: PRODUCT, quantity: '1' };
+    expect(parse({ lines: Array.from({ length: 200 }, () => line) }).success).toBe(true);
+    expect(parse({ lines: Array.from({ length: 201 }, () => line) }).success).toBe(false);
+    expect(parse({ reason: 'x'.repeat(501), lines: [] }).success).toBe(false);
+  });
+});
+
+describe('updateDraftContract y submitRequestContract', () => {
+  it('piden id y versión entera mayor o igual a 1', () => {
+    const update = updateDraftContract.inputSchema;
+    expect(update.safeParse({ id: ID, version: 1, lines: [] }).success).toBe(true);
+    expect(update.safeParse({ id: ID, lines: [] }).success).toBe(false);
+    const submit = submitRequestContract.inputSchema;
+    expect(submit.safeParse({ id: ID, version: 0 }).success).toBe(false);
+    expect(submit.safeParse({ id: ID, version: 2 }).success).toBe(true);
+    expect(submit.safeParse({ id: 'x', version: 2 }).success).toBe(false);
+  });
+});
+
+describe('contratos de la secuencia', () => {
+  const parse = (value: unknown) => updateDocumentSequenceContract.inputSchema.safeParse(value);
+
+  it('normaliza el prefijo a mayúsculas y convierte el número del formulario', () => {
+    const result = parse({ sequencePrefix: ' gr- ', sequenceNextNumber: '500' });
+
+    expect(result.data).toEqual({ sequencePrefix: 'GR-', sequenceNextNumber: 500 });
+  });
+
+  it.each([
+    [{ sequencePrefix: '', sequenceNextNumber: 1 }],
+    [{ sequencePrefix: 'A B', sequenceNextNumber: 1 }],
+    [{ sequencePrefix: 'ABCDEFGHIJKLMNOPQ', sequenceNextNumber: 1 }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: 0 }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: -3 }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: 1.5 }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: '' }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: 2_000_000_001 }],
+  ])('rechaza %j', (value) => {
+    expect(parse(value).success).toBe(false);
+  });
+
+  it('la consola agrega el tenantId', () => {
+    const schema = platformUpdateDocumentSequenceContract.inputSchema;
+    const input = { tenantId: ID, sequencePrefix: 'SOF-', sequenceNextNumber: 1 };
+
+    expect(schema.safeParse(input).success).toBe(true);
+    expect(schema.safeParse({ ...input, tenantId: 'x' }).success).toBe(false);
+  });
+});

@@ -297,8 +297,7 @@ describe('importación de productos', () => {
 
   it('la moneda de los precios sin moneda es la de la empresa', async () => {
     await getDbAdmin().execute(
-      (await import('drizzle-orm'))
-        .sql`update tenant_settings set currency = 'USD' where tenant_id = ${B}`,
+      sql`update tenant_settings set currency = 'USD' where tenant_id = ${B}`,
     );
     const jobId = await createJob(B, ADMIN_B, csv(PRODUCT_HEADER, 'CUR-1,Con precio,UND,,10,'));
 

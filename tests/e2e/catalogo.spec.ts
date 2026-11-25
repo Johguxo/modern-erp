@@ -153,7 +153,7 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(rowOf(page, 'P-002').getByRole('button', { name: /Activar/ })).toBeVisible();
   await expectNoPageOverflow(page);
 
-  // Equipos: pestaña activa, crear, importar deshabilitado.
+  // Equipos: pestaña activa, crear, importar habilitado.
   const tabs = page.getByRole('navigation', { name: t.sectionsLabel });
   await tabs.getByRole('link', { name: t.sections.equipment }).click();
   await expect(page).toHaveURL(/\/configuracion\/equipos$/);
@@ -168,7 +168,7 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   );
   await page.keyboard.press('Escape');
   await expect(page.getByText(t.equipment.emptyTitle)).toBeVisible();
-  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
+  await expect(page.getByRole('button', { name: t.import })).toBeEnabled();
   await page.getByRole('button', { name: t.equipment.new }).click();
   await dialog.getByLabel(t.fields.code, { exact: true }).fill('EQ-01');
   await dialog.getByLabel(t.fields.name, { exact: true }).fill('Grúa torre');

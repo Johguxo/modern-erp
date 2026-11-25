@@ -2,14 +2,14 @@
 // tenantId. app_user no puede cambiar el código ni borrar (grants de 0006).
 import { and, asc, count, eq, ilike, inArray, sql } from 'drizzle-orm';
 
-import type { DbExecutor } from '@/db';
+import { escapeLike, type DbExecutor } from '@/db';
 import { products } from '@/db/schema';
 import { offsetOf } from '@/shared/pagination';
 
 import type { ProductRepository, ProductSearchItem, ProductView } from '../application/ports';
 import { formatPrice, type Currency } from '../domain/money';
 
-import { escapeLike, insertOrCodeTaken, masterWhere } from './master-data-sql';
+import { insertOrCodeTaken, masterWhere } from './master-data-sql';
 
 const columns = {
   id: products.id,

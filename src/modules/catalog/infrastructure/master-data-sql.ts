@@ -1,20 +1,10 @@
 // Piezas comunes de los repositorios de datos maestros (solo Drizzle; nada de reglas de negocio).
 import { and, eq, ilike, or, type AnyColumn, type SQL } from 'drizzle-orm';
 
-import { isUniqueViolation, type DbExecutor } from '@/db';
+import { escapeLike, isUniqueViolation, searchWords, type DbExecutor } from '@/db';
 import { ConflictError } from '@/shared/errors';
 
 import type { ListFilter } from '../application/ports';
-
-/** Escapa % y _ (y la barra) para que el texto del usuario se busque tal cual en LIKE. */
-export function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, (char) => `\\${char}`);
-}
-
-/** Palabras de la búsqueda, sin vacíos. */
-export function searchWords(q: string): string[] {
-  return q.split(/\s+/).filter((word) => word.length > 0);
-}
 
 interface MasterColumns {
   readonly tenantId: AnyColumn;

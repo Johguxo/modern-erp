@@ -310,3 +310,49 @@ test('sin solicitudes muestra el vacío; en solo lectura los botones quedan desh
     await context.close();
   }
 });
+
+test('la búsqueda conserva el foco y lo escrito aunque se pause entre teclas', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  const tenantId = admin.tenants[0]?.id ?? '';
+  await accounts.addRequestCatalog(tenantId);
+  const requester = await accounts.addMember(tenantId, ['requester']);
+  await accounts.addRequests(tenantId, [
+    {
+      requesterId: requester.userId,
+      status: 'approved',
+      number: 'SOF-0201',
+      reason: 'Compra de tornillos',
+    },
+    { requesterId: requester.userId, status: 'approved', number: 'SOF-0202', reason: 'Cinta' },
+  ]);
+  await signIn(page, requester, /\/bandeja$/);
+  await expect(rowsOf(page)).toHaveCount(2);
+
+  // Registra si el esqueleto de carga (role=status, aria-busy) aparece alguna vez al buscar.
+  await page.evaluate(() => {
+    const w = window as unknown as { __skeleton: boolean };
+    w.__skeleton = false;
+    new MutationObserver(() => {
+      if (document.querySelector('[aria-busy="true"]')) w.__skeleton = true;
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+
+  const search = page.getByLabel(t.search);
+  await search.click();
+  await search.pressSequentially('torni');
+  await page.waitForTimeout(600); // > debounce: el servidor responde mientras se sigue escribiendo
+  await expect(page).toHaveURL(/q=torni/);
+  await expect(search).toBeFocused();
+  await search.pressSequentially('llos');
+  await expect(page).toHaveURL(/q=tornillos/);
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('tornillos');
+  await expect(rowsOf(page)).toHaveCount(1);
+  await expect(rowWith(page, 'SOF-0201')).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __skeleton: boolean }).__skeleton)).toBe(
+    false,
+  );
+});

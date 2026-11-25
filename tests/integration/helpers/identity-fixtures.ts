@@ -10,12 +10,16 @@ import { pgErrorCode } from '@/db/errors';
 import {
   auditEvents,
   costCenters,
+  documentSequences,
   equipment,
   importJobs,
   invitations,
   memberships,
   platformAdmins,
   products,
+  requestLineRevisions,
+  requestLines,
+  requests,
   plans,
   subscriptions,
   tenantSettings,
@@ -210,6 +214,13 @@ export function createIdentityFixtures(): IdentityFixtures {
         for (const { id } of created) if (!userIds.includes(id)) userIds.push(id);
       }
       if (tenantIds.length > 0) {
+        // Solicitudes (E3-H1): primero, porque apuntan al catálogo y a users.
+        await admin
+          .delete(requestLineRevisions)
+          .where(inArray(requestLineRevisions.tenantId, tenantIds));
+        await admin.delete(requestLines).where(inArray(requestLines.tenantId, tenantIds));
+        await admin.delete(requests).where(inArray(requests.tenantId, tenantIds));
+        await admin.delete(documentSequences).where(inArray(documentSequences.tenantId, tenantIds));
         // Catálogo (E2-H1): sin FK entre ellas, solo hacia tenants y users.
         await admin.delete(importJobs).where(inArray(importJobs.tenantId, tenantIds));
         await admin.delete(products).where(inArray(products.tenantId, tenantIds));

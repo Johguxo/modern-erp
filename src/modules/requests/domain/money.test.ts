@@ -7,6 +7,7 @@ import {
   formatAmount,
   formatQuantity,
   formatUnitPrice,
+  incrementQuantity,
   lineSubtotal,
   normalizeQuantity,
   parseQuantity,
@@ -97,5 +98,28 @@ describe('formatos', () => {
     expect(formatUnitPrice('3.5')).toBe('3.5000');
     expect(formatAmount('10')).toBe('10.00');
     expect(formatAmount('10.1')).toBe('10.10');
+  });
+});
+
+describe('incrementQuantity', () => {
+  it.each([
+    ['1', '2'],
+    ['2.5', '3.5'],
+    ['0.001', '1.001'],
+    [' 3.250 ', '4.25'],
+    ['', '1'],
+    ['abc', '1'],
+    ['0', '1'],
+    ['-4', '1'],
+  ])('%j + 1 = %j', (raw, expected) => {
+    expect(incrementQuantity(raw)).toBe(expected);
+  });
+
+  it('no desborda numeric(14,3): deja la cantidad como estaba', () => {
+    expect(incrementQuantity('99999999999.999')).toBe('99999999999.999');
+  });
+
+  it('el resultado siempre es una cantidad válida', () => {
+    expect(parseQuantity(incrementQuantity('7.125'))?.toString()).toBe('8.125');
   });
 });

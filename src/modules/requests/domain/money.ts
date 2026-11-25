@@ -27,6 +27,16 @@ export function parseQuantity(raw: string): Decimal | null {
   return value.gt(0) ? value : null;
 }
 
+/**
+ * Suma 1 a una cantidad escrita por el usuario y devuelve el texto sin ceros finales ("2.5" → "3.5").
+ * Una cantidad no válida cuenta como 0 ("" → "1"). Si el resultado ya no cabe en numeric(14,3)
+ * devuelve la cantidad original sin cambios.
+ */
+export function incrementQuantity(raw: string): string {
+  const next = (parseQuantity(raw) ?? new Dec(0)).plus(1).toFixed();
+  return QUANTITY_PATTERN.test(next) ? next : raw;
+}
+
 /** Texto canónico con 3 decimales ("2" → "2.000"). Lanza si la cantidad no es válida. */
 export function normalizeQuantity(raw: string): string {
   const value = parseQuantity(raw);

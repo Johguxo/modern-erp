@@ -12,7 +12,20 @@ export const SPREADSHEET_LIMITS = {
   /** Entradas del zip de un .xlsx. */
   maxZipEntries: 100,
   /** Bytes REALES descomprimidos de las entradas XML del zip (se cuentan al descomprimir). */
-  maxUncompressedBytes: 30 * 1024 * 1024,
+  // Medido: una plantilla de productos (6 columnas) con 5,000 filas de textos largos de ~150
+  // caracteres descomprime a 5.5 MB (sharedStrings 4.2 MB, hoja 1.3 MB, styles < 1 KB): el tope
+  // total deja ~2x de margen y los de sharedStrings/styles dejan ~2x y holgura para libros con formato.
+  maxUncompressedBytes: 12 * 1024 * 1024,
+  /** xl/sharedStrings.xml descomprimido (la librería lo expande entero en memoria). */
+  maxSharedStringsBytes: 8 * 1024 * 1024,
+  /** xl/styles.xml descomprimido. */
+  maxStylesBytes: 2 * 1024 * 1024,
+  /** Cadenas compartidas (<si>): 5,000 filas x 30 columnas + margen. */
+  maxSharedStrings: 5000 * 30 + 10_000,
+  /** Estilos de celda (<xf>). */
+  maxCellStyles: 10_000,
+  /** Hojas que se leen a la vez por proceso (cada lectura puede ocupar decenas de MB). */
+  maxConcurrentReads: 2,
   /** Las celdas más largas se cortan a este largo (así fallan la validación sin ocupar memoria). */
   maxCellChars: 1001,
   /** Columnas que puede tener la hoja (más se rechazan antes de leerla). */

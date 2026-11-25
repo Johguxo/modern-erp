@@ -315,6 +315,210 @@ describe('SpreadsheetReader · .xlsx hostiles (zip bombs y hojas dispersas)', ()
     expect(Date.now() - started).toBeLessThan(1000);
   });
 
+  describe('evasiones del análisis de la hoja (variantes que la librería sí lee)', () => {
+    const MAIN = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+    const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const FAR = 'XFD1048576';
+    const small = worksheet(`<row r="1">${inline('A1', 'x')}</row>`);
+    const sparse = worksheet(
+      `<row r="1">${inline('A1', 'x')}</row><row r="1048576">${inline(FAR, 'y')}</row>`,
+    );
+    const relation = (id: string, target: string) =>
+      `<Relationship Id="${id}" Type="${REL}/worksheet" Target="${target}"/>`;
+    const book = (sheets: string, rels: string, sheet1: string, sheet2 = small): Uint8Array =>
+      zipSync({
+        ...bookEntries(sheet1),
+        'xl/workbook.xml': strToU8(
+          `<workbook xmlns="${MAIN}" xmlns:r="${REL}"><sheets>${sheets}</sheets></workbook>`,
+        ),
+        'xl/_rels/workbook.xml.rels': strToU8(
+          `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`,
+        ),
+        'xl/worksheets/sheet2.xml': strToU8(sheet2),
+      });
+    const oneSheet = `<sheet name="S" sheetId="1" r:id="rId1"/>`;
+    const oneRel = relation('rId1', 'worksheets/sheet1.xml');
+
+    const variants: [string, Uint8Array][] = [
+      [
+        '> dentro de un atributo',
+        book(
+          oneSheet,
+          oneRel,
+          worksheet(
+            `<row x=">" r="1048576"><c x=">" r="${FAR}" t="inlineStr"><is><t>y</t></is></c></row>`,
+          ),
+        ),
+      ],
+      [
+        'prefijo con guion',
+        book(
+          oneSheet,
+          oneRel,
+          `<?xml version="1.0"?><s-x:worksheet xmlns:s-x="${MAIN}"><s-x:sheetData><s-x:row r="1048576"><s-x:c r="${FAR}" t="inlineStr"><s-x:is><s-x:t>y</s-x:t></s-x:is></s-x:c></s-x:row></s-x:sheetData></s-x:worksheet>`,
+        ),
+      ],
+      [
+        'prefijo con punto',
+        book(
+          oneSheet,
+          oneRel,
+          `<?xml version="1.0"?><s.x:worksheet xmlns:s.x="${MAIN}"><s.x:sheetData><s.x:row r="1048576"><s.x:c r="${FAR}"/></s.x:row></s.x:sheetData></s.x:worksheet>`,
+        ),
+      ],
+      [
+        'Id de relación repetido (gana el último)',
+        book(oneSheet, oneRel + relation('rId1', 'worksheets/sheet2.xml'), small, sparse),
+      ],
+      [
+        'primera <sheet> sin name',
+        book(
+          `<sheet sheetId="1" r:id="rId1"/><sheet name="S" sheetId="2" r:id="rId2"/>`,
+          oneRel + relation('rId2', 'worksheets/sheet2.xml'),
+          small,
+          sparse,
+        ),
+      ],
+      [
+        'atributo id repetido con otro prefijo',
+        book(
+          `<sheet name="S" sheetId="1" q:id="rId1" r:id="rId2" xmlns:q="urn:q"/>`,
+          oneRel + relation('rId2', 'worksheets/sheet2.xml'),
+          small,
+          sparse,
+        ),
+      ],
+      [
+        '<sheet> dentro de un comentario',
+        book(
+          `<!-- <sheet name="S" r:id="rId1"/> --><sheet name="S" sheetId="2" r:id="rId2"/>`,
+          oneRel + relation('rId2', 'worksheets/sheet2.xml'),
+          small,
+          sparse,
+        ),
+      ],
+    ];
+
+    it.each(variants)('%s → rechazada rápido', async (_name, bytes) => {
+      const started = Date.now();
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'e.xlsx', bytes }))).toBe(
+        'too_many_rows',
+      );
+      expect(Date.now() - started).toBeLessThan(1000);
+    });
+
+    it('atributo con prefijo (x:r) y espacios alrededor de = también cuenta', async () => {
+      const bytes = zipSync(
+        bookEntries(worksheet(`<row x:r = "1048576" xmlns:x="urn:x"><c r = '${FAR}'/></row>`)),
+      );
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'e.xlsx', bytes }))).toBe(
+        'too_many_rows',
+      );
+    });
+
+    it('con varios r en la misma etiqueta se toma el mayor', async () => {
+      const bytes = zipSync(bookEntries(worksheet(`<row r="1" x:r="1048576" xmlns:x="urn:x"/>`)));
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'e.xlsx', bytes }))).toBe(
+        'too_many_rows',
+      );
+    });
+
+    it('un r con entidad (&#49;) se rechaza como ilegible', async () => {
+      const bytes = zipSync(bookEntries(worksheet(`<row r="&#49;048576"/>`)));
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'e.xlsx', bytes }))).toBe(
+        'file_unreadable',
+      );
+    });
+
+    it('una comilla sin cerrar en <row> se rechaza como ilegible', async () => {
+      const bytes = zipSync(bookEntries(worksheet(`<row r="1>`)));
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'e.xlsx', bytes }))).toBe(
+        'file_unreadable',
+      );
+    });
+
+    it('<c:chart r="…"> de un dibujo no cuenta como celda', async () => {
+      const bytes = zipSync({
+        ...bookEntries(worksheet(`<row r="1">${inline('A1', 'ok')}</row>`)),
+        'xl/drawings/drawing1.xml': strToU8(
+          '<!-- sheetData --><c:chart xmlns:c="urn:c" r="99999999"/><c:cx r="99999999"/>',
+        ),
+      });
+      const rows = await reader.readFirstSheet({ name: 'c.xlsx', bytes });
+      expect(rows[0]).toEqual(['ok']);
+    });
+
+    it('sharedStrings por encima de su tope → file_too_large', async () => {
+      const sst = `<sst xmlns="${MAIN}"><si><t>x</t></si>${' '.repeat(SPREADSHEET_LIMITS.maxSharedStringsBytes)}</sst>`;
+      const bytes = zipSync({
+        ...bookEntries(small),
+        'xl/sharedStrings.xml': strToU8(sst),
+      });
+      expect(await rejectionReason(reader.readFirstSheet({ name: 's.xlsx', bytes }))).toBe(
+        'file_too_large',
+      );
+    });
+
+    it('styles por encima de su tope → file_too_large', async () => {
+      const styles = `<styleSheet xmlns="${MAIN}">${' '.repeat(SPREADSHEET_LIMITS.maxStylesBytes)}</styleSheet>`;
+      const bytes = zipSync({ ...bookEntries(small), 'xl/styles.xml': strToU8(styles) });
+      expect(await rejectionReason(reader.readFirstSheet({ name: 's.xlsx', bytes }))).toBe(
+        'file_too_large',
+      );
+    });
+
+    it('demasiadas <si> o <xf> (dentro del tope en bytes) → file_too_large', async () => {
+      const sst = `<sst xmlns="${MAIN}">${'<si/>'.repeat(SPREADSHEET_LIMITS.maxSharedStrings + 1)}</sst>`;
+      const styles = `<styleSheet xmlns="${MAIN}"><cellXfs>${'<xf/>'.repeat(SPREADSHEET_LIMITS.maxCellStyles + 1)}</cellXfs></styleSheet>`;
+      for (const extra of [
+        { 'xl/sharedStrings.xml': strToU8(sst) } as Record<string, Uint8Array>,
+        { 'xl/styles.xml': strToU8(styles) } as Record<string, Uint8Array>,
+      ]) {
+        const bytes = zipSync({ ...bookEntries(small), ...extra });
+        expect(await rejectionReason(reader.readFirstSheet({ name: 's.xlsx', bytes }))).toBe(
+          'file_too_large',
+        );
+      }
+    });
+
+    it('una hoja con basura por encima del total permitido → file_too_large', async () => {
+      const junk = '<a/>'.repeat(SPREADSHEET_LIMITS.maxUncompressedBytes / 4 + 1);
+      const bytes = zipSync(bookEntries(worksheet(`<row r="1">${inline('A1', 'x')}</row>`, junk)));
+      expect(bytes.byteLength).toBeLessThan(SPREADSHEET_LIMITS.maxFileBytes);
+      expect(await rejectionReason(reader.readFirstSheet({ name: 'j.xlsx', bytes }))).toBe(
+        'file_too_large',
+      );
+    });
+
+    it('una plantilla de 5,000 filas x 6 columnas con textos largos cabe en los topes', async () => {
+      const rows = Array.from({ length: SPREADSHEET_LIMITS.maxDataRows + 1 }, (_, i) =>
+        Array.from(
+          { length: 6 },
+          (_, c) => `Producto ${i} col ${c} ${'n'.repeat(120)} ${i * 7919}`,
+        ),
+      );
+      const bytes = await writer.writeWorkbook([{ name: 'Productos', rows }]);
+      const read = await reader.readFirstSheet({ name: 'g.xlsx', bytes });
+      expect(read).toHaveLength(SPREADSHEET_LIMITS.maxDataRows + 1);
+    });
+
+    it('lecturas en paralelo terminan todas (el semáforo no se atasca)', async () => {
+      const ok = zipSync(bookEntries(small));
+      const bad = zipSync(bookEntries(sparse));
+      const results = await Promise.allSettled(
+        [ok, bad, ok, bad, ok, ok].map((bytes) => reader.readFirstSheet({ name: 'p.xlsx', bytes })),
+      );
+      expect(results.map((r) => r.status)).toEqual([
+        'fulfilled',
+        'rejected',
+        'fulfilled',
+        'rejected',
+        'fulfilled',
+        'fulfilled',
+      ]);
+    });
+  });
+
   it('un <dimension> enorme sin celdas lejanas también se rechaza', async () => {
     const bytes = zipSync(
       bookEntries(

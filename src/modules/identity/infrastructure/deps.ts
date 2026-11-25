@@ -19,6 +19,7 @@ import { createDrizzlePlatformGuard } from './drizzle-platform-guard';
 import { createDrizzlePlatformStore, type TenantSetupStepFactory } from './drizzle-platform-store';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
 import { createDrizzleSettingsRepository } from './drizzle-settings-repository';
+import { createDrizzleUserNames } from './drizzle-user-names';
 import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
 /** Auditoría sobre una conexión (transacción de withTenant): solo insert, con RLS del tenant activo. */
@@ -131,4 +132,14 @@ export function createTenantCurrencyFor(
 ): (tenantId: string) => Promise<'PEN' | 'USD'> {
   const settings = createDrizzleSettingsRepository(db);
   return async (tenantId) => (await settings.get(tenantId))?.currency ?? 'PEN';
+}
+
+/**
+ * Nombres completos de los miembros del tenant por id, para mostrar en listados de otros módulos
+ * (la bandeja de requests). Solo devuelve usuarios con membresía en ese tenant.
+ */
+export function createUserNamesFor(
+  db: DbExecutor,
+): (tenantId: string, userIds: readonly string[]) => Promise<ReadonlyMap<string, string>> {
+  return createDrizzleUserNames(db);
 }

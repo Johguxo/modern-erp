@@ -14,6 +14,7 @@ import { createDraft } from './create-draft';
 import { getDocumentSequence } from './get-document-sequence';
 import { getRequest } from './get-request';
 import type {
+  ApprovalAssignments,
   ApprovalStarter,
   CatalogLookup,
   CatalogProduct,
@@ -185,6 +186,8 @@ function memorySequences(initial: SequenceState): SequenceRepository & { state: 
 function setup(
   options: {
     approvals?: ApprovalStarter;
+    /** Solicitudes asignadas al aprobador del ctx. */
+    assigned?: string[];
     costCenters?: string[];
     products?: { current: CatalogProduct[] };
   } = {},
@@ -208,7 +211,12 @@ function setup(
     defaultWarehouseId: () => Promise.resolve(WAREHOUSE),
   };
   const started: string[] = [];
-  const deps: SubmitDeps & { sequences: typeof sequences } = {
+  const assignments: ApprovalAssignments = {
+    assignedRequestIds: () => Promise.resolve(options.assigned ?? []),
+    pendingRequestIds: () => Promise.resolve(options.assigned ?? []),
+  };
+  const deps: SubmitDeps & { sequences: typeof sequences; assignments: ApprovalAssignments } = {
+    assignments,
     requests,
     sequences,
     catalog,
@@ -536,6 +544,23 @@ describe('getRequest', () => {
 
     expect((await getRequest(READER, { id: draft.id }, s.deps)).number).toBe('SOF-0143');
     await expect(getRequest(OTHER, { id: draft.id }, s.deps)).rejects.toThrow(NotFoundError);
+  });
+
+  it('el aprobador asignado ve lo enviado, pero nunca un borrador', async () => {
+    const approver = makeCtx({
+      userId: '99999999-0000-4000-8000-000000000001',
+      permissions: ['requests.read_own', 'approvals.decide'],
+    });
+    const assigned: string[] = [];
+    const s = setup({ assigned });
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    assigned.push(draft.id);
+
+    await expect(getRequest(approver, { id: draft.id }, s.deps)).rejects.toThrow(NotFoundError);
+    await submitRequest(ME, { id: draft.id, version: 1 }, s.deps);
+    expect((await getRequest(approver, { id: draft.id }, s.deps)).number).toBe('SOF-0143');
+    assigned.length = 0;
+    await expect(getRequest(approver, { id: draft.id }, s.deps)).rejects.toThrow(NotFoundError);
   });
 
   it('un id inexistente es 404 y sin ningún permiso de lectura es 403', async () => {

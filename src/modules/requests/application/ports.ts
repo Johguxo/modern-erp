@@ -5,6 +5,7 @@ import type { Ctx } from '@/shared/context';
 import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 
+import type { InboxScope, InboxTab } from '../domain/inbox';
 import type { Currency } from '../domain/money';
 import type { SequenceState } from '../domain/numbering';
 import type { Request, RequestLine } from '../domain/request';
@@ -58,6 +59,32 @@ export interface ApprovalStarter {
     ctx: Ctx,
     input: { readonly requestId: string; readonly docType: DocType; readonly totalAmount: string },
   ): Promise<void>;
+}
+
+/**
+ * Aprobador asignado (bandeja y visibilidad, E3-H3). En E3-H3 la implementación devuelve listas
+ * vacías; E4-H2 la reemplaza por el motor de aprobaciones. Si las listas crecen mucho, el adaptador
+ * pasa a una subconsulta (ver el plan de E3-H3, riesgos).
+ */
+export interface ApprovalAssignments {
+  /** Solicitudes donde el usuario del ctx es aprobador asignado (cualquier paso). */
+  assignedRequestIds(ctx: Ctx): Promise<readonly string[]>;
+  /** Solicitudes cuyo paso pendiente actual es del usuario del ctx. */
+  pendingRequestIds(ctx: Ctx): Promise<readonly string[]>;
+}
+
+/** Nombres de otros módulos para mostrar en la bandeja (se resuelven en lote, solo las filas). */
+export interface RequestLabels {
+  /** id de usuario → nombre completo. Los ids sin nombre no aparecen. */
+  userNames(ctx: Ctx, userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  /** id → rótulo del equipo («CODE · Nombre») y del centro de costo (su nombre), activos o no. */
+  areaLabels(
+    ctx: Ctx,
+    ids: { readonly equipmentIds: readonly string[]; readonly costCenterIds: readonly string[] },
+  ): Promise<{
+    readonly equipment: ReadonlyMap<string, string>;
+    readonly costCenters: ReadonlyMap<string, string>;
+  }>;
 }
 
 // ── Solicitudes ──────────────────────────────────────────────────────────────────────────────
@@ -125,6 +152,51 @@ export interface RequestRepository {
   ): Promise<Request>;
 }
 
+// ── Consulta de la bandeja (E3-H3) ───────────────────────────────────────────────────────────
+
+/** Fila de la bandeja: solo columnas de `requests` (los nombres se resuelven aparte). */
+export interface InboxRow {
+  readonly id: string;
+  readonly docType: 'SOF';
+  readonly number: string | null;
+  readonly status: RequestStatus;
+  readonly requesterId: string;
+  readonly equipmentId: string | null;
+  readonly costCenterId: string | null;
+  readonly currency: Currency;
+  /** Texto con 2 decimales. */
+  readonly totalAmount: string;
+  readonly updatedAt: Date;
+}
+
+export interface InboxVisibility {
+  readonly tenantId: string;
+  readonly scope: InboxScope;
+  /** Solicitudes con el paso pendiente del usuario (para «Esperan mi aprobación»). */
+  readonly pendingIds: readonly string[];
+}
+
+export interface InboxListQuery extends InboxVisibility {
+  readonly tab: InboxTab;
+  /** Texto en número o motivo (cada palabra); null = sin búsqueda. */
+  readonly q: string | null;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
+export interface InboxSummary {
+  readonly awaitingMe: number;
+  readonly inApproval: number;
+  readonly approvedThisWeek: number;
+}
+
+export interface RequestQueryRepository {
+  /** Página de lo visible, ordenada por `updated_at desc, id desc`. */
+  list(query: InboxListQuery): Promise<{ items: InboxRow[]; total: number }>;
+  /** Conteos sobre lo visible, sin pestaña ni búsqueda. `weekStart` es UTC. */
+  summary(visibility: InboxVisibility, weekStart: Date): Promise<InboxSummary>;
+}
+
 // ── Secuencia de numeración ──────────────────────────────────────────────────────────────────
 
 export interface SequenceRepository {
@@ -163,6 +235,15 @@ export interface SubmitDeps extends DraftDeps {
 
 export interface GetRequestDeps {
   readonly requests: RequestRepository;
+  /** Aprobador asignado (E4-H2); hoy vacío. */
+  readonly assignments: ApprovalAssignments;
+}
+
+export interface ListRequestsDeps {
+  readonly queries: RequestQueryRepository;
+  readonly assignments: ApprovalAssignments;
+  readonly labels: RequestLabels;
+  readonly clock: Clock;
 }
 
 export interface SequenceDeps extends AuditDeps {
@@ -170,7 +251,7 @@ export interface SequenceDeps extends AuditDeps {
 }
 
 /** Todo lo que arma la entrega para requests, sobre la transacción de withTenant. */
-export type RequestsDeps = SubmitDeps & SequenceDeps;
+export type RequestsDeps = SubmitDeps & SequenceDeps & Pick<GetRequestDeps, 'assignments'>;
 
 // ── Consola de plataforma (conexión dueño, ADR-007) ──────────────────────────────────────────
 

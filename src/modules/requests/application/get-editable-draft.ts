@@ -12,7 +12,7 @@ import { toRequestView, type RequestView } from './views';
 export async function getEditableDraft(
   ctx: Ctx,
   input: { readonly id: string },
-  deps: GetRequestDeps,
+  deps: Pick<GetRequestDeps, 'requests'>,
 ): Promise<RequestView> {
   requirePermission(ctx, 'requests.create');
   const found = await deps.requests.find(ctx.tenantId, input.id);

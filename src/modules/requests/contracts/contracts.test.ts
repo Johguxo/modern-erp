@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createDraftContract,
+  listRequestsContract,
   platformUpdateDocumentSequenceContract,
   submitRequestContract,
   updateDocumentSequenceContract,
@@ -106,5 +107,25 @@ describe('contratos de la secuencia', () => {
 
     expect(schema.safeParse(input).success).toBe(true);
     expect(schema.safeParse({ ...input, tenantId: 'x' }).success).toBe(false);
+  });
+});
+
+describe('listRequestsContract', () => {
+  const parse = (value: unknown) => listRequestsContract.inputSchema.safeParse(value);
+
+  it('sin nada: todas, sin búsqueda, página 1 de 25', () => {
+    expect(parse({}).data).toEqual({ tab: 'all', q: null, page: 1, pageSize: 25 });
+  });
+
+  it('normaliza la búsqueda (recorta; vacío es null) y acepta cada pestaña', () => {
+    expect(parse({ q: '  filtro  ' }).data?.q).toBe('filtro');
+    expect(parse({ q: '   ' }).data?.q).toBeNull();
+    for (const tab of ['all', 'awaiting_me', 'in_approval', 'approved', 'draft', 'rejected']) {
+      expect(parse({ tab }).success).toBe(true);
+    }
+  });
+
+  it.each([{ tab: 'otra' }, { page: 0 }, { q: 'x'.repeat(101) }])('rechaza %j', (value) => {
+    expect(parse(value).success).toBe(false);
   });
 });

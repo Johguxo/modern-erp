@@ -94,6 +94,14 @@ export function createDrizzleEquipmentRepository(
         .where(and(eq(equipment.tenantId, tenantId), eq(equipment.id, id)));
     },
 
+    async findByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      return db
+        .select(equipmentColumns)
+        .from(equipment)
+        .where(and(eq(equipment.tenantId, tenantId), inArray(equipment.id, [...ids])));
+    },
+
     async findActiveByIds(tenantId, ids) {
       if (ids.length === 0) return [];
       return db
@@ -171,6 +179,14 @@ export function createDrizzleCostCenterRepository(
         .update(costCenters)
         .set({ active })
         .where(and(eq(costCenters.tenantId, tenantId), eq(costCenters.id, id)));
+    },
+
+    async findByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      return db
+        .select(costCenterColumns)
+        .from(costCenters)
+        .where(and(eq(costCenters.tenantId, tenantId), inArray(costCenters.id, [...ids])));
     },
 
     async findActiveByIds(tenantId, ids) {

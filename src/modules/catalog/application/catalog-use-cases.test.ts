@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ConflictError, ForbiddenError, NotFoundError } from '@/shared/errors';
 import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 
+import { getCatalogLabels } from './get-catalog-labels';
 import { getCatalogRefs } from './get-catalog-refs';
 import { getDefaultWarehouse } from './get-default-warehouse';
 import { listProducts } from './list-products';
@@ -66,6 +67,9 @@ function memoryRepo<V extends MasterView, F extends object>(): MasterRepository<
     },
     findActiveByIds(_tenantId: string, ids: readonly string[]) {
       return Promise.resolve(repo.rows.filter((r) => r.active && ids.includes(r.id)));
+    },
+    findByIds(_tenantId: string, ids: readonly string[]) {
+      return Promise.resolve(repo.rows.filter((r) => ids.includes(r.id)));
     },
     setActive(_tenantId: string, id: string, active: boolean) {
       const index = repo.rows.findIndex((r) => r.id === id);
@@ -286,5 +290,35 @@ describe('getCatalogRefs', () => {
 
     expect((await getCatalogRefs(REQUESTER, input, deps)).products).toEqual([]);
     await expect(getCatalogRefs(NOBODY, input, deps)).rejects.toThrow(ForbiddenError);
+  });
+});
+
+describe('getCatalogLabels', () => {
+  it('devuelve equipos y centros de costo por id, activos o no, a quien solo lee solicitudes', async () => {
+    const s = setup();
+    await upsertCostCenter(MANAGER, { code: 'CC-1', name: 'Centro' }, s.costDeps);
+    const costCenterId = s.costCenters.rows[0]?.id ?? '';
+    s.costCenters.rows[0] = { ...s.costCenters.rows[0]!, active: false };
+    const READER = makeCtx({ permissions: ['requests.read_own'] });
+
+    const labels = await getCatalogLabels(
+      READER,
+      { equipmentIds: [], costCenterIds: [costCenterId, costCenterId] },
+      { costCenters: s.costCenters, equipment: memoryRepo<never, never>() },
+    );
+
+    expect(labels.costCenters).toEqual([{ id: costCenterId, code: 'CC-1', name: 'Centro' }]);
+    expect(labels.equipment).toEqual([]);
+  });
+
+  it('exige algún permiso de solicitudes o de catálogo', async () => {
+    const s = setup();
+    await expect(
+      getCatalogLabels(
+        NOBODY,
+        { equipmentIds: [], costCenterIds: [] },
+        { costCenters: s.costCenters, equipment: memoryRepo<never, never>() },
+      ),
+    ).rejects.toThrow(ForbiddenError);
   });
 });

@@ -72,3 +72,42 @@ export function isOwnDraft(
 ): boolean {
   return request.status === 'draft' && request.requesterId === viewerId;
 }
+
+// ── Semana (tarjeta «Aprobadas esta semana») ────────────────────────────────────────────────────
+
+/** Desfase (ms) de la zona respecto de UTC en ese instante: hora local menos hora UTC. */
+function zoneOffsetMs(instant: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  }).formatToParts(new Date(instant));
+  const part = (type: string) => Number(parts.find((item) => item.type === type)?.value ?? 0);
+  const asUtc = Date.UTC(
+    part('year'),
+    part('month') - 1,
+    part('day'),
+    part('hour'),
+    part('minute'),
+    part('second'),
+  );
+  return asUtc - Math.floor(instant / 1000) * 1000;
+}
+
+/** Lunes 00:00 de la semana de `now`, en la zona del tenant, como instante UTC. */
+export function startOfWeek(now: Date, timeZone: string): Date {
+  const local = new Date(now.getTime() + zoneOffsetMs(now.getTime(), timeZone));
+  const sinceMonday = (local.getUTCDay() + 6) % 7;
+  const wallMonday = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate() - sinceMonday,
+  );
+  const first = wallMonday - zoneOffsetMs(wallMonday, timeZone);
+  return new Date(wallMonday - zoneOffsetMs(first, timeZone));
+}

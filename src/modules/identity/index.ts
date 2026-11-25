@@ -15,6 +15,7 @@ export {
   createSettingsDeps,
   createTenantCurrencyFor,
   createUserAdminDeps,
+  createUserNamesFor,
   type SettingsExtras,
   type PlatformExtras,
   type UserAdminExtras,

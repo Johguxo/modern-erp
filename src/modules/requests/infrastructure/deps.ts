@@ -8,8 +8,10 @@ import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 
 import type {
+  ApprovalAssignments,
   ApprovalStarter,
   GetRequestDeps,
+  ListRequestsDeps,
   PlatformSequenceDeps,
   RequestsDeps,
   SequenceDeps,
@@ -17,9 +19,12 @@ import type {
 
 import { createCatalogLookup } from './catalog-lookup';
 import { createDrizzleDocumentSequenceRepository } from './drizzle-document-sequence-repository';
+import { createDrizzleRequestQueryRepository } from './drizzle-request-query-repository';
 import { createDrizzleRequestRepository } from './drizzle-request-repository';
 import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-store';
+import { noopApprovalAssignments } from './noop-approval-assignments';
 import { noopApprovalStarter } from './noop-approval-starter';
+import { createRequestLabels } from './request-labels';
 
 /** Lo que la entrega aporta a requests (además de la transacción). */
 export interface RequestsExtras {
@@ -27,6 +32,8 @@ export interface RequestsExtras {
   readonly clock: Clock;
   /** E4-H2 pasa aquí el motor de aprobaciones; por defecto no hace nada. */
   readonly approvals?: ApprovalStarter;
+  /** E4-H2 pasa aquí las asignaciones del motor; por defecto nadie tiene nada asignado. */
+  readonly assignments?: ApprovalAssignments;
 }
 
 export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
@@ -38,6 +45,7 @@ export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): Requ
     catalog: createCatalogLookup(tx, catalogExtras),
     currency: { currencyOf },
     approvals: extras.approvals ?? noopApprovalStarter,
+    assignments: extras.assignments ?? noopApprovalAssignments,
     audit: createAuditLogFor(tx),
     client: extras.client,
     clock: extras.clock,
@@ -57,8 +65,27 @@ export function createSequenceDeps(
 }
 
 /** Lectura de una solicitud (sin auditoría ni reloj). */
-export function createGetRequestDeps(tx: DbExecutor): GetRequestDeps {
-  return { requests: createDrizzleRequestRepository(tx) };
+export function createGetRequestDeps(
+  tx: DbExecutor,
+  extras: Pick<RequestsExtras, 'assignments'> = {},
+): GetRequestDeps {
+  return {
+    requests: createDrizzleRequestRepository(tx),
+    assignments: extras.assignments ?? noopApprovalAssignments,
+  };
+}
+
+/** Bandeja (E3-H3): consulta sobre `requests` y nombres resueltos en lote desde identity/catalog. */
+export function createListRequestsDeps(
+  tx: DbExecutor,
+  extras: Pick<RequestsExtras, 'client' | 'clock' | 'assignments'>,
+): ListRequestsDeps {
+  return {
+    queries: createDrizzleRequestQueryRepository(tx),
+    assignments: extras.assignments ?? noopApprovalAssignments,
+    labels: createRequestLabels(tx, { client: extras.client }),
+    clock: extras.clock,
+  };
 }
 
 /**

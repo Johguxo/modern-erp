@@ -124,6 +124,15 @@ export function createDrizzleProductRepository(db: DbExecutor): ProductRepositor
         .where(and(eq(products.tenantId, tenantId), eq(products.id, id)));
     },
 
+    async findByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      const rows = await db
+        .select(columns)
+        .from(products)
+        .where(and(eq(products.tenantId, tenantId), inArray(products.id, [...ids])));
+      return rows.map(toView);
+    },
+
     async findActiveByIds(tenantId, ids) {
       if (ids.length === 0) return [];
       const rows = await db

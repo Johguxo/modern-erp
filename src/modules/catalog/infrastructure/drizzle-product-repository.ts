@@ -1,6 +1,6 @@
 // Productos del tenant activo con la transacción de withTenant: RLS y filtro explícito por
 // tenantId. app_user no puede cambiar el código ni borrar (grants de 0006).
-import { and, asc, count, eq, ilike, sql } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import { products } from '@/db/schema';
@@ -122,6 +122,21 @@ export function createDrizzleProductRepository(db: DbExecutor): ProductRepositor
         .update(products)
         .set({ active })
         .where(and(eq(products.tenantId, tenantId), eq(products.id, id)));
+    },
+
+    async findActiveByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      const rows = await db
+        .select(columns)
+        .from(products)
+        .where(
+          and(
+            eq(products.tenantId, tenantId),
+            eq(products.active, true),
+            inArray(products.id, [...ids]),
+          ),
+        );
+      return rows.map(toView);
     },
 
     async search(tenantId, q, limit) {

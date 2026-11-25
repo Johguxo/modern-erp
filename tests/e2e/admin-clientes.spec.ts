@@ -12,6 +12,7 @@ import { invitationPathFrom, waitForMail } from './fixtures/mailpit';
 
 const a = messages.admin;
 const f = a.form;
+const q = messages.sequence;
 
 test('SuperAdmin crea un cliente → el admin invitado entra a su empresa → al suspender queda en solo lectura', async ({
   page,
@@ -36,6 +37,11 @@ test('SuperAdmin crea un cliente → el admin invitado entra a su empresa → al
   await page.getByLabel(f.name).fill(name);
   await expect(page.getByLabel(f.slug)).toHaveValue(slug);
   await page.getByLabel(f.maxUsers).fill('5');
+  // Numeración del SOF (E3-H1): por defecto SOF-0001; se continúa el correlativo del cliente.
+  await expect(page.getByTestId('sequence-preview')).toContainText('SOF-0001');
+  await page.getByLabel(q.prefix, { exact: true }).fill('gr-');
+  await page.getByLabel(q.nextNumber, { exact: true }).fill('500');
+  await expect(page.getByTestId('sequence-preview')).toContainText('GR-0500');
   await page.getByLabel(f.adminEmail).fill(email);
   await page.getByRole('button', { name: f.create }).click();
 
@@ -43,6 +49,18 @@ test('SuperAdmin crea un cliente → el admin invitado entra a su empresa → al
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
   await expect(page.getByRole('status').filter({ hasText: a.notices.created })).toBeVisible();
   const detailUrl = page.url().split('?')[0] ?? '';
+
+  // Detalle: la numeración del alta, editable (el siguiente número puede subir).
+  await expect(page.getByRole('heading', { name: q.title })).toBeVisible();
+  await expect(page.getByLabel(q.prefix, { exact: true })).toHaveValue('GR-');
+  await expect(page.getByLabel(q.nextNumber, { exact: true })).toHaveValue('500');
+  await page.getByLabel(q.nextNumber, { exact: true }).fill('600');
+  await expect(page.getByTestId('sequence-preview')).toContainText('GR-0600');
+  await page.getByRole('button', { name: q.save }).click();
+  await expect(page.getByRole('status').filter({ hasText: q.notices.saved })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(q.nextNumber, { exact: true })).toHaveValue('600');
+  await expect(page.getByTestId('sequence-preview')).toContainText('GR-0600');
 
   // Lista: plan, estado y usuarios activos / límite (con la invitación pendiente aparte).
   await page.getByRole('link', { name: a.back }).click();

@@ -2,7 +2,7 @@
 // nombre visible, el color y la moneda, sube un logo (y un SVG es rechazado) y la marca aparece en
 // el menú lateral; un usuario sin settings.manage recibe 404 y no ve el ítem. Requiere el bucket
 // brand-assets en Supabase local (pnpm exec supabase seed buckets).
-// Inicios de sesión por proyecto: admin 1, solicitante 1.
+// Inicios de sesión por proyecto: admin 1, solicitante 1, admin en solo lectura 1.
 import { randomUUID } from 'node:crypto';
 
 import type { Page } from '@playwright/test';
@@ -12,6 +12,7 @@ import { messages } from '../../src/ui/messages/es-PE';
 import { expect, signIn, test } from './fixtures/auth';
 
 const t = messages.company;
+const q = messages.sequence;
 
 /** PNG válido de 1×1 px. */
 const PNG_1X1 = Buffer.from(
@@ -52,6 +53,18 @@ test('el admin configura nombre, color, moneda y logo → la marca aparece en el
   await expect(page.getByLabel(t.displayName)).toHaveValue(name);
   await expect(page.getByRole('textbox', { name: t.primaryColor })).toHaveValue('#7A1F1F');
   await expect(page.getByLabel(t.currency)).toContainText(messages.admin.form.currencies.USD);
+
+  // Numeración del SOF (E3-H1): se cambia el prefijo y el siguiente número; la vista previa los refleja.
+  await expect(page.getByRole('heading', { name: q.title })).toBeVisible();
+  await expect(page.getByTestId('sequence-preview')).toContainText('SOF-0001');
+  await page.getByLabel(q.prefix, { exact: true }).fill('gr-');
+  await page.getByLabel(q.nextNumber, { exact: true }).fill('500');
+  await expect(page.getByTestId('sequence-preview')).toContainText('GR-0500');
+  await page.getByRole('button', { name: q.save }).click();
+  await expect(page.getByRole('status').filter({ hasText: q.notices.saved })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(q.prefix, { exact: true })).toHaveValue('GR-');
+  await expect(page.getByLabel(q.nextNumber, { exact: true })).toHaveValue('500');
 
   // Sin logo: iniciales sobre el color; el ítem activo lleva el acento del cliente.
   let menu = await openMenu(page);
@@ -114,4 +127,17 @@ test('un usuario sin settings.manage no ve el ítem y recibe "no encontrada"', a
   await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: t.title })).toHaveCount(0);
   await expect(page.getByLabel(t.displayName)).toHaveCount(0);
+});
+
+test('en solo lectura la numeración del SOF se ve deshabilitada', async ({ page, accounts }) => {
+  const admin = await accounts.create('suspended');
+  await signIn(page, admin, /\/bandeja$/);
+
+  await page.goto('/configuracion/empresa');
+
+  await expect(page.getByRole('heading', { name: q.title })).toBeVisible();
+  await expect(page.getByLabel(q.prefix, { exact: true })).toBeDisabled();
+  await expect(page.getByLabel(q.nextNumber, { exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: q.save })).toBeDisabled();
+  await expect(page.getByTestId('sequence-preview')).toContainText('SOF-0001');
 });

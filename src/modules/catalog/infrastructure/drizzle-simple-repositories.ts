@@ -1,6 +1,6 @@
 // Equipos y centros de costo del tenant activo con la transacción de withTenant: RLS y filtro
 // explícito por tenantId. app_user no puede cambiar el código ni borrar (grants de 0006).
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import { costCenters, equipment } from '@/db/schema';
@@ -93,6 +93,20 @@ export function createDrizzleEquipmentRepository(
         .set({ active })
         .where(and(eq(equipment.tenantId, tenantId), eq(equipment.id, id)));
     },
+
+    async findActiveByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      return db
+        .select(equipmentColumns)
+        .from(equipment)
+        .where(
+          and(
+            eq(equipment.tenantId, tenantId),
+            eq(equipment.active, true),
+            inArray(equipment.id, [...ids]),
+          ),
+        );
+    },
   };
 }
 
@@ -157,6 +171,20 @@ export function createDrizzleCostCenterRepository(
         .update(costCenters)
         .set({ active })
         .where(and(eq(costCenters.tenantId, tenantId), eq(costCenters.id, id)));
+    },
+
+    async findActiveByIds(tenantId, ids) {
+      if (ids.length === 0) return [];
+      return db
+        .select(costCenterColumns)
+        .from(costCenters)
+        .where(
+          and(
+            eq(costCenters.tenantId, tenantId),
+            eq(costCenters.active, true),
+            inArray(costCenters.id, [...ids]),
+          ),
+        );
     },
   };
 }

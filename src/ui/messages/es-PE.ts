@@ -102,6 +102,26 @@ export const messages = {
       logoRemoved: 'Logo quitado.',
     },
   },
+  /** Numeración de los documentos (E3-H1): alta del cliente, detalle en la consola y empresa. */
+  sequence: {
+    title: 'Numeración de SOF',
+    description:
+      'Prefijo y siguiente número de las solicitudes de almacén. Así se continúa el correlativo que ya usan.',
+    prefix: 'Prefijo',
+    prefixHint:
+      'Incluye el separador, por ejemplo SOF-. Hasta 16 caracteres: letras mayúsculas, números y . _ / -',
+    nextNumber: 'Siguiente número',
+    nextNumberHint: (last: number | null) =>
+      last === null
+        ? 'Aún no se envió ninguna solicitud: puedes elegir cualquier número desde 1.'
+        : `Último número usado: ${last}. El siguiente debe ser mayor.`,
+    preview: (number: string) => `La próxima solicitud enviada saldrá como ${number}.`,
+    save: 'Guardar numeración',
+    notices: {
+      saved: 'Numeración actualizada.',
+      unchanged: 'No había cambios que guardar.',
+    },
+  },
   catalog: {
     title: 'Catálogo',
     sectionsLabel: 'Secciones del catálogo',
@@ -523,6 +543,26 @@ export const messages = {
         `El cliente alcanzó su límite de ${p.max ?? '?'} usuarios. Sube el límite en la suscripción.`,
       tenant_inactive: () =>
         'El cliente está en solo lectura o sin suscripción vigente. Reactiva su suscripción primero.',
+      // Solicitudes (E3-H1).
+      request_incomplete: () =>
+        'Completa el centro de costo, el motivo y al menos un ítem para enviar la solicitud.',
+      request_not_editable: () =>
+        'Esta solicitud ya no se puede editar porque salió de borrador. Recarga la página.',
+      quantity_invalid: () => 'Ingresa una cantidad mayor que cero, con hasta 3 decimales.',
+      product_not_available: () => 'Este producto ya no está disponible en el catálogo.',
+      product_currency_mismatch: () =>
+        'El precio de este producto está en otra moneda que la de tu empresa.',
+      equipment_not_available: () => 'Este equipo ya no está disponible en el catálogo.',
+      cost_center_not_available: () => 'Este centro de costo ya no está disponible.',
+      too_many_lines: (p: Params) =>
+        `Una solicitud admite hasta ${p.max ?? '?'} ítems. Divide el pedido en varias solicitudes.`,
+      amount_too_large: () =>
+        'El monto de la solicitud es demasiado grande. Reduce las cantidades.',
+      sequence_below_last_used: (p: Params) =>
+        `El siguiente número debe ser mayor que el último usado (${p.last ?? '?'}).`,
+      number_taken: () =>
+        'Este número ya fue usado. Pide al administrador revisar la numeración de SOF.',
+      sequence_exhausted: () => 'La numeración llegó a su límite. Contacta a LinkUs.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
       // Importación del catálogo (E2-H3): el archivo en sí.
       file_unsupported: () => 'El archivo debe ser un Excel moderno (.xlsx) o un CSV (.csv).',

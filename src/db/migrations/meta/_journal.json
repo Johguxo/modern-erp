@@ -71,6 +71,27 @@
       "when": 1795569225528,
       "tag": "0009_import_jobs_worker_update",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795617157651,
+      "tag": "0010_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795617170768,
+      "tag": "0011_requests_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795619949940,
+      "tag": "0012_document_sequences_guard",
+      "breakpoints": true
     }
   ]
 }

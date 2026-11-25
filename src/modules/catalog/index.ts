@@ -34,6 +34,11 @@ export { listCostCenters } from './application/list-cost-centers';
 export { upsertCostCenter } from './application/upsert-cost-center';
 export { setCostCenterActive } from './application/set-cost-center-active';
 export { getDefaultWarehouse } from './application/get-default-warehouse';
+export {
+  getCatalogRefs,
+  type CatalogRefs,
+  type CatalogRefsInput,
+} from './application/get-catalog-refs';
 export type {
   ImportCreateDeps,
   ImportJobStatus,

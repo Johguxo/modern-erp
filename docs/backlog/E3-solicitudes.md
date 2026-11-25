@@ -4,14 +4,14 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md`, `docs/ui/mapa-pantallas.md
 
 ### E3-H1 · Dominio de solicitudes
 **Criterios de aceptación**
-- [ ] Tablas `document_sequences`, `requests`, `request_lines`, `request_line_revisions` con RLS e índices.
-- [ ] Entidad `Request` con la máquina de estados del §1 (todas las transiciones válidas e inválidas probadas).
-- [ ] Cálculo de subtotales y total con `decimal.js`; el total siempre se recalcula en el servidor.
-- [ ] Numeración al enviar con bloqueo de fila (prueba de concurrencia: 20 envíos simultáneos → 20 números distintos y consecutivos).
-- [ ] Bloqueo optimista con `version`.
-- [ ] `platform.createTenant` (E1-H4) crea la secuencia `SOF`; el alta y la edición de cliente (`/admin/clientes`) y `/configuracion/empresa` (E1-H5) permiten fijar el prefijo y el siguiente número. Cambiar el siguiente número no puede dejarlo por debajo del último usado.
+- [x] Tablas `document_sequences`, `requests`, `request_lines`, `request_line_revisions` con RLS e índices.
+- [x] Entidad `Request` con la máquina de estados del §1 (todas las transiciones válidas e inválidas probadas).
+- [x] Cálculo de subtotales y total con `decimal.js`; el total siempre se recalcula en el servidor.
+- [x] Numeración al enviar con bloqueo de fila (prueba de concurrencia: 20 envíos simultáneos → 20 números distintos y consecutivos).
+- [x] Bloqueo optimista con `version`.
+- [x] `platform.createTenant` (E1-H4) crea la secuencia `SOF`; el alta y la edición de cliente (`/admin/clientes`) y `/configuracion/empresa` (E1-H5) permiten fijar el prefijo y el siguiente número. Cambiar el siguiente número no puede dejarlo por debajo del último usado.
 
-Estado: pendiente · Issue: [#16](https://github.com/Johguxo/modern-erp/issues/16)
+Estado: en revisión · Issue: [#16](https://github.com/Johguxo/modern-erp/issues/16)
 
 ### E3-H2 · Nuevo SOF y borradores (pantalla 2)
 **Como** solicitante **quiero** armar un SOF eligiendo repuestos del catálogo **para** no escribir códigos ni precios a mano.

@@ -5,7 +5,7 @@ import { getDbAdmin } from '@/db/admin';
 
 import { createEntitlements, type Entitlements } from '../application/entitlements';
 import type { InvitationAcceptStore } from '../application/invitation-accept-ports';
-import type { PlatformDeps, PlatformStore } from '../application/platform/ports';
+import type { PlatformDeps, PlatformGuard, PlatformStore } from '../application/platform/ports';
 import type { SessionRepository } from '../application/session-ports';
 import type { SettingsDeps } from '../application/settings-ports';
 import type { AuditLog, UserAdminDeps } from '../application/user-admin-ports';
@@ -15,6 +15,7 @@ import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repo
 import { createDrizzleInvitationAcceptStore } from './drizzle-invitation-accept-store';
 import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
 import { createDrizzleMemberRepository } from './drizzle-member-repository';
+import { createDrizzlePlatformGuard } from './drizzle-platform-guard';
 import { createDrizzlePlatformStore, type TenantSetupStepFactory } from './drizzle-platform-store';
 import { createDrizzleSessionRepository } from './drizzle-session-repository';
 import { createDrizzleSettingsRepository } from './drizzle-settings-repository';
@@ -85,6 +86,14 @@ export function createPlatformStore(
   db: DbExecutor = getDbAdmin(),
 ): PlatformStore {
   return createDrizzlePlatformStore(db, setupSteps);
+}
+
+/**
+ * Revisión de SuperAdmin sobre la conexión de otro módulo (p. ej. la transacción dueño de la
+ * secuencia de numeración, E3-H1): para repetir `assertPlatformAdmin` antes de escribir.
+ */
+export function createPlatformGuardFor(db: DbExecutor): PlatformGuard {
+  return createDrizzlePlatformGuard(db);
 }
 
 /** Lo que la entrega aporta a la consola (además de los pasos de alta). */

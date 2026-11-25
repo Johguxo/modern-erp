@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { createPlatformStore, getTenant, listPlans } from '@/modules/identity';
+import { platformGetDocumentSequence } from '@/modules/requests';
+import { NotFoundError } from '@/shared/errors';
 import { systemClock } from '@/shared/adapters/system-clock';
 import { PageHeader } from '@/ui/base/page-header';
 import { messages } from '@/ui/messages/es-PE';
 
+import { readOnlyPlatformSequenceDeps } from '../../../_lib/requests';
 import { requirePlatformAdmin } from '../../../_lib/session';
 
 import { TenantDetailView, type DetailNotice } from './tenant-detail';
@@ -27,9 +30,16 @@ export default async function TenantPage({
   if (!z.uuid().safeParse(id).success) notFound();
 
   const store = createPlatformStore();
-  const [tenant, plans] = await Promise.all([
+  const [tenant, plans, sequence] = await Promise.all([
     getTenant(ctx, { tenantId: id }, { store, clock: systemClock }),
     listPlans(ctx, { store }),
+    platformGetDocumentSequence(ctx, { tenantId: id }, readOnlyPlatformSequenceDeps()).catch(
+      (error: unknown) => {
+        // Un cliente sin secuencia (no debería pasar) no tumba la página: se oculta la sección.
+        if (error instanceof NotFoundError) return null;
+        throw error;
+      },
+    ),
   ]);
   if (!tenant) notFound();
 
@@ -48,7 +58,7 @@ export default async function TenantPage({
         title={tenant.name}
         description={`${tenant.slug} · ${messages.admin.detail.currency(tenant.currency)}`}
       />
-      <TenantDetailView tenant={tenant} plans={plans} initialNotice={notice} />
+      <TenantDetailView tenant={tenant} plans={plans} sequence={sequence} initialNotice={notice} />
     </>
   );
 }

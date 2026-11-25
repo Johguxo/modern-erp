@@ -10,6 +10,7 @@ export {
   createInvitationServices,
   createSessionServices,
   createPlatformDeps,
+  createPlatformGuardFor,
   createPlatformStore,
   createSettingsDeps,
   createTenantCurrencyFor,
@@ -19,7 +20,14 @@ export {
   type UserAdminExtras,
 } from './infrastructure/deps';
 export type { TenantSetupStepFactory } from './infrastructure/drizzle-platform-store';
-export type { PlatformDeps, PlatformStore, TenantSetupStep } from './application/platform/ports';
+export type {
+  PlatformDeps,
+  PlatformGuard,
+  PlatformStore,
+  TenantSetupStep,
+} from './application/platform/ports';
+export { assertPlatformAdmin } from './application/platform/shared';
+export { recordPlatformAudit } from './application/platform/audit';
 export { createTenant } from './application/platform/create-tenant';
 export { updateSubscription } from './application/platform/update-subscription';
 export { inviteTenantAdmin } from './application/platform/invite-tenant-admin';

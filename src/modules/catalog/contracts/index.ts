@@ -11,6 +11,7 @@ export * as upsertCostCenterContract from './upsert-cost-center';
 export * as setCostCenterActiveContract from './set-cost-center-active';
 export * as searchProductsContract from './search-products';
 export * as getDefaultWarehouseContract from './get-default-warehouse';
+export * as getCatalogRefsContract from './get-catalog-refs';
 export * as previewImportContract from './preview-import';
 export * as confirmImportContract from './confirm-import';
 export * as getImportJobContract from './get-import-job';

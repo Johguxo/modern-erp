@@ -2,14 +2,11 @@
 import type { PlatformCtx } from '@/shared/context';
 import { ForbiddenError, LimitExceededError } from '@/shared/errors';
 
-import type { PlatformUnitOfWork } from './ports';
+import type { PlatformGuard, PlatformUnitOfWork } from './ports';
 
 /** Defensa en profundidad: la entrega ya lo revisó, pero se repite dentro de la transacción. */
-export async function assertPlatformAdmin(
-  uow: PlatformUnitOfWork,
-  ctx: PlatformCtx,
-): Promise<void> {
-  if (!(await uow.isPlatformAdmin(ctx.userId))) {
+export async function assertPlatformAdmin(guard: PlatformGuard, ctx: PlatformCtx): Promise<void> {
+  if (!(await guard.isPlatformAdmin(ctx.userId))) {
     throw new ForbiddenError({ message: 'Not a platform admin' });
   }
 }

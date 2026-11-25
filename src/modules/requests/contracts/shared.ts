@@ -26,12 +26,14 @@ export const quantitySchema = z
   })
   .transform((value) => parseQuantity(value)?.toFixed(3) ?? value);
 
-export const lineInputSchema = z.object({
-  productId: z.uuid(),
-  quantity: quantitySchema,
-  equipmentId: optionalUuidSchema,
-  notes: optionalTextSchema(NOTES_MAX),
-});
+export const lineInputSchema = z
+  .object({
+    productId: z.uuid(),
+    quantity: quantitySchema,
+    equipmentId: optionalUuidSchema,
+    notes: optionalTextSchema(NOTES_MAX),
+  })
+  .strict();
 
 /** Encabezado y líneas editables de un borrador (sin precios). */
 export const draftFieldsSchema = z.object({
@@ -99,7 +101,11 @@ export const sequencePrefixSchema = z
   .regex(PREFIX_PATTERN);
 
 /** Entero ≥ 1. Acepta texto del formulario ("500"); '' no es válido. */
-export const sequenceNextNumberSchema = z.coerce.number().int().min(1).max(MAX_SEQUENCE_NUMBER);
+export const sequenceNextNumberSchema = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(MAX_SEQUENCE_NUMBER - 1);
 
 /** Los dos campos de la secuencia, tal como los piden el alta del cliente y los formularios. */
 export const sequenceSetupFieldsSchema = z.object({

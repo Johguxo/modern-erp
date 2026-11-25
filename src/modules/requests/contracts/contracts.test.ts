@@ -30,19 +30,19 @@ describe('createDraftContract', () => {
     });
   });
 
-  it('no acepta precios, subtotales ni total del cliente: se descartan', () => {
-    const result = parse({
-      lines: [{ productId: PRODUCT, quantity: '1', unitPrice: '0.01', subtotal: '0.01' }],
-      totalAmount: '0.01',
-    });
+  it('rechaza precios, subtotales o claves extra en una línea', () => {
+    for (const extra of [{ unitPrice: '0.01' }, { subtotal: '0.01' }, { foo: 1 }]) {
+      expect(parse({ lines: [{ productId: PRODUCT, quantity: '1', ...extra }] }).success).toBe(
+        false,
+      );
+    }
+  });
+
+  it('descarta el total que mande el cliente en el encabezado', () => {
+    const result = parse({ lines: [], totalAmount: '0.01' });
 
     expect(result.success).toBe(true);
-    expect(result.data).toEqual({
-      costCenterId: null,
-      equipmentId: null,
-      reason: null,
-      lines: [{ productId: PRODUCT, quantity: '1.000', equipmentId: null, notes: null }],
-    });
+    expect(result.data).toEqual({ costCenterId: null, equipmentId: null, reason: null, lines: [] });
   });
 
   it.each(['0', '-1', '1.2345', 'abc', '', '1e3'])('rechaza la cantidad %j', (quantity) => {
@@ -90,9 +90,14 @@ describe('contratos de la secuencia', () => {
     [{ sequencePrefix: 'SOF-', sequenceNextNumber: -3 }],
     [{ sequencePrefix: 'SOF-', sequenceNextNumber: 1.5 }],
     [{ sequencePrefix: 'SOF-', sequenceNextNumber: '' }],
+    [{ sequencePrefix: 'SOF-', sequenceNextNumber: 2_000_000_000 }],
     [{ sequencePrefix: 'SOF-', sequenceNextNumber: 2_000_000_001 }],
   ])('rechaza %j', (value) => {
     expect(parse(value).success).toBe(false);
+  });
+
+  it('acepta el mayor siguiente número permitido', () => {
+    expect(parse({ sequencePrefix: 'SOF-', sequenceNextNumber: 1_999_999_999 }).success).toBe(true);
   });
 
   it('la consola agrega el tenantId', () => {

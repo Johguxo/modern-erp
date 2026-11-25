@@ -1,13 +1,6 @@
 // Regla común de editar la secuencia (la usan la empresa y la consola): prefijo normalizado y el
 // siguiente número nunca por debajo del último emitido. Devuelve solo lo que cambió.
-import { ConflictError } from '@/shared/errors';
-
-import {
-  MAX_SEQUENCE_NUMBER,
-  assertNextNumberAllowed,
-  normalizePrefix,
-  type SequenceState,
-} from '../domain/numbering';
+import { assertNextNumberAllowed, normalizePrefix, type SequenceState } from '../domain/numbering';
 
 import type { DocType } from './ports';
 
@@ -30,9 +23,6 @@ export function planSequenceChange(
 ): SequenceChange {
   const prefix = normalizePrefix(input.prefix);
   assertNextNumberAllowed(input.nextNumber, current.lastIssuedNumber);
-  if (input.nextNumber > MAX_SEQUENCE_NUMBER) {
-    throw new ConflictError({ reason: 'sequence_exhausted', message: 'Next number too large' });
-  }
 
   const patch: { prefix?: string; nextNumber?: number } = {};
   const changes: Record<string, { from: unknown; to: unknown }> = {};

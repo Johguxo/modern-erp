@@ -24,8 +24,9 @@
 | Pantalla | Ruta | Permiso | Casos de uso |
 |---|---|---|---|
 | Usuarios | `/configuracion/usuarios` | `users.manage` | `identity.listMembers()`, `identity.inviteUser()`, `identity.updateMemberRoles()`, `identity.disableMember()` |
-| Productos | `/configuracion/productos` | `catalog.manage` | `catalog.listProducts()`, `catalog.upsertProduct()`, `catalog.importProducts(file)` |
-| Equipos | `/configuracion/equipos` | `catalog.manage` | `catalog.listEquipment()`, `catalog.upsertEquipment()`, `catalog.importEquipment(file)` |
+| Productos | `/configuracion/productos` | `catalog.manage` | `catalog.listProducts()`, `catalog.upsertProduct()`, `catalog.previewImport`, `catalog.confirmImport` (kind `products`), plantilla `GET /configuracion/productos/plantilla` |
+| Equipos | `/configuracion/equipos` | `catalog.manage` | `catalog.listEquipment()`, `catalog.upsertEquipment()`, `catalog.previewImport`, `catalog.confirmImport` (kind `equipment`), plantilla `GET /configuracion/equipos/plantilla` |
+| Resultado de importación | `/configuracion/importaciones/[id]` | `catalog.manage` | `catalog.getImportJob()` (se refresca mientras está `pending`) |
 | Centros de costo | `/configuracion/centros-de-costo` | `catalog.manage` | `catalog.listCostCenters()`, `catalog.upsertCostCenter()` |
 
 El menú tiene un solo ítem «Catálogo» (→ `/configuracion/productos`, activo en las tres rutas) y dentro, pestañas «Productos · Equipos · Centros de costo» (E2-H2).

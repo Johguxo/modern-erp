@@ -24,10 +24,10 @@ Estado: en revisión · Issue: [#14](https://github.com/Johguxo/modern-erp/issue
 **Como** admin **quiero** subir mi Excel de productos y de equipos **para** no cargarlos uno por uno.
 
 **Criterios de aceptación**
-- [ ] Plantillas descargables (`.xlsx`) con las columnas esperadas.
-- [ ] Subida → vista previa de las primeras 20 filas → confirmar. El procesamiento corre en el worker (`catalog.import`).
-- [ ] Validación fila por fila con Zod: filas válidas se insertan o actualizan por `code`; las inválidas se listan con número de fila y motivo.
-- [ ] Resumen final: creados, actualizados, con error. Guardado en `import_jobs`.
-- [ ] Prueba con un archivo de 2,000 filas en menos de 30 s.
+- [x] Plantillas descargables (`.xlsx`) con las columnas esperadas.
+- [x] Subida → vista previa de las primeras 20 filas → confirmar. El procesamiento corre en el worker (`catalog.import`).
+- [x] Validación fila por fila con Zod: filas válidas se insertan o actualizan por `code`; las inválidas se listan con número de fila y motivo.
+- [x] Resumen final: creados, actualizados, con error. Guardado en `import_jobs`.
+- [x] Prueba con un archivo de 2,000 filas en menos de 30 s.
 
-Estado: pendiente · Issue: [#15](https://github.com/Johguxo/modern-erp/issues/15)
+Estado: en revisión · Issue: [#15](https://github.com/Johguxo/modern-erp/issues/15)

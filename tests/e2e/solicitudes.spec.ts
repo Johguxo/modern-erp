@@ -232,7 +232,15 @@ test('un aprobador no ve el editor y nadie edita el borrador de otro', async ({
       const results: boolean[] = [];
       for (const path of paths) {
         await other.goto(path);
-        results.push(await other.getByText(messages.states.notFoundTitle).isVisible());
+        // Soft 404: la página "no encontrada" llega después del esqueleto de carga; hay que esperarla.
+        const shown = await other
+          .getByText(messages.states.notFoundTitle)
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .then(
+            () => true,
+            () => false,
+          );
+        results.push(shown);
       }
       return { hasItem: hasItem > 0, notFound: results };
     } finally {

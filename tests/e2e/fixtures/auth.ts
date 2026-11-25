@@ -53,6 +53,12 @@ export interface Accounts {
   trackTenantSlug(slug: string): void;
   /** E2-H2: producto activo (unidad UND, sin precio) en un tenant ya creado. */
   addProduct(tenantId: string, code: string, name: string): Promise<void>;
+  /**
+   * E3-H2: catálogo para crear SOF en un tenant ya creado (moneda PEN): almacén PRINCIPAL;
+   * productos FIL-1 (12.5000), PER-2 (3.3333) y SIN-3 (sin precio); equipos EQ-1 y EQ-2; y el
+   * centro de costo CC-1.
+   */
+  addRequestCatalog(tenantId: string): Promise<void>;
   /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
   setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
@@ -170,6 +176,25 @@ export function createAccounts(): Accounts {
       await sql`
         insert into products (tenant_id, code, name, unit)
         values (${tenantId}, ${code}, ${name}, 'UND')`;
+    },
+
+    async addRequestCatalog(tenantId) {
+      await sql`
+        insert into warehouses (tenant_id, code, name, is_default)
+        values (${tenantId}, 'PRINCIPAL', 'Almacén principal', true)`;
+      await sql`
+        insert into products (tenant_id, code, name, unit, reference_price, currency) values
+          (${tenantId}, 'FIL-1', 'Filtro de aceite', 'UND', '12.5000', 'PEN'),
+          (${tenantId}, 'PER-2', 'Perno', 'UND', '3.3333', 'PEN')`;
+      await sql`
+        insert into products (tenant_id, code, name, unit)
+        values (${tenantId}, 'SIN-3', 'Producto sin precio', 'UND')`;
+      await sql`
+        insert into equipment (tenant_id, code, name) values
+          (${tenantId}, 'EQ-1', 'Grúa'), (${tenantId}, 'EQ-2', 'Montacargas')`;
+      await sql`
+        insert into cost_centers (tenant_id, code, name)
+        values (${tenantId}, 'CC-1', 'Obra norte')`;
     },
 
     async cleanup() {

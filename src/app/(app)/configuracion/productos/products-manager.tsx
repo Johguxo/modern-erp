@@ -16,7 +16,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { setProductActiveAction } from '../_catalog/actions';
 import { CatalogListView } from '../_catalog/catalog-list-view';
-import { ImportButton } from '../_catalog/import-button';
+import { ImportDialog } from '../_catalog/import-dialog';
 import type { ListParams } from '../_catalog/list-params';
 import { SetActiveControl } from '../_catalog/set-active-control';
 
@@ -143,7 +143,7 @@ export function ProductsManager({
               </Button>
             }
           />
-          <ImportButton />
+          <ImportDialog kind="products" readOnly={readOnly} />
         </>
       }
     />

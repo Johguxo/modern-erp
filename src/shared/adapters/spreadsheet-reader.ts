@@ -15,8 +15,9 @@ import {
   type SpreadsheetRow,
 } from '../ports/spreadsheet';
 
-const fail = (reason: 'file_unsupported' | 'file_unreadable' | 'file_too_large', cause?: unknown) =>
-  new ValidationError({ reason, message: `Spreadsheet rejected: ${reason}`, cause });
+// Sin `cause`: el error de la librería puede citar texto del archivo y el contenido no va a los logs.
+const fail = (reason: 'file_unsupported' | 'file_unreadable' | 'file_too_large') =>
+  new ValidationError({ reason, message: `Spreadsheet rejected: ${reason}` });
 
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04] as const;
 /** Cabecera de los archivos antiguos .xls (OLE2): se rechazan aunque lleven otra extensión. */
@@ -64,7 +65,7 @@ function inspectZip(bytes: Uint8Array): void {
     });
   } catch (error) {
     if (error instanceof ValidationError) throw error;
-    throw fail('file_unreadable', error);
+    throw fail('file_unreadable');
   }
 }
 
@@ -92,8 +93,8 @@ async function readXlsx(bytes: Uint8Array): Promise<SpreadsheetRow[]> {
     // redondeos de punto flotante en los precios).
     const sheet = await readSheet(Buffer.from(bytes), { parseNumber: (text) => text });
     return sheet.map((row) => toRow(row));
-  } catch (error) {
-    throw fail('file_unreadable', error);
+  } catch {
+    throw fail('file_unreadable');
   }
 }
 
@@ -151,7 +152,7 @@ export function createSpreadsheetReader(): SpreadsheetReader {
         return kind === 'xlsx' ? await readXlsx(file.bytes) : readCsv(file.bytes);
       } catch (error) {
         if (error instanceof ValidationError) throw error;
-        throw fail('file_unreadable', error);
+        throw fail('file_unreadable');
       }
     },
   };

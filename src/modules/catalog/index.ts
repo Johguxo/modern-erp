@@ -55,4 +55,5 @@ export {
   PRODUCT_COLUMNS,
   columnsOf,
   type ColumnSpec,
+  type ImportKind,
 } from './domain/import';

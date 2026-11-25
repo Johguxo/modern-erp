@@ -53,10 +53,9 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(page).toHaveURL(/\/configuracion\/productos$/);
   await expect(page.getByRole('heading', { level: 1, name: t.products.title })).toBeVisible();
 
-  // Vacío: crear y un importar deshabilitado con el motivo escrito.
+  // Vacío: crear e importar (habilitado desde E2-H3; el flujo completo está en su propia prueba).
   await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
-  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
-  await expect(page.getByText(t.importSoon)).toBeVisible();
+  await expect(page.getByRole('button', { name: t.import })).toBeEnabled();
   await expectNoPageOverflow(page);
 
   // Crear P-001 con precio "12.5": la moneda se propone (soles) y se muestra "S/ 12.50".

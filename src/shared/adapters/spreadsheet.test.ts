@@ -1,5 +1,7 @@
 // E2-H3 · Adaptadores de hojas de cálculo: escritura, lectura de .xlsx y .csv, filas vacías
 // intermedias, límites y archivos que no son lo que dicen ser. Sin base de datos.
+import { deflateRawSync } from 'node:zlib';
+
 import { zipSync, strToU8 } from 'fflate';
 import writeXlsxFile from 'write-excel-file/node';
 import { describe, expect, it } from 'vitest';
@@ -126,22 +128,29 @@ describe('SpreadsheetReader · .xlsx', () => {
     expect(rows[3]?.[0]).toBe('P3');
   });
 
-  it('corta las celdas muy largas y las filas a 30 columnas', async () => {
-    const wide = Array.from({ length: 35 }, (_, i) => inline(`${colName(i)}1`, `h${i}`)).join('');
-    const bytes = handMadeXlsx(
-      `<row r="1">${wide}</row><row r="2">${inline('A2', 'x'.repeat(3000))}</row>`,
-    );
+  it('corta las celdas muy largas; 30 columnas valen y 31 → too_many_columns', async () => {
+    const sheet = (count: number) => {
+      const wide = Array.from({ length: count }, (_, i) => inline(`${colName(i)}1`, `h${i}`)).join(
+        '',
+      );
+      return handMadeXlsx(
+        `<row r="1">${wide}</row><row r="2">${inline('A2', 'x'.repeat(3000))}</row>`,
+      );
+    };
 
-    const rows = await reader.readFirstSheet({ name: 'g.xlsx', bytes });
-
+    const rows = await reader.readFirstSheet({ name: 'g.xlsx', bytes: sheet(30) });
     expect(rows[0]).toHaveLength(SPREADSHEET_LIMITS.maxColumns);
     expect(rows[1]?.[0]).toHaveLength(SPREADSHEET_LIMITS.maxCellChars);
+
+    expect(await rejectionReason(reader.readFirstSheet({ name: 'g.xlsx', bytes: sheet(31) }))).toBe(
+      'too_many_columns',
+    );
   });
 
   it('un zip que declara más de 30 MB descomprimidos → file_too_large', async () => {
     // 31 MB de ceros comprimen a unos 30 KB: pasa los 2 MB pero no los 30 MB descomprimidos.
     const bomb = handMadeXlsx('<row r="1"/>', {
-      'xl/relleno.bin': new Uint8Array(31 * 1024 * 1024),
+      'xl/relleno.xml': new Uint8Array(31 * 1024 * 1024),
     });
     expect(bomb.byteLength).toBeLessThan(SPREADSHEET_LIMITS.maxFileBytes);
 
@@ -185,6 +194,171 @@ function colName(index: number): string {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   return index < 26 ? (letters[index] ?? '') : `A${letters[index - 26] ?? ''}`;
 }
+
+const CONTENT_TYPES =
+  '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/></Types>';
+const WORKBOOK =
+  '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets></workbook>';
+const WORKBOOK_RELS =
+  '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+
+/**
+ * Zip escrito a mano con data descriptor (flag 0x08: tamaños en 0 en la cabecera local) y,
+ * opcionalmente, un directorio central que MIENTE sobre el tamaño descomprimido (fflate con
+ * unzipSync lo cree; una librería que descomprime por cabeceras locales no).
+ */
+function descriptorZip(
+  entries: Record<string, Uint8Array>,
+  declaredOriginalSize?: number,
+): Uint8Array {
+  const local: Buffer[] = [];
+  const central: Buffer[] = [];
+  let offset = 0;
+  for (const [name, content] of Object.entries(entries)) {
+    const data = Buffer.from(content);
+    const compressed = deflateRawSync(data, { level: 9 });
+    const nameBytes = Buffer.from(name);
+    const header = Buffer.alloc(30);
+    header.writeUInt32LE(0x04034b50, 0);
+    header.writeUInt16LE(20, 4);
+    header.writeUInt16LE(0x08, 6);
+    header.writeUInt16LE(8, 8);
+    header.writeUInt16LE(nameBytes.length, 26);
+    const descriptor = Buffer.alloc(16);
+    descriptor.writeUInt32LE(0x08074b50, 0);
+    descriptor.writeUInt32LE(compressed.length, 8);
+    descriptor.writeUInt32LE(data.length, 12);
+    local.push(header, nameBytes, compressed, descriptor);
+    const entry = Buffer.alloc(46);
+    entry.writeUInt32LE(0x02014b50, 0);
+    entry.writeUInt16LE(20, 4);
+    entry.writeUInt16LE(20, 6);
+    entry.writeUInt16LE(0x08, 8);
+    entry.writeUInt16LE(8, 10);
+    entry.writeUInt32LE(compressed.length, 20);
+    entry.writeUInt32LE(declaredOriginalSize ?? data.length, 24);
+    entry.writeUInt16LE(nameBytes.length, 28);
+    entry.writeUInt32LE(offset, 42);
+    central.push(entry, nameBytes);
+    offset += 30 + nameBytes.length + compressed.length + 16;
+  }
+  const directory = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(central.length / 2, 8);
+  end.writeUInt16LE(central.length / 2, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return new Uint8Array(Buffer.concat([...local, directory, end]));
+}
+
+function bookEntries(sheetXml: string): Record<string, Uint8Array> {
+  return {
+    '[Content_Types].xml': strToU8(CONTENT_TYPES),
+    'xl/workbook.xml': strToU8(WORKBOOK),
+    'xl/_rels/workbook.xml.rels': strToU8(WORKBOOK_RELS),
+    'xl/worksheets/sheet1.xml': strToU8(sheetXml),
+  };
+}
+
+const worksheet = (body: string, extra = '') =>
+  `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${extra}<sheetData>${body}</sheetData></worksheet>`;
+
+describe('SpreadsheetReader · .xlsx hostiles (zip bombs y hojas dispersas)', () => {
+  it('data descriptor y directorio central que miente → file_too_large, rápido', async () => {
+    // 60 MB de espacios en la hoja: el directorio central declara 100 bytes.
+    const sheet = `<?xml version="1.0"?><worksheet><sheetData><row r="1">${inline('A1', 'x')}</row></sheetData>${' '.repeat(60 * 1024 * 1024)}</worksheet>`;
+    const bomb = descriptorZip(bookEntries(sheet), 100);
+    expect(bomb.byteLength).toBeLessThan(SPREADSHEET_LIMITS.maxFileBytes);
+
+    const started = Date.now();
+    expect(await rejectionReason(reader.readFirstSheet({ name: 'b.xlsx', bytes: bomb }))).toBe(
+      'file_too_large',
+    );
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('un zip honesto con data descriptor se lee bien', async () => {
+    const bytes = descriptorZip(
+      bookEntries(worksheet(`<row r="1">${inline('A1', 'codigo')}</row>`)),
+    );
+
+    const rows = await reader.readFirstSheet({ name: 'd.xlsx', bytes });
+
+    expect(rows[0]).toEqual(['codigo']);
+  });
+
+  it('descarta las entradas que no son XML (imágenes, macros) sin descomprimirlas', async () => {
+    const bytes = zipSync({
+      ...bookEntries(worksheet(`<row r="1">${inline('A1', 'ok')}</row>`)),
+      'xl/media/image1.png': new Uint8Array(40 * 1024 * 1024),
+      'xl/vbaProject.bin': new Uint8Array(40 * 1024 * 1024),
+    });
+
+    const rows = await reader.readFirstSheet({ name: 'i.xlsx', bytes });
+
+    expect(rows[0]).toEqual(['ok']);
+  });
+
+  it.each([
+    ['XFD1048576 (la última celda)', 'XFD1048576', 'too_many_rows'],
+    ['Z100000 (fila 100,000)', 'Z100000', 'too_many_rows'],
+    ['XFD1 (columna 16,384)', 'XFD1', 'too_many_columns'],
+  ])('hoja dispersa con %s → rechazada rápido', async (_name, ref, reason) => {
+    const row = ref.replace(/[A-Z]+/, '');
+    const bytes = handMadeXlsx(
+      `<row r="1">${inline('A1', 'x')}</row><row r="${row}">${inline(ref, 'y')}</row>`,
+    );
+
+    const started = Date.now();
+    expect(await rejectionReason(reader.readFirstSheet({ name: 's.xlsx', bytes }))).toBe(reason);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it('un <dimension> enorme sin celdas lejanas también se rechaza', async () => {
+    const bytes = zipSync(
+      bookEntries(
+        worksheet(`<row r="1">${inline('A1', 'x')}</row>`, '<dimension ref="A1:XFD1048576"/>'),
+      ),
+    );
+    expect(await rejectionReason(reader.readFirstSheet({ name: 'd.xlsx', bytes }))).toBe(
+      'too_many_rows',
+    );
+  });
+
+  it('filas vacías al final dentro del margen todavía se leen', async () => {
+    const last = SPREADSHEET_LIMITS.maxDataRows + 1 + SPREADSHEET_LIMITS.emptyRowsMargin;
+    const bytes = handMadeXlsx(`<row r="1">${inline('A1', 'x')}</row><row r="${last}"/>`);
+
+    const rows = await reader.readFirstSheet({ name: 'm.xlsx', bytes });
+
+    expect(rows[0]).toEqual(['x']);
+  });
+});
+
+describe('SpreadsheetReader · números de Excel', () => {
+  const numeric = async (value: string) => {
+    const bytes = handMadeXlsx(`<row r="1"><c r="A1"><v>${value}</v></c></row>`);
+    const rows = await reader.readFirstSheet({ name: 'n.xlsx', bytes });
+    return rows[0]?.[0];
+  };
+
+  it.each([
+    ['19.989999999999998', '19.99'],
+    ['1E-3', '0.001'],
+    ['1.5E+2', '150'],
+    ['12.3', '12.3'],
+    ['100', '100'],
+    ['1E+20', '100000000000000000000'],
+    ['0.1', '0.1'],
+  ])('%s → %s (decimal exacto, 15 cifras, sin exponente)', async (raw, expected) => {
+    expect(await numeric(raw)).toBe(expected);
+  });
+
+  it('un exponente absurdo no se expande', async () => {
+    expect(await numeric('1E+999999')).toBe('1E+999999');
+  });
+});
 
 describe('SpreadsheetReader · tipos y límites', () => {
   it('.xls, .xlsm y otras extensiones → file_unsupported', async () => {
@@ -269,6 +443,16 @@ describe('SpreadsheetReader · .csv', () => {
     expect((rows[1] ?? []).every((cell) => cell === null)).toBe(true);
     expect(rows[2]).toEqual(['P1', null]);
     expect(rows[3]).toEqual(['a,b', 'c']);
+  });
+
+  it('2 MB de saltos de línea → too_many_rows, rápido', async () => {
+    const bytes = strToU8(`a,b\n${'\n'.repeat(2 * 1024 * 1024 - 4)}`);
+
+    const started = Date.now();
+    expect(await rejectionReason(reader.readFirstSheet({ name: 'n.csv', bytes }))).toBe(
+      'too_many_rows',
+    );
+    expect(Date.now() - started).toBeLessThan(1000);
   });
 
   it('comillas sin cerrar → file_unreadable', async () => {

@@ -2,7 +2,8 @@
 // spreadsheet-writer.ts (read-excel-file, write-excel-file, papaparse y fflate).
 //
 // Los errores salen como ValidationError con `reason`: `file_unsupported` (no es .xlsx ni .csv),
-// `file_unreadable` (dañado o ilegible) y `file_too_large` (supera los límites).
+// `file_unreadable` (dañado o ilegible), `file_too_large` (supera los límites), `too_many_columns`
+// y `too_many_rows` (params.max; el dominio del catálogo usa el mismo motivo).
 
 /** Límites de lectura (decisiones de la historia E2-H3). */
 export const SPREADSHEET_LIMITS = {
@@ -10,12 +11,16 @@ export const SPREADSHEET_LIMITS = {
   maxFileBytes: 2 * 1024 * 1024,
   /** Entradas del zip de un .xlsx. */
   maxZipEntries: 100,
-  /** Suma de lo que declaran las entradas del zip al descomprimir. */
+  /** Bytes REALES descomprimidos de las entradas XML del zip (se cuentan al descomprimir). */
   maxUncompressedBytes: 30 * 1024 * 1024,
   /** Las celdas más largas se cortan a este largo (así fallan la validación sin ocupar memoria). */
   maxCellChars: 1001,
-  /** Columnas que se leen por fila. */
+  /** Columnas que puede tener la hoja (más se rechazan antes de leerla). */
   maxColumns: 30,
+  /** Filas de datos por archivo (igual a IMPORT_LIMITS.maxRows del catálogo). */
+  maxDataRows: 5000,
+  /** Filas vacías de más que se toleran al final de una hoja (formato sin datos). */
+  emptyRowsMargin: 100,
 } as const;
 
 /** Todo se lee como texto; null = celda vacía. */

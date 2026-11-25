@@ -528,6 +528,8 @@ export const messages = {
       file_unsupported: () => 'El archivo debe ser un Excel moderno (.xlsx) o un CSV (.csv).',
       file_unreadable: () =>
         'No pudimos leer el archivo. Revisa que no esté dañado y que no tenga contraseña.',
+      too_many_columns: () =>
+        'La hoja tiene demasiadas columnas. Usa la plantilla y quita las columnas que no necesitas.',
       file_too_large: () => 'El archivo es demasiado grande. El máximo es 2 MB y 5,000 filas.',
       missing_columns: (p: Params) =>
         `Al archivo le faltan columnas obligatorias: ${p.columns ?? ''}. Descarga la plantilla para ver los encabezados.`,

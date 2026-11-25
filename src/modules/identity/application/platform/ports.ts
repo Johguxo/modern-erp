@@ -71,8 +71,12 @@ export interface TenantSetupStep {
   run(input: { readonly tenantId: string }): Promise<void>;
 }
 
-export interface PlatformUnitOfWork {
+/** Revisión de SuperAdmin; otros módulos la repiten dentro de su transacción dueño. */
+export interface PlatformGuard {
   isPlatformAdmin(userId: string): Promise<boolean>;
+}
+
+export interface PlatformUnitOfWork extends PlatformGuard {
   findPlan(code: string): Promise<PlanRecord | null>;
   /** ValidationError slug_taken si el slug ya existe. */
   insertTenant(input: { name: string; slug: string }): Promise<string>;

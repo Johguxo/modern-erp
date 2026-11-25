@@ -31,6 +31,7 @@ import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
 import { createDrizzleInvitationRepository } from './drizzle-invitation-repository';
 import { createDrizzleMemberRepository } from './drizzle-member-repository';
+import { createDrizzlePlatformGuard } from './drizzle-platform-guard';
 import { createDrizzleTenantDirectory, createDrizzleTenantLocks } from './drizzle-tenant-store';
 
 /** Fábrica de un paso de alta sobre la transacción (la agrega cada historia en la entrega). */
@@ -115,14 +116,7 @@ async function latestSubscription(db: DbExecutor, tenantId: string) {
 
 function unitOfWork(tx: DbTransaction, setupSteps: readonly TenantSetupStepFactory[]) {
   const uow: PlatformUnitOfWork = {
-    async isPlatformAdmin(userId) {
-      const rows = await tx
-        .select({ userId: platformAdmins.userId })
-        .from(platformAdmins)
-        .where(eq(platformAdmins.userId, userId))
-        .limit(1);
-      return rows.length > 0;
-    },
+    isPlatformAdmin: (userId) => createDrizzlePlatformGuard(tx).isPlatformAdmin(userId),
 
     async findPlan(code) {
       const [row] = await tx

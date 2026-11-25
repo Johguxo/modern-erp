@@ -98,6 +98,14 @@ const FORBIDDEN: Case[] = [
   ['src/ui/x.tsx', '@/modules/identity/domain/x'],
   ['src/modules/requests/application/x.ts', '@/modules/identity/contracts/sign-in'],
   ['src/shared/context.ts', '@/modules/identity/infrastructure/deps'],
+  // E2-H3: las librerías de Excel/CSV solo en src/shared/adapters
+  ['src/modules/catalog/domain/x.ts', 'papaparse'],
+  ['src/modules/catalog/infrastructure/x.ts', 'read-excel-file/node'],
+  ['src/modules/catalog/infrastructure/x.ts', 'write-excel-file/node'],
+  ['src/modules/catalog/application/x.ts', 'fflate'],
+  ['src/app/page.tsx', 'papaparse'],
+  ['src/shared/ports/x.ts', 'read-excel-file/node'],
+  ['src/worker.ts', 'fflate'],
 ];
 
 const ALLOWED: Case[] = [
@@ -131,6 +139,9 @@ const ALLOWED: Case[] = [
   ['src/ui/x.tsx', '@/modules/identity/contracts'],
   ['src/modules/requests/application/x.ts', '@/modules/identity/contracts'],
   ['src/proxy.ts', '@/shared/adapters/supabase-auth-provider'],
+  ['src/shared/adapters/spreadsheet-reader.ts', 'read-excel-file/node'],
+  ['src/shared/adapters/spreadsheet-reader.ts', 'papaparse'],
+  ['src/shared/adapters/spreadsheet-writer.ts', 'write-excel-file/node'],
 ];
 
 describe('regla de imports prohibidos (no-restricted-imports por carpeta)', () => {

@@ -17,7 +17,7 @@
 | Jobs | pg-boss | Worker separado (`pnpm worker`) |
 | PDF | @react-pdf/renderer | Generado en el worker o en un route handler |
 | Correo | Resend + React Email | Solo dentro del adaptador `Mailer` |
-| Importación Excel/CSV | SheetJS (`xlsx`) o `papaparse` | Validación fila por fila con Zod |
+| Importación Excel/CSV | `read-excel-file` (leer .xlsx), `write-excel-file` (plantillas), `papaparse` (CSV) y `fflate` (revisar el zip antes de leerlo) | Validación fila por fila con Zod. Solo dentro de los adaptadores `SpreadsheetReader`/`SpreadsheetWriter` (`src/shared/adapters`). SheetJS (`xlsx`) descartado: el paquete de npm quedó en 0.18.5 con CVE-2023-30533 y CVE-2024-22363. Una futura exportación a CSV debe escapar los textos que empiezan con `=`, `+`, `-` o `@` |
 | Pruebas unitarias | Vitest | Dominio y casos de uso |
 | Pruebas de integración | Vitest + base local de Supabase | Repositorios y RLS |
 | Pruebas E2E | Playwright | Flujos de las pantallas 1–3 |

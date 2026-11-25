@@ -34,6 +34,22 @@ const SDKS = {
   message: `Los SDK externos solo se usan en infrastructure/ o src/shared/adapters/, detrás de un puerto. ${ADR}`,
 };
 
+// Librerías de hojas de cálculo (E2-H3): solo los adaptadores de src/shared/adapters las usan, detrás
+// del puerto SpreadsheetReader/SpreadsheetWriter. Ningún otro bloque (ni infrastructure/) las permite.
+const SPREADSHEET_LIBS = {
+  group: [
+    'read-excel-file',
+    'read-excel-file/*',
+    'write-excel-file',
+    'write-excel-file/*',
+    'papaparse',
+    'papaparse/*',
+    'fflate',
+    'fflate/*',
+  ],
+  message: `Las librerías de Excel/CSV solo se usan en src/shared/adapters/, detrás de un puerto. ${ADR}`,
+};
+
 // Entradas públicas de un módulo: su index.ts y, para el cliente (formularios), su carpeta
 // contracts/ (solo esquemas Zod, sin base de datos). Nada más profundo.
 const DEEP_MODULE_IMPORT = {
@@ -89,6 +105,7 @@ function moduleRestrictions(mod, { allowSdks }) {
   const others = MODULES.filter((m) => m !== mod).map(escape);
   const patterns = [
     FRAMEWORK,
+    SPREADSHEET_LIBS,
     DEEP_MODULE_IMPORT,
     {
       regex: `^(\\.\\./)+(${others.join('|')})(/|$)`,
@@ -123,7 +140,10 @@ export const importBoundaries = [
     name: 'import-boundaries/db',
     files: ['src/db/**/*.{ts,tsx,mts}'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [FRAMEWORK, SDKS, LOWER_LAYER] }],
+      'no-restricted-imports': [
+        'error',
+        { patterns: [FRAMEWORK, SDKS, SPREADSHEET_LIBS, LOWER_LAYER] },
+      ],
     },
   },
   {
@@ -135,6 +155,7 @@ export const importBoundaries = [
         {
           patterns: [
             SDKS,
+            SPREADSHEET_LIBS,
             DEEP_MODULE_IMPORT,
             PG_DRIVER,
             DRIZZLE,
@@ -152,7 +173,7 @@ export const importBoundaries = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [SDKS, DEEP_MODULE_IMPORT, DB_ACCESS, DB_RELATIVE] },
+        { patterns: [SDKS, SPREADSHEET_LIBS, DEEP_MODULE_IMPORT, DB_ACCESS, DB_RELATIVE] },
       ],
     },
   },
@@ -164,7 +185,7 @@ export const importBoundaries = [
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [SDKS, DEEP_MODULE_IMPORT, DB_ACCESS, DB_RELATIVE] },
+        { patterns: [SDKS, SPREADSHEET_LIBS, DEEP_MODULE_IMPORT, DB_ACCESS, DB_RELATIVE] },
       ],
     },
   },
@@ -181,7 +202,10 @@ export const importBoundaries = [
       'src/middleware.ts',
     ],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [SDKS, DEEP_MODULE_IMPORT, PG_DRIVER] }],
+      'no-restricted-imports': [
+        'error',
+        { patterns: [SDKS, SPREADSHEET_LIBS, DEEP_MODULE_IMPORT, PG_DRIVER] },
+      ],
     },
   },
 ];

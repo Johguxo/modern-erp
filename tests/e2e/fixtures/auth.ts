@@ -111,6 +111,7 @@ export function createAccounts(): Accounts {
     if (!row) throw new Error('tenant no creado');
     tenantIds.push(row.id);
     await sql`insert into tenant_settings (tenant_id) values (${row.id})`;
+    await sql`insert into document_sequences (tenant_id, doc_type, prefix, next_number) values (${row.id}, 'SOF', 'SOF-', 1)`;
     await sql`
       insert into subscriptions (tenant_id, plan_id, status)
       select ${row.id}, id, 'active' from plans where code = 'starter'`;
@@ -191,6 +192,10 @@ export function createAccounts(): Accounts {
         if (tenantIds.length > 0) {
           await sql`delete from audit_events where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from invitations where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from request_line_revisions where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from request_lines where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from requests where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from document_sequences where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from products where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from equipment where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from cost_centers where tenant_id in ${sql(tenantIds)}`;

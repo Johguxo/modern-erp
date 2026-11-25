@@ -111,7 +111,7 @@ export function createDrizzleRequestQueryRepository(db: DbExecutor): RequestQuer
           inApproval:
             sql<number>`count(*) filter (where ${requests.status} = 'in_approval')`.mapWith(Number),
           approvedThisWeek:
-            sql<number>`count(*) filter (where ${requests.status} = 'approved' and ${requests.approvedAt} >= ${weekStart})`.mapWith(
+            sql<number>`count(*) filter (where ${requests.status} = 'approved' and ${requests.approvedAt} >= ${weekStart.toISOString()}::timestamptz)`.mapWith(
               Number,
             ),
         })

@@ -9,7 +9,9 @@ import {
   createDrizzleCostCenterRepository,
   createDrizzleEquipmentRepository,
 } from '@/modules/catalog/infrastructure/drizzle-simple-repositories';
+import { createDrizzleUserNames } from '@/modules/identity/infrastructure/drizzle-user-names';
 import { createDrizzleDocumentSequenceRepository } from '@/modules/requests/infrastructure/drizzle-document-sequence-repository';
+import { createDrizzleRequestQueryRepository } from '@/modules/requests/infrastructure/drizzle-request-query-repository';
 import { createDrizzleRequestRepository } from '@/modules/requests/infrastructure/drizzle-request-repository';
 
 import { createIdentityFixtures } from '../helpers/identity-fixtures';
@@ -118,5 +120,62 @@ describe('findActiveByIds del catálogo filtra por tenantId sin RLS', () => {
     ]);
     expect(own.map((p) => p.code).sort()).toEqual(['FIL-1', 'PER-2']);
     expect(await products.findActiveByIds(A.tenantId, [])).toEqual([]);
+  });
+});
+
+describe('findByIds del catálogo filtra por tenantId sin RLS', () => {
+  it('devuelve activos e inactivos del tenant, nunca de otro', async () => {
+    const equipment = createDrizzleEquipmentRepository(getDbAdmin());
+    const costCenters = createDrizzleCostCenterRepository(getDbAdmin());
+    const products = createDrizzleProductRepository(getDbAdmin());
+    await equipment.setActive(A.tenantId, A.equipmentId, false);
+
+    expect((await equipment.findByIds(A.tenantId, [A.equipmentId])).map((e) => e.code)).toEqual([
+      'EQ-1',
+    ]);
+    expect(await equipment.findByIds(A.tenantId, [B.equipmentId])).toEqual([]);
+    expect(await costCenters.findByIds(A.tenantId, [B.costCenterId])).toEqual([]);
+    expect(await products.findByIds(A.tenantId, [B.productIds.filter])).toEqual([]);
+    expect(await equipment.findByIds(A.tenantId, [])).toEqual([]);
+  });
+});
+
+describe('la bandeja y los nombres filtran por tenantId sin RLS', () => {
+  it('list y summary solo ven las solicitudes del tenant, aun con read_all', async () => {
+    const queries = createDrizzleRequestQueryRepository(getDbAdmin());
+    const visibility = (world: RequestsWorld) => ({
+      tenantId: world.tenantId,
+      scope: { viewerId: world.userId, readAll: true, assignedIds: [] as string[] },
+      pendingIds: [] as string[],
+    });
+    // Las dos solicitudes de la prueba son borradores propios de cada tenant.
+    const a = await queries.list({ ...visibility(A), tab: 'all', q: null, page: 1, pageSize: 25 });
+    const b = await queries.list({ ...visibility(B), tab: 'all', q: null, page: 1, pageSize: 25 });
+
+    expect(a.items.map((item) => item.id)).toEqual([requestA]);
+    expect(b.items.map((item) => item.id)).toEqual([requestB]);
+    // Un usuario de A con el tenantId de B no ve nada: la solicitud de B no es suya.
+    const crossed = await queries.list({
+      ...visibility(A),
+      tenantId: B.tenantId,
+      tab: 'all',
+      q: null,
+      page: 1,
+      pageSize: 25,
+    });
+    expect(crossed.items).toEqual([]);
+    expect(crossed.total).toBe(0);
+
+    const summary = await queries.summary(visibility(A), new Date('2026-11-23T05:00:00Z'));
+    expect(summary).toEqual({ awaitingMe: 0, inApproval: 0, approvedThisWeek: 0 });
+  });
+
+  it('los nombres solo salen de miembros del tenant pedido', async () => {
+    const names = createDrizzleUserNames(getDbAdmin());
+
+    expect((await names(A.tenantId, [A.userId, B.userId])).has(A.userId)).toBe(true);
+    expect((await names(A.tenantId, [A.userId, B.userId])).has(B.userId)).toBe(false);
+    expect((await names(B.tenantId, [A.userId])).size).toBe(0);
+    expect((await names(A.tenantId, [])).size).toBe(0);
   });
 });

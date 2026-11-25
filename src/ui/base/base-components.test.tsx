@@ -36,6 +36,11 @@ describe('PageHeader', () => {
     expect(html).toContain('<button type="button">Nueva</button>');
   });
 
+  it('el saludo (eyebrow) va sobre el título', () => {
+    const html = renderToStaticMarkup(<PageHeader eyebrow="Hola, Ruby" title="Bandeja" />);
+    expect(html.indexOf('Hola, Ruby')).toBeLessThan(html.indexOf('<h1'));
+  });
+
   it('sin descripción ni acciones no deja contenedores vacíos', () => {
     const html = renderToStaticMarkup(<PageHeader title="Clientes" />);
     expect(html).not.toContain('<p');

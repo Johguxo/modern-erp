@@ -483,7 +483,6 @@ export const messages = {
     noValue: '—',
     noResultsTitle: 'No hay solicitudes con este filtro',
     noResultsDescription: 'Prueba con otra búsqueda o cambia de pestaña.',
-    openRequest: (label: string) => `Abrir ${label}`,
   },
   /** Solicitudes (SOF): editor de borradores y detalle provisional (E3-H2). */
   requests: {

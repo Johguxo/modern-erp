@@ -3,11 +3,14 @@ import type { ReactNode } from 'react';
 import { cn } from '@/ui/lib/utils';
 
 export function PageHeader({
+  eyebrow,
   title,
   description,
   actions,
   className,
 }: {
+  /** Línea breve sobre el título (por ejemplo, el saludo de la bandeja). */
+  eyebrow?: string;
   title: string;
   description?: string;
   /** Botones de acción (por ejemplo, "+ Nueva solicitud"). */
@@ -22,6 +25,7 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0">
+        {eyebrow ? <p className="mb-1 text-[13px] text-muted-foreground">{eyebrow}</p> : null}
         <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">{title}</h1>
         {description ? <p className="mt-1 text-muted-foreground">{description}</p> : null}
       </div>

@@ -1,0 +1,60 @@
+// Fábricas de dependencias de requests (ADR-005): la entrega las arma con la transacción de
+// withTenant (o getDbAdmin en la consola) y se las pasa a los casos de uso.
+import type { DbExecutor } from '@/db';
+import { getDbAdmin } from '@/db/admin';
+import type { CatalogExtras } from '@/modules/catalog';
+import { createAuditLogFor, createTenantCurrencyFor } from '@/modules/identity';
+import type { ClientInfo } from '@/shared/ports/client-info';
+import type { Clock } from '@/shared/ports/clock';
+
+import type {
+  ApprovalStarter,
+  GetRequestDeps,
+  PlatformSequenceDeps,
+  RequestsDeps,
+} from '../application/ports';
+
+import { createCatalogLookup } from './catalog-lookup';
+import { createDrizzleDocumentSequenceRepository } from './drizzle-document-sequence-repository';
+import { createDrizzleRequestRepository } from './drizzle-request-repository';
+import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-store';
+import { noopApprovalStarter } from './noop-approval-starter';
+
+/** Lo que la entrega aporta a requests (además de la transacción). */
+export interface RequestsExtras {
+  readonly client: ClientInfo;
+  readonly clock: Clock;
+  /** E4-H2 pasa aquí el motor de aprobaciones; por defecto no hace nada. */
+  readonly approvals?: ApprovalStarter;
+}
+
+export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
+  const catalogExtras: CatalogExtras = { client: extras.client };
+  const currencyOf = createTenantCurrencyFor(tx);
+  return {
+    requests: createDrizzleRequestRepository(tx),
+    sequences: createDrizzleDocumentSequenceRepository(tx),
+    catalog: createCatalogLookup(tx, catalogExtras),
+    currency: { currencyOf },
+    approvals: extras.approvals ?? noopApprovalStarter,
+    audit: createAuditLogFor(tx),
+    client: extras.client,
+    clock: extras.clock,
+  };
+}
+
+/** Lectura de una solicitud (sin auditoría ni reloj). */
+export function createGetRequestDeps(tx: DbExecutor): GetRequestDeps {
+  return { requests: createDrizzleRequestRepository(tx) };
+}
+
+/**
+ * Consola de plataforma (ADR-007): store sobre la conexión dueño. La entrega nunca recibe la
+ * conexión; los casos de uso revisan SuperAdmin dentro de su transacción y auditan.
+ */
+export function createPlatformSequenceDeps(
+  extras: { readonly client: ClientInfo },
+  db: DbExecutor = getDbAdmin(),
+): PlatformSequenceDeps {
+  return { store: createDrizzleRequestsPlatformStore(db), client: extras.client };
+}

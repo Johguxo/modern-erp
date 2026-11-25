@@ -118,7 +118,109 @@ export const messages = {
     noResultsTitle: 'Sin resultados',
     noResultsDescription: 'Prueba con otro texto o cambia el filtro de estado.',
     import: 'Importar desde Excel',
-    importSoon: 'Disponible pronto',
+    importer: {
+      title: { products: 'Importar productos', equipment: 'Importar equipos' },
+      description:
+        'Descarga la plantilla, llénala y súbela. Revisamos el archivo y te mostramos el resultado antes de guardar nada.',
+      downloadTemplate: 'Descargar plantilla',
+      fileLabel: 'Archivo (.xlsx o .csv)',
+      fileHint:
+        'Hasta 2 MB y 5,000 filas. Se lee la primera hoja y la fila 1 debe ser el encabezado.',
+      existingHint:
+        'Si el código ya existe, se actualizan sus datos; si es nuevo, se crea. Los registros inactivos siguen inactivos (actívalos desde la lista).',
+      review: 'Revisar archivo',
+      reviewing: 'Revisando…',
+      chooseAnother: 'Elegir otro archivo',
+      confirm: 'Confirmar importación',
+      confirming: 'Enviando…',
+      cancel: 'Cancelar',
+      close: 'Cerrar',
+      chooseFile: 'Elige un archivo para continuar.',
+      previewTitle: 'Vista previa',
+      previewTotals: (total: number, valid: number, failed: number) =>
+        `${total} ${total === 1 ? 'fila' : 'filas'} en el archivo: ${valid} ${valid === 1 ? 'válida' : 'válidas'} y ${failed} con error.`,
+      previewShowing: (shown: number, total: number) =>
+        shown < total
+          ? `Se muestran las primeras ${shown} de ${total} filas.`
+          : `Se muestran las ${total} filas.`,
+      previewTableLabel: 'Primeras filas del archivo',
+      rowColumn: 'Fila',
+      errorsTitle: 'Errores encontrados',
+      errorsHint:
+        'Las filas con error no se importan. Corrige el archivo y súbelo de nuevo, o confirma para importar solo las filas válidas.',
+      errorsMore: (count: number) => `y ${count} ${count === 1 ? 'error más' : 'errores más'}`,
+      noValidRows: 'No hay filas válidas para importar.',
+      queueFailed:
+        'El archivo se guardó, pero no se pudo iniciar la importación. Vuelve a subirlo en unos minutos.',
+      fields: {
+        code: 'Código',
+        name: 'Nombre',
+        unit: 'Unidad',
+        category: 'Categoría',
+        price: 'Precio',
+        currency: 'Moneda',
+        type: 'Tipo',
+      },
+      rowReasons: {
+        required: () => 'es obligatorio.',
+        too_long: (p: Params) => `puede tener como máximo ${p.max ?? '?'} caracteres.`,
+        invalid_code: () => 'solo admite letras, números y . _ / - (sin espacios).',
+        invalid_price: () =>
+          'usa punto decimal, hasta 4 decimales y sin separador de miles (por ejemplo 1250.50).',
+        invalid_currency: () => 'debe ser PEN o USD.',
+        price_required: () => 'ingresa el precio o quita la moneda.',
+        duplicate_in_file: (p: Params) =>
+          `el código ya aparece en la fila ${p.firstRow ?? '?'}; solo se importa la primera.`,
+        invalid: () => 'el valor no es válido.',
+      } satisfies Record<string, (params: Params) => string>,
+      template: {
+        fileName: { products: 'plantilla-productos', equipment: 'plantilla-equipos' },
+        sheets: { products: 'Productos', equipment: 'Equipos', instructions: 'Instrucciones' },
+        instructionsTitle: 'Cómo llenar la plantilla',
+        common: [
+          'Llena la hoja de datos a partir de la fila 2; la fila 1 es el encabezado y no se debe cambiar.',
+          'Las columnas con asterisco (*) son obligatorias; el orden de las columnas no importa.',
+          'Un código que ya existe actualiza ese registro; uno nuevo lo crea. Los registros inactivos siguen inactivos.',
+          'El código solo admite letras, números y . _ / - ; se guarda en mayúsculas y no se puede cambiar después.',
+          'Máximo 5,000 filas y 2 MB. Se lee solo la primera hoja.',
+        ],
+        products: [
+          'Unidad: por ejemplo UND, KG o M.',
+          'Precio: opcional, con punto decimal y hasta 4 decimales (1250.50). Sin separador de miles ni símbolo de moneda.',
+          'Moneda: PEN o USD. Si pones precio y no moneda, se usa la moneda de tu empresa.',
+        ],
+        equipment: ['Tipo: opcional, por ejemplo Grúa o Camioneta.'],
+      },
+      job: {
+        title: { products: 'Importación de productos', equipment: 'Importación de equipos' },
+        back: 'Volver a la lista',
+        startedAt: 'Iniciada:',
+        pendingText: 'Estamos importando tu archivo. Esta página se actualiza sola.',
+        stalledTitle: 'No se pudo iniciar la importación',
+        stalledText:
+          'Lleva más de 5 minutos sin comenzar. Vuelve a subir el archivo desde la lista; si sigue igual, contacta al administrador de LinkUs.',
+        failedTitle: 'La importación no se completó',
+        failureReasons: {
+          not_allowed: 'Tu usuario ya no tiene permiso para importar en esta empresa.',
+          tenant_read_only: 'Tu empresa está en modo solo lectura.',
+          invalid_payload: 'No se pudo leer el contenido guardado. Vuelve a subir el archivo.',
+          unexpected: 'Ocurrió un error inesperado. Vuelve a subir el archivo en unos minutos.',
+        } satisfies Record<string, string>,
+        cards: {
+          created: 'Creados',
+          updated: 'Actualizados',
+          unchanged: 'Sin cambios',
+          failed: 'Con error',
+        },
+        total: (total: number) => `${total} ${total === 1 ? 'fila' : 'filas'} en el archivo.`,
+        errorsTitle: 'Filas con error',
+        errorsTableLabel: 'Filas con error de la importación',
+        errorsOmitted: (count: number) =>
+          `y ${count} ${count === 1 ? 'error más' : 'errores más'} que no se muestran.`,
+        columns: { row: 'Fila', code: 'Código', reason: 'Problema' },
+        noErrors: 'Todas las filas se importaron sin problemas.',
+      },
+    },
     actions: {
       edit: 'Editar',
       activate: 'Activar',
@@ -346,6 +448,10 @@ export const messages = {
     subscription_suspended: 'Suspendida',
     subscription_cancelled: 'Cancelada',
     subscription_none: 'Sin suscripción',
+    import_pending: 'En cola',
+    import_processing: 'Procesando',
+    import_completed: 'Terminada',
+    import_failed: 'Con fallas',
   },
   states: {
     loading: 'Cargando…',
@@ -418,6 +524,20 @@ export const messages = {
       tenant_inactive: () =>
         'El cliente está en solo lectura o sin suscripción vigente. Reactiva su suscripción primero.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
+      // Importación del catálogo (E2-H3): el archivo en sí.
+      file_unsupported: () => 'El archivo debe ser un Excel moderno (.xlsx) o un CSV (.csv).',
+      file_unreadable: () =>
+        'No pudimos leer el archivo. Revisa que no esté dañado y que no tenga contraseña.',
+      too_many_columns: () =>
+        'La hoja tiene demasiadas columnas. Usa la plantilla y quita las columnas que no necesitas.',
+      file_too_large: () => 'El archivo es demasiado grande. El máximo es 2 MB y 5,000 filas.',
+      missing_columns: (p: Params) =>
+        `Al archivo le faltan columnas obligatorias: ${p.columns ?? ''}. Descarga la plantilla para ver los encabezados.`,
+      no_rows: () => 'El archivo no tiene filas de datos debajo del encabezado.',
+      too_many_rows: (p: Params) =>
+        `El archivo tiene demasiadas filas. El máximo es ${p.max ?? '?'} por importación.`,
+      no_valid_rows: () =>
+        'No hay filas válidas para importar. Corrige el archivo y vuelve a subirlo.',
     } satisfies Record<string, (params: Params) => string>,
     reference: 'Código de referencia',
   },

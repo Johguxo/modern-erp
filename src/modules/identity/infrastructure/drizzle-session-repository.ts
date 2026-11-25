@@ -1,6 +1,6 @@
 // Lecturas de sesión con la conexión dueño (getDbAdmin): todavía no hay tenant activo para RLS.
 // Están acotadas: siempre filtran por auth_user_id y, si aplica, por tenant_id (ADR-004 §8).
-import { and, eq } from 'drizzle-orm';
+import { and, eq, type SQL } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import { memberships, platformAdmins, tenantSettings, tenants, users } from '@/db/schema';
@@ -36,35 +36,44 @@ export function createDrizzleSessionRepository(db: DbExecutor): SessionRepositor
       return { user, memberships: rows, isPlatformAdmin: admin.length > 0 };
     },
 
-    async findTenantAccess(authUserId: string, tenantId: string): Promise<TenantAccess | null> {
-      const [row] = await db
-        .select({
-          userId: users.id,
-          email: users.email,
-          roles: memberships.roles,
-          timezone: tenantSettings.timezone,
-        })
-        .from(users)
-        .innerJoin(
-          memberships,
-          and(
-            eq(memberships.userId, users.id),
-            eq(memberships.tenantId, tenantId),
-            eq(memberships.status, 'active'),
-          ),
-        )
-        .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
-        .leftJoin(tenantSettings, eq(tenantSettings.tenantId, tenants.id))
-        .where(and(eq(users.authUserId, authUserId), eq(users.status, 'active')))
-        .limit(1);
-      if (!row) return null;
-      return {
-        userId: row.userId,
-        email: row.email,
-        roles: toRoles(row.roles),
-        timezone: row.timezone ?? 'America/Lima',
-        locale: 'es-PE',
-      };
-    },
+    findTenantAccess: (authUserId, tenantId) =>
+      findAccess(db, eq(users.authUserId, authUserId), tenantId),
+    findTenantAccessByUserId: (userId, tenantId) => findAccess(db, eq(users.id, userId), tenantId),
+  };
+}
+
+/** Usuario activo (según `who`) con membresía activa en el tenant; null si falta alguno. */
+async function findAccess(
+  db: DbExecutor,
+  who: SQL,
+  tenantId: string,
+): Promise<TenantAccess | null> {
+  const [row] = await db
+    .select({
+      userId: users.id,
+      email: users.email,
+      roles: memberships.roles,
+      timezone: tenantSettings.timezone,
+    })
+    .from(users)
+    .innerJoin(
+      memberships,
+      and(
+        eq(memberships.userId, users.id),
+        eq(memberships.tenantId, tenantId),
+        eq(memberships.status, 'active'),
+      ),
+    )
+    .innerJoin(tenants, eq(tenants.id, memberships.tenantId))
+    .leftJoin(tenantSettings, eq(tenantSettings.tenantId, tenants.id))
+    .where(and(who, eq(users.status, 'active')))
+    .limit(1);
+  if (!row) return null;
+  return {
+    userId: row.userId,
+    email: row.email,
+    roles: toRoles(row.roles),
+    timezone: row.timezone ?? 'America/Lima',
+    locale: 'es-PE',
   };
 }

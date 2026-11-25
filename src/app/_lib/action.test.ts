@@ -13,8 +13,9 @@ import { z } from 'zod';
 
 import type { DbTransaction } from '@/db';
 import type { Ctx } from '@/shared/context';
+import { ValidationError } from '@/shared/errors';
 
-import { createAction } from './action';
+import { createAction, createPrepare } from './action';
 import type { PipelineDeps } from './pipeline';
 
 vi.mock('next/headers', () => ({ headers: vi.fn() }));
@@ -112,5 +113,65 @@ describe('createAction', () => {
     expect(d.logger.find('action finished')?.bindings).toMatchObject({
       action: 'submitRequest',
     });
+  });
+});
+
+describe('createPrepare (trabajo previo a la transacción)', () => {
+  const MANAGER = makeCtx({ roles: ['admin'], permissions: ['catalog.manage'] });
+
+  it('con permiso corre el trabajo con el ctx y devuelve su resultado', async () => {
+    setHeaders({});
+    const work = vi.fn((ctx: Ctx) => Promise.resolve(ctx.userId));
+
+    const result = await createPrepare(() => deps(MANAGER))('catalog.manage', 'leer', work);
+
+    expect(result).toEqual({ ok: true, data: MANAGER.userId });
+    expect(work).toHaveBeenCalledOnce();
+  });
+
+  it('sin sesión → UNAUTHENTICATED y no corre el trabajo (no se lee el archivo)', async () => {
+    setHeaders({});
+    const work = vi.fn(() => Promise.resolve('leído'));
+
+    const result = await createPrepare(() => deps(null))('catalog.manage', 'leer', work);
+
+    expect(!result.ok && result.error.code).toBe('UNAUTHENTICATED');
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it('sin el permiso → FORBIDDEN y no corre el trabajo (no se lee el archivo)', async () => {
+    setHeaders({});
+    const work = vi.fn(() => Promise.resolve('leído'));
+    const requester = makeCtx({ permissions: ['requests.create'] });
+
+    const result = await createPrepare(() => deps(requester))('catalog.manage', 'leer', work);
+
+    expect(!result.ok && result.error.code).toBe('FORBIDDEN');
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it('empresa en solo lectura → FORBIDDEN (tenant_read_only) y no corre el trabajo', async () => {
+    setHeaders({});
+    const work = vi.fn(() => Promise.resolve('leído'));
+    const readOnly = makeCtx({
+      roles: ['admin'],
+      permissions: ['catalog.manage'],
+      readOnly: true,
+    });
+
+    const result = await createPrepare(() => deps(readOnly))('catalog.manage', 'leer', work);
+
+    expect(!result.ok && result.error.code).toBe('FORBIDDEN');
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it('un error de dominio del trabajo sale como ActionResult con su mensaje es-PE', async () => {
+    setHeaders({});
+    const result = await createPrepare(() => deps(MANAGER))('catalog.manage', 'leer', () =>
+      Promise.reject(new ValidationError({ reason: 'file_unreadable' })),
+    );
+
+    expect(!result.ok && result.error.code).toBe('VALIDATION');
+    expect(!result.ok && result.error.message).toContain('No pudimos leer el archivo');
   });
 });

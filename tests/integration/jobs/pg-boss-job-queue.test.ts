@@ -7,7 +7,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDatabases, getDbAdmin } from '@/db/admin';
 import { getEnv } from '@/env';
-import { createPgBossRuntime, type JobRuntime } from '@/shared/adapters/pg-boss-job-queue';
+import {
+  createPgBossProducer,
+  createPgBossRuntime,
+  type JobRuntime,
+} from '@/shared/adapters/pg-boss-job-queue';
 import type { Job } from '@/shared/ports/job-queue';
 import { CapturingLogger } from '@tests/support/fakes/capturing-logger';
 
@@ -153,4 +157,57 @@ describe('adaptador pg-boss (JobQueue y JobConsumer)', () => {
     },
     JOB_TIMEOUT_MS + 10_000,
   );
+});
+
+describe('productor de solo envío (web, E2-H3)', () => {
+  it(
+    'es perezoso, encola sin supervise ni schedule y el worker recibe el job',
+    async () => {
+      await runtime.ensureQueues(['catalog.import']);
+      const received = deferredJob(JOB_TIMEOUT_MS);
+      await runtime.work('catalog.import', (job) => {
+        received.resolve(job);
+        return Promise.resolve();
+      });
+
+      const producer = createPgBossProducer({
+        connectionString: getEnv().DATABASE_URL_ADMIN,
+        schema: SCHEMA,
+        logger,
+        applicationName: 'linkus-web-producer-test',
+      });
+      try {
+        const payload = { tenantId: newId(), jobId: newId() };
+        const id = await producer.enqueue('catalog.import', payload, {
+          singletonKey: payload.jobId,
+          singletonSeconds: 3600,
+        });
+
+        expect(id).toEqual(expect.any(String));
+        const job = await received.promise;
+        expect(job.id).toBe(id);
+        expect(job.payload).toEqual(payload);
+        // El mismo singletonKey no se encola dos veces.
+        expect(
+          await producer.enqueue('catalog.import', payload, {
+            singletonKey: payload.jobId,
+            singletonSeconds: 3600,
+          }),
+        ).toBeNull();
+      } finally {
+        await producer.stop();
+        await producer.stop();
+      }
+    },
+    JOB_TIMEOUT_MS + 10_000,
+  );
+
+  it('stop() sin haber enviado nada no abre conexiones ni falla', async () => {
+    const producer = createPgBossProducer({
+      connectionString: getEnv().DATABASE_URL_ADMIN,
+      schema: SCHEMA,
+      logger,
+    });
+    await expect(producer.stop()).resolves.toBeUndefined();
+  });
 });

@@ -36,7 +36,7 @@
 | `products` | `tenant_id`, `code`, `name`, `unit`, `category`, `reference_price` numeric(14,4), `currency`, `active` | unique(`tenant_id`,`code`); índice de búsqueda `pg_trgm` sobre `code` y `name`. Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
 | `equipment` | `tenant_id`, `code`, `name`, `type`, `active` | unique(`tenant_id`,`code`) — ej. `GEN-045`. Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
 | `cost_centers` | `tenant_id`, `code`, `name`, `active` | unique(`tenant_id`,`code`). Código inmutable y normalizado (mayúsculas, sin espacios, ≤ 40, `^[A-Z0-9][A-Z0-9._/-]*$`); sin DELETE (se desactiva con `active`) |
-| `import_jobs` | `tenant_id`, `kind` (`products`,`equipment`,`stock`), `status`, `file_path`, `summary` jsonb, `errors` jsonb, `created_by` | Resultado fila por fila de importaciones |
+| `import_jobs` | `tenant_id`, `kind` (`products`,`equipment`,`stock`), `status`, `file_path`, `payload` jsonb, `summary` jsonb, `errors` jsonb, `created_by`, `finished_at` | Resultado fila por fila de importaciones. `payload` guarda las filas leídas (sin validar) hasta que el worker termina y luego se vacía; no se usa Storage (`file_path` queda reservado). `app_user` puede hacer UPDATE solo de `status, summary, errors, payload, finished_at, updated_at` (0009), para que el worker cierre el job en la misma transacción `withTenant` del upsert (E2-H3) |
 
 ## Módulo `requests`
 

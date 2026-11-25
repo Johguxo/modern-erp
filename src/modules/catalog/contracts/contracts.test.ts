@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { listProductsContract, searchProductsContract, upsertProductContract } from './index';
+import {
+  confirmImportContract,
+  listProductsContract,
+  previewImportContract,
+  searchProductsContract,
+  upsertProductContract,
+} from './index';
 
 const base = { code: ' pr-001 ', name: ' Tornillo ', unit: ' und ' };
 
@@ -59,5 +65,36 @@ describe('searchProductsContract', () => {
   it('límite por defecto 20 y máximo 50', () => {
     expect(searchProductsContract.inputSchema.parse({}).limit).toBe(20);
     expect(searchProductsContract.inputSchema.safeParse({ limit: 51 }).success).toBe(false);
+  });
+});
+
+describe('contratos de la importación (filas ya extraídas)', () => {
+  const row = (n: number) => ({ row: n, values: { code: 'P', name: 'N' } });
+
+  it.each([
+    ['vista previa', previewImportContract],
+    ['confirmar', confirmImportContract],
+  ])('%s: acepta hasta 5,000 filas y rechaza más', (_name, contract) => {
+    const rows = (count: number) => Array.from({ length: count }, (_, i) => row(i + 2));
+    expect(contract.inputSchema.safeParse({ kind: 'products', rows: rows(5000) }).success).toBe(
+      true,
+    );
+    expect(contract.inputSchema.safeParse({ kind: 'products', rows: rows(5001) }).success).toBe(
+      false,
+    );
+  });
+
+  it('rechaza celdas de más de 1,001 caracteres y filas con demasiadas claves', () => {
+    const long = { row: 2, values: { code: 'x'.repeat(1002) } };
+    expect(
+      previewImportContract.inputSchema.safeParse({ kind: 'products', rows: [long] }).success,
+    ).toBe(false);
+    const keys = Object.fromEntries(Array.from({ length: 11 }, (_, i) => [`k${i}`, 'v']));
+    expect(
+      previewImportContract.inputSchema.safeParse({
+        kind: 'products',
+        rows: [{ row: 2, values: keys }],
+      }).success,
+    ).toBe(false);
   });
 });

@@ -12,6 +12,7 @@ export {
   createPlatformDeps,
   createPlatformStore,
   createSettingsDeps,
+  createTenantCurrencyFor,
   createUserAdminDeps,
   type SettingsExtras,
   type PlatformExtras,
@@ -43,6 +44,7 @@ export { requestPasswordReset } from './application/request-password-reset';
 export { resetPassword } from './application/reset-password';
 export { resolveEntry } from './application/resolve-entry';
 export { resolveTenantSession } from './application/resolve-tenant-session';
+export { resolveJobCtx } from './application/resolve-job-ctx';
 export type { AuditLog, UserAdminDeps } from './application/user-admin-ports';
 export { recordAudit, type AuditEvent } from './application/audit';
 export {

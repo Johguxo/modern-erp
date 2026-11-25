@@ -3,6 +3,7 @@
 // tenant; aislamiento entre dos tenants; Entitlements.isReadOnly vía loadStatus.
 import { randomUUID } from 'node:crypto';
 
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDatabases, getDbAdmin } from '@/db/admin';
@@ -110,6 +111,28 @@ describe('SessionRepository.findTenantAccess', () => {
   it('aislamiento entre dos tenants: usuario solo en A pidiendo el tenant B → null', async () => {
     expect(await services().sessions.findTenantAccess(auth.onlyA, B)).toBeNull();
     expect(await services().sessions.findTenantAccess(auth.onlyA, A)).not.toBeNull();
+  });
+});
+
+describe('SessionRepository.findTenantAccessByUserId (E2-H3, jobs)', () => {
+  it('usuario y membresía activos → mismo acceso que por id de Auth', async () => {
+    const byUser = await services().sessions.findTenantAccessByUserId(onlyAUserId, A);
+    expect(byUser).toEqual(await services().sessions.findTenantAccess(auth.onlyA, A));
+    expect(byUser?.roles).toEqual(['requester', 'approver']);
+  });
+
+  it('otro tenant, id desconocido, usuario o membresía desactivados → null', async () => {
+    const sessions = services().sessions;
+    expect(await sessions.findTenantAccessByUserId(onlyAUserId, B)).toBeNull();
+    expect(await sessions.findTenantAccessByUserId(randomUUID(), A)).toBeNull();
+    const [disabled] = await getDbAdmin().execute<{ id: string }>(
+      sql`select id from users where auth_user_id = ${auth.disabledUser}`,
+    );
+    const [noMembership] = await getDbAdmin().execute<{ id: string }>(
+      sql`select id from users where auth_user_id = ${auth.disabledMembership}`,
+    );
+    expect(await sessions.findTenantAccessByUserId(disabled?.id ?? '', A)).toBeNull();
+    expect(await sessions.findTenantAccessByUserId(noMembership?.id ?? '', A)).toBeNull();
   });
 });
 

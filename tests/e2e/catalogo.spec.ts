@@ -2,7 +2,10 @@
 // vacío, crear, código repetido, editar con el código de solo lectura, buscar (sin ver datos de
 // otro tenant), desactivar con confirmación y filtrar por estado; un usuario sin catalog.manage
 // no ve el ítem y recibe "no encontrada". Inicios de sesión por proyecto: admin 1, solicitante 1.
+import { readFileSync } from 'node:fs';
+
 import type { Locator, Page } from '@playwright/test';
+import writeXlsxFile from 'write-excel-file/node';
 
 import { messages } from '../../src/ui/messages/es-PE';
 
@@ -53,10 +56,9 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(page).toHaveURL(/\/configuracion\/productos$/);
   await expect(page.getByRole('heading', { level: 1, name: t.products.title })).toBeVisible();
 
-  // Vacío: crear y un importar deshabilitado con el motivo escrito.
+  // Vacío: crear e importar (habilitado desde E2-H3; el flujo completo está en su propia prueba).
   await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
-  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
-  await expect(page.getByText(t.importSoon)).toBeVisible();
+  await expect(page.getByRole('button', { name: t.import })).toBeEnabled();
   await expectNoPageOverflow(page);
 
   // Crear P-001 con precio "12.5": la moneda se propone (soles) y se muestra "S/ 12.50".
@@ -154,7 +156,7 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expect(rowOf(page, 'P-002').getByRole('button', { name: /Activar/ })).toBeVisible();
   await expectNoPageOverflow(page);
 
-  // Equipos: pestaña activa, crear, importar deshabilitado.
+  // Equipos: pestaña activa, crear, importar habilitado.
   const tabs = page.getByRole('navigation', { name: t.sectionsLabel });
   await tabs.getByRole('link', { name: t.sections.equipment }).click();
   await expect(page).toHaveURL(/\/configuracion\/equipos$/);
@@ -169,7 +171,7 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   );
   await page.keyboard.press('Escape');
   await expect(page.getByText(t.equipment.emptyTitle)).toBeVisible();
-  await expect(page.getByRole('button', { name: t.import })).toBeDisabled();
+  await expect(page.getByRole('button', { name: t.import })).toBeEnabled();
   await page.getByRole('button', { name: t.equipment.new }).click();
   await dialog.getByLabel(t.fields.code, { exact: true }).fill('EQ-01');
   await dialog.getByLabel(t.fields.name, { exact: true }).fill('Grúa torre');
@@ -194,6 +196,154 @@ test('el admin crea, edita, busca, desactiva y filtra en el catálogo', async ({
   await expectNoPageOverflow(page);
 });
 
+test('el admin importa productos desde un CSV: plantilla, vista previa con el error y resultado', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  await signIn(page, admin, /\/bandeja$/);
+  await page.goto('/configuracion/productos');
+  await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
+
+  const imp = t.importer;
+  await page.getByRole('button', { name: t.import }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: imp.title.products })).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // La plantilla se descarga como .xlsx.
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    dialog.getByRole('link', { name: imp.downloadTemplate }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('plantilla-productos.xlsx');
+  const templatePath = await download.path();
+  expect(readFileSync(templatePath).subarray(0, 2).toString('latin1')).toBe('PK');
+
+  // CSV de 3 filas con punto y coma: la fila 3 no tiene nombre.
+  const csv = [
+    'codigo;nombre;unidad;precio',
+    'IMP-1;Tubo PVC;und;12.50',
+    'IMP-2;;UND;',
+    'IMP-3;Cemento;BOL;',
+    '',
+  ].join('\n');
+  await expect(dialog.getByRole('button', { name: imp.review })).toBeDisabled();
+  await dialog
+    .getByLabel(imp.fileLabel)
+    .setInputFiles({ name: 'productos.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await dialog.getByRole('button', { name: imp.review }).click();
+
+  // Vista previa: totales y el error marcado en la fila 3 (texto del error, asociado a la celda).
+  await expect(dialog.getByText(imp.previewTotals(3, 2, 1))).toBeVisible();
+  const badRow = dialog.getByRole('row').filter({ hasText: 'IMP-2' });
+  await expect(badRow.locator('[aria-describedby]')).toHaveCount(1);
+  await expect(badRow).toContainText(`${imp.fields.name}: ${imp.rowReasons.required()}`);
+  await expect(
+    dialog.getByRole('listitem').filter({ hasText: `${imp.rowColumn} 3 (IMP-2)` }),
+  ).toBeVisible();
+  await expectNoPageOverflow(page);
+
+  // Confirmar: el worker procesa y la página de resultado se actualiza sola.
+  await dialog.getByRole('button', { name: imp.confirm }).click();
+  await expect(page).toHaveURL(/\/configuracion\/importaciones\/[0-9a-f-]{36}$/);
+  const card = (label: string) => page.locator('dl > div').filter({ hasText: label });
+  await expect(card(imp.job.cards.created)).toContainText('2', { timeout: 30_000 });
+  await expect(card(imp.job.cards.failed)).toContainText('1');
+  await expect(card(imp.job.cards.updated)).toContainText('0');
+  await expect(page.getByText(messages.status.import_completed)).toBeVisible();
+  const errorRow = page.getByRole('row').filter({ hasText: 'IMP-2' });
+  await expect(errorRow).toContainText('3');
+  await expect(errorRow).toContainText(`${imp.fields.name}: ${imp.rowReasons.required()}`);
+  await expectNoPageOverflow(page);
+
+  // Los productos válidos están en la lista; el inválido no.
+  await page.getByRole('link', { name: imp.job.back }).click();
+  await expect(page).toHaveURL(/\/configuracion\/productos$/);
+  await expect(rowOf(page, 'IMP-1')).toContainText('Tubo PVC');
+  await expect(rowOf(page, 'IMP-1')).toContainText(/S\/\s12\.50/);
+  await expect(rowOf(page, 'IMP-3')).toContainText('Cemento');
+  await expect(rowOf(page, 'IMP-2')).toHaveCount(0);
+
+  // Un archivo que no es .xlsx ni .csv se rechaza con un mensaje claro y no se importa nada.
+  await page.getByRole('button', { name: t.import }).click();
+  await dialog
+    .getByLabel(imp.fileLabel)
+    .setInputFiles({ name: 'notas.txt', mimeType: 'text/plain', buffer: Buffer.from('hola') });
+  await dialog.getByRole('button', { name: imp.review }).click();
+  await expect(
+    dialog.getByRole('alert').filter({ hasText: messages.errors.reasons.file_unsupported() }),
+  ).toBeVisible();
+});
+
+test('el admin importa productos desde un .xlsx: plantilla descargada, llenada y subida', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  await signIn(page, admin, /\/bandeja$/);
+  await page.goto('/configuracion/productos');
+  await expect(page.getByText(t.products.emptyTitle)).toBeVisible();
+
+  const imp = t.importer;
+  await page.getByRole('button', { name: t.import }).click();
+  const dialog = page.getByRole('dialog');
+
+  // Se descarga la plantilla de productos (.xlsx).
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    dialog.getByRole('link', { name: imp.downloadTemplate }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('plantilla-productos.xlsx');
+  expect(
+    readFileSync(await download.path())
+      .subarray(0, 2)
+      .toString('latin1'),
+  ).toBe('PK');
+
+  // Se "llena" con los mismos encabezados de la plantilla; el precio va como número de Excel.
+  const header = ['Código *', 'Nombre *', 'Unidad *', 'Categoría', 'Precio referencial', 'Moneda'];
+  const text = (value: string) => ({ value, type: String });
+  const filled = await writeXlsxFile([
+    {
+      sheet: imp.template.sheets.products,
+      data: [
+        header.map(text),
+        [
+          text('XLS-1'),
+          text('Tubería de acero'),
+          text('und'),
+          text('Plomería'),
+          { value: 19.99, type: Number },
+          text('PEN'),
+        ],
+        [text('XLS-2'), text('Cemento'), text('BOL'), null, null, null],
+      ],
+    },
+  ]).toBuffer();
+  await dialog.getByLabel(imp.fileLabel).setInputFiles({
+    name: 'productos.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: Buffer.from(filled),
+  });
+  await dialog.getByRole('button', { name: imp.review }).click();
+
+  // Vista previa: las 2 filas son válidas y se ven tal como se escribieron (precio exacto).
+  await expect(dialog.getByText(imp.previewTotals(2, 2, 0))).toBeVisible();
+  const first = dialog.getByRole('row').filter({ hasText: 'XLS-1' });
+  await expect(first).toContainText('Tubería de acero');
+  await expect(first).toContainText('19.99');
+  await expect(dialog.getByRole('row').filter({ hasText: 'XLS-2' })).toContainText('Cemento');
+  await expectNoPageOverflow(page);
+
+  // Confirmar: el worker crea los 2 productos.
+  await dialog.getByRole('button', { name: imp.confirm }).click();
+  await expect(page).toHaveURL(/\/configuracion\/importaciones\/[0-9a-f-]{36}$/);
+  const card = (label: string) => page.locator('dl > div').filter({ hasText: label });
+  await expect(card(imp.job.cards.created)).toContainText('2', { timeout: 30_000 });
+  await expect(card(imp.job.cards.failed)).toContainText('0');
+});
+
 test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', async ({
   page,
   accounts,
@@ -216,4 +366,13 @@ test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', as
     await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: title })).toHaveCount(0);
   }
+
+  // La plantilla y la página de resultado de importación tampoco existen para él.
+  const template = await page.request.get('/configuracion/productos/plantilla');
+  expect(template.status()).toBe(404);
+  const result = await page.goto(
+    '/configuracion/importaciones/00000000-0000-4000-8000-000000000000',
+  );
+  expect(result?.status()).toBe(200);
+  await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
 });

@@ -23,10 +23,22 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: isCI ? 'pnpm start' : 'pnpm dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !isCI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: isCI ? 'pnpm start' : 'pnpm dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+    {
+      // Worker de jobs (E2-H3): la importación del catálogo corre en él. Se considera arrancado
+      // cuando registra "worker started"; si ya hay uno corriendo, dos consumidores no chocan
+      // (el job se bloquea y solo se procesa una vez).
+      command: 'pnpm worker',
+      wait: { stdout: /worker started/ },
+      stdout: 'pipe',
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });

@@ -17,4 +17,9 @@ export interface SessionRepository {
   findEntryAccess(authUserId: string): Promise<EntryAccess>;
   /** Acceso del usuario a un tenant: null si el usuario o la membresía no están activos. */
   findTenantAccess(authUserId: string, tenantId: string): Promise<TenantAccess | null>;
+  /**
+   * Lo mismo, por el id de `users` (no el de Auth): para los jobs del worker (E2-H3), que no tienen
+   * sesión y reconstruyen el contexto de quien creó el trabajo.
+   */
+  findTenantAccessByUserId(userId: string, tenantId: string): Promise<TenantAccess | null>;
 }

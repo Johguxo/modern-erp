@@ -117,15 +117,31 @@ describe('grants de app_user', () => {
     expect(await withTenant(scope(), (tx) => tx.select().from(warehouses))).toHaveLength(1);
   });
 
-  it('import_jobs: se crea y se lee, pero no se actualiza desde la web', async () => {
+  it('import_jobs: se crea, se lee y el worker actualiza solo las columnas concedidas (0009)', async () => {
     await withTenant(scope(), (tx) =>
       tx.insert(importJobs).values({ tenantId: A, kind: 'equipment', createdBy: U }),
     );
-    await expectDenied(() =>
-      withTenant(scope(), (tx) =>
-        tx.update(importJobs).set({ status: 'completed' }).where(eq(importJobs.id, jobId)),
-      ),
+    await withTenant(scope(), (tx) =>
+      tx
+        .update(importJobs)
+        .set({
+          status: 'completed',
+          summary: { total: 1 },
+          errors: [],
+          payload: null,
+          finishedAt: new Date(),
+        })
+        .where(eq(importJobs.id, jobId)),
     );
+    for (const statement of [
+      sql`update import_jobs set kind = 'stock' where id = ${jobId}`,
+      sql`update import_jobs set tenant_id = ${B} where id = ${jobId}`,
+      sql`update import_jobs set created_by = null where id = ${jobId}`,
+      sql`update import_jobs set created_at = now() where id = ${jobId}`,
+      sql`update import_jobs set file_path = 'x' where id = ${jobId}`,
+    ]) {
+      await expectDenied(() => withTenant(scope(), (tx) => tx.execute(statement)));
+    }
   });
 
   it('productos, equipos y centros de costo: INSERT y UPDATE de las columnas editables funcionan', async () => {

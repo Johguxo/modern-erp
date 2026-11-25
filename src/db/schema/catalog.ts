@@ -134,7 +134,10 @@ export const costCenters = pgTable(
   ],
 );
 
-/** Solo el esquema en E2-H1: la importación masiva es E2-H3. */
+/**
+ * Trabajos de importación (E2-H3). `payload` guarda las filas sin validar hasta que el worker las
+ * procesa (se pone en null al cerrar el job). El worker actualiza con app_user (grants de 0009).
+ */
 export const importJobs = pgTable(
   'import_jobs',
   {
@@ -143,6 +146,7 @@ export const importJobs = pgTable(
     kind: text().notNull(),
     status: text().notNull().default('pending'),
     filePath: text(),
+    payload: jsonb(),
     summary: jsonb()
       .notNull()
       .default(sql`'{}'::jsonb`),

@@ -27,6 +27,10 @@ const TONE_BY_STATUS: Record<BadgeStatus, StatusTone> = {
   subscription_suspended: 'rejected',
   subscription_cancelled: 'neutral',
   subscription_none: 'neutral',
+  import_pending: 'pending',
+  import_processing: 'in-approval',
+  import_completed: 'approved',
+  import_failed: 'rejected',
 };
 
 const TONE_CLASSES: Record<StatusTone, string> = {

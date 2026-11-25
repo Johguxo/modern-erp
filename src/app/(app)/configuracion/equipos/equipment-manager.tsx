@@ -14,7 +14,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { setEquipmentActiveAction } from '../_catalog/actions';
 import { CatalogListView } from '../_catalog/catalog-list-view';
-import { ImportButton } from '../_catalog/import-button';
+import { ImportDialog } from '../_catalog/import-dialog';
 import type { ListParams } from '../_catalog/list-params';
 import { SetActiveControl } from '../_catalog/set-active-control';
 
@@ -116,7 +116,7 @@ export function EquipmentManager({
               </Button>
             }
           />
-          <ImportButton />
+          <ImportDialog kind="equipment" readOnly={readOnly} />
         </>
       }
     />

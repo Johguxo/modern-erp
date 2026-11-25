@@ -24,3 +24,12 @@ export {
   type Mailer,
   type RenderedMail,
 } from './mailer';
+export {
+  SPREADSHEET_LIMITS,
+  type SpreadsheetCell,
+  type SpreadsheetFile,
+  type SpreadsheetReader,
+  type SpreadsheetRow,
+  type SpreadsheetSheet,
+  type SpreadsheetWriter,
+} from './spreadsheet';

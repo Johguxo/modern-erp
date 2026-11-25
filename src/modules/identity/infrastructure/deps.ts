@@ -111,3 +111,15 @@ export function createSettingsDeps(tx: DbExecutor, extras: SettingsExtras): Sett
     ...extras,
   };
 }
+
+/**
+ * Moneda del tenant (tenant_settings.currency) sobre la transacción de withTenant. La usan los
+ * módulos que necesitan una moneda por defecto (importación del catálogo, E2-H3); si falta la fila
+ * de ajustes devuelve PEN, el valor por defecto de la base.
+ */
+export function createTenantCurrencyFor(
+  db: DbExecutor,
+): (tenantId: string) => Promise<'PEN' | 'USD'> {
+  const settings = createDrizzleSettingsRepository(db);
+  return async (tenantId) => (await settings.get(tenantId))?.currency ?? 'PEN';
+}

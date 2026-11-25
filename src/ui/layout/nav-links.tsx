@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@/ui/lib/utils';
 
-import type { NavItem } from './nav-items';
+import { isNavItemActive, type NavItem } from './nav-items';
 
 export function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <ul className="flex flex-col gap-1">
       {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = isNavItemActive(item, pathname);
         return (
           <li key={item.href}>
             <Link

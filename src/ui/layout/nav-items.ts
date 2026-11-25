@@ -9,10 +9,25 @@ export interface NavItem {
   readonly href: Route;
   readonly label: string;
   readonly permission?: Permission;
+  /** Rutas extra donde el ítem también se marca activo (p. ej. las pestañas del catálogo). */
+  readonly activePrefixes?: readonly string[];
+}
+
+/** El ítem está activo en su ruta, en sus subrutas y en los prefijos extra declarados. */
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
+  return [item.href as string, ...(item.activePrefixes ?? [])].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 }
 
 export const APP_NAV: readonly NavItem[] = [
   { href: '/bandeja', label: messages.nav.inbox, permission: 'requests.read_own' },
+  {
+    href: '/configuracion/productos',
+    label: messages.nav.catalog,
+    permission: 'catalog.manage',
+    activePrefixes: ['/configuracion/equipos', '/configuracion/centros-de-costo'],
+  },
   { href: '/configuracion/usuarios', label: messages.nav.users, permission: 'users.manage' },
   { href: '/configuracion/empresa', label: messages.nav.company, permission: 'settings.manage' },
 ];

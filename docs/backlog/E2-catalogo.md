@@ -14,11 +14,11 @@ Estado: en revisión · Issue: [#13](https://github.com/Johguxo/modern-erp/issue
 **Como** admin o almacén **quiero** mantener el catálogo **para** que las solicitudes usen códigos y precios correctos.
 
 **Criterios de aceptación**
-- [ ] `/configuracion/productos`, `/configuracion/equipos`, `/configuracion/centros-de-costo` con tabla, búsqueda, crear/editar en diálogo y activar/desactivar.
-- [ ] Precio referencial con moneda del tenant; formato es-PE.
-- [ ] Estados de vacío con botón "Importar desde Excel".
+- [x] `/configuracion/productos`, `/configuracion/equipos`, `/configuracion/centros-de-costo` con tabla, búsqueda, crear/editar en diálogo y activar/desactivar.
+- [x] Precio referencial con moneda del tenant; formato es-PE.
+- [x] Estados de vacío con botón "Importar desde Excel".
 
-Estado: pendiente · Issue: [#14](https://github.com/Johguxo/modern-erp/issues/14)
+Estado: en revisión · Issue: [#14](https://github.com/Johguxo/modern-erp/issues/14)
 
 ### E2-H3 · Importación desde Excel/CSV
 **Como** admin **quiero** subir mi Excel de productos y de equipos **para** no cargarlos uno por uno.

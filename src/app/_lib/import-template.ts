@@ -2,18 +2,11 @@
 // las instrucciones (textos de es-PE). Los códigos y demás textos van con formato de texto para no
 // perder ceros a la izquierda. La descarga exige sesión (401) y catalog.manage (404: no revela
 // que existe).
-import { headers } from 'next/headers';
-
 import { columnsOf, type ImportKind } from '@/modules/catalog';
-import { cryptoIdGenerator } from '@/shared/adapters/crypto-id-generator';
 import { hasPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
-import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 import type { SpreadsheetSheet, SpreadsheetWriter } from '@/shared/ports/spreadsheet';
 import { messages } from '@/ui/messages/es-PE';
-
-import { sessionCtxResolver } from './session';
-import { getSpreadsheetWriter } from './spreadsheet';
 
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const t = messages.catalog.importer.template;
@@ -60,16 +53,4 @@ export function createTemplateRoute(kind: ImportKind, deps: TemplateRouteDeps) {
       },
     });
   };
-}
-
-/** Dependencias reales: la sesión sale de las cookies del request. */
-export function productionTemplateRoute(kind: ImportKind) {
-  return createTemplateRoute(kind, {
-    resolveCtx: async () =>
-      sessionCtxResolver({
-        headers: await headers(),
-        requestId: resolveRequestId((await headers()).get(REQUEST_ID_HEADER), cryptoIdGenerator),
-      }),
-    writer: getSpreadsheetWriter(),
-  });
 }

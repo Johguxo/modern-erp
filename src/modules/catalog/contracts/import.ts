@@ -70,6 +70,14 @@ export const importRowSchema = z.object({
   values: z.record(z.string(), z.string().nullable()),
 });
 
+/** Lo que se guarda en import_jobs.payload hasta que el worker lo procesa. */
+export const importPayloadSchema = z.object({
+  kind: importKindSchema,
+  /** Moneda de la empresa al confirmar: la de los precios sin moneda. */
+  defaultCurrency: currencySchema,
+  rows: z.array(importRowSchema),
+});
+
 export const rowErrorSchema = z.object({
   /** Número de fila de la hoja (el encabezado es la 1). */
   row: z.number().int().min(1),
@@ -89,9 +97,6 @@ export const importSummarySchema = z.object({
   unchanged: z.number().int().nonnegative(),
   failed: z.number().int().nonnegative(),
 });
-
-/** Tope de filas con error que se guardan y se muestran (el resumen cuenta todas). */
-export const MAX_STORED_ERRORS = 500;
 
 export type ImportKindValue = z.infer<typeof importKindSchema>;
 export type RowError = z.infer<typeof rowErrorSchema>;

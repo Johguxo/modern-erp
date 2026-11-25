@@ -12,6 +12,7 @@ export {
   createPlatformDeps,
   createPlatformStore,
   createSettingsDeps,
+  createTenantCurrencyFor,
   createUserAdminDeps,
   type SettingsExtras,
   type PlatformExtras,

@@ -62,10 +62,11 @@ export function createPrepare(deps: () => PipelineDeps) {
     const requestHeaders = await headers();
     const resolved = deps();
     const requestId = resolveRequestId(requestHeaders.get(REQUEST_ID_HEADER), resolved.ids);
-    const logger = resolved.logger.child({ requestId, action: name });
+    let logger = resolved.logger.child({ requestId, action: name });
     try {
       const ctx = await resolved.resolveCtx({ headers: requestHeaders, requestId });
       if (!ctx) throw new UnauthenticatedError();
+      logger = logger.child({ tenantId: ctx.tenantId, userId: ctx.userId });
       assertAllowed(ctx, permission, 'write');
       return { ok: true, data: await work(ctx) };
     } catch (error) {

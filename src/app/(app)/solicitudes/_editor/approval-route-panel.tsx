@@ -21,10 +21,13 @@ function StepNumber({ n }: { n: number }) {
 export function ApprovalRoutePanel({
   route,
   requesterEmail,
+  status,
   children,
 }: {
   route: RoutePreview;
   requesterEmail: string;
+  /** Aviso mientras se recalcula la ruta o si falló. */
+  status?: 'updating' | 'error';
   /** Avisos y botones de acción. */
   children: ReactNode;
 }) {
@@ -41,20 +44,37 @@ export function ApprovalRoutePanel({
           <span className="min-w-0 break-words">{t.requester(requesterEmail)}</span>
         </li>
         {route.steps.map((step, index) => {
-          const role = messages.roles[step.role];
+          const names = step.approvers.map((approver) => approver.name).join(', ');
+          let rule: string;
+          if (step.approverType === 'role') {
+            const role = messages.roles[step.role];
+            rule = step.rule === 'all' ? t.ruleAll(role) : t.ruleAny(role);
+          } else {
+            rule = step.rule === 'all' ? t.usersAll : t.usersAny;
+          }
           return (
             <li key={step.order} className="flex items-center gap-3">
               <StepNumber n={index + 2} />
               <span className="min-w-0">
                 <span className="block">{step.name}</span>
                 <span className="block text-[13px] text-muted-foreground">
-                  {step.rule === 'all' ? t.ruleAll(role) : t.ruleAny(role)}
+                  {names !== '' ? names : rule}
                 </span>
               </span>
             </li>
           );
         })}
       </ol>
+      {status === 'updating' ? (
+        <p role="status" className="text-[13px] text-muted-foreground">
+          {t.updating}
+        </p>
+      ) : null}
+      {status === 'error' ? (
+        <p role="alert" className="text-[13px] text-destructive">
+          {t.updateError}
+        </p>
+      ) : null}
       <p className="rounded-lg bg-primary-soft p-3 text-[13px] text-primary-hover">{t.notice}</p>
       {children}
     </aside>

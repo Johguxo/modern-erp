@@ -6,7 +6,7 @@
 // guardado.
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
-import { useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import type { RoutePreview } from '@/modules/approvals';
 import type { RequestView } from '@/modules/requests';
@@ -15,7 +15,12 @@ import { FormError } from '@/ui/forms/form-error';
 import { Button } from '@/ui/components/button';
 import { messages } from '@/ui/messages/es-PE';
 
-import { createDraftAction, submitRequestAction, updateDraftAction } from '../actions';
+import {
+  createDraftAction,
+  previewRouteAction,
+  submitRequestAction,
+  updateDraftAction,
+} from '../actions';
 
 import { ApprovalRoutePanel } from './approval-route-panel';
 import { CatalogSearch } from './catalog-search';
@@ -38,12 +43,15 @@ import type { SelectOption } from './load-editor-data';
 const t = messages.requests.actions;
 
 type Busy = 'save' | 'submit' | null;
+type RouteStatus = 'idle' | 'updating' | 'error';
+
+const ROUTE_DEBOUNCE_MS = 400;
 
 export function RequestEditor({
   initial,
   costCenters,
   equipment,
-  route,
+  route: initialRoute,
   currency,
   requesterEmail,
   readOnly,
@@ -63,6 +71,42 @@ export function RequestEditor({
   );
   const [busy, setBusy] = useState<Busy>(null);
   const totals = useMemo(() => computeTotals(state.lines), [state.lines]);
+  const [route, setRoute] = useState<RoutePreview>(initialRoute);
+  const [routeStatus, setRouteStatus] = useState<RouteStatus>('idle');
+  // El total con el que se calculó la ruta que se ve: la carga inicial viene del servidor.
+  const routeTotal = useRef<string | null>(initial ? initial.totalAmount : null);
+
+  // La ruta depende del monto: se recalcula cuando cambia el total en vivo (con espera y
+  // descartando respuestas viejas, como el buscador). La carga inicial no llama.
+  useEffect(() => {
+    const total = totals.total;
+    if (total === null || total === routeTotal.current) {
+      setRouteStatus('idle');
+      return;
+    }
+    let stale = false;
+    const timer = setTimeout(() => {
+      setRouteStatus('updating');
+      previewRouteAction({ docType: 'SOF', total })
+        .then((result) => {
+          if (stale) return;
+          if (result.ok) {
+            routeTotal.current = total;
+            setRoute(result.data);
+            setRouteStatus('idle');
+          } else {
+            setRouteStatus('error');
+          }
+        })
+        .catch(() => {
+          if (!stale) setRouteStatus('error');
+        });
+    }, ROUTE_DEBOUNCE_MS);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [totals.total]);
 
   /** Crea o actualiza el borrador y refleja lo que guardó el servidor. Null si falló. */
   async function persist(): Promise<RequestView | null> {
@@ -135,7 +179,10 @@ export function RequestEditor({
 
   return (
     <div className="flex flex-wrap items-start gap-5">
-      <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
+      <fieldset
+        disabled={busy !== null || readOnly}
+        className="m-0 flex min-w-0 flex-[999_1_520px] flex-col gap-5 border-0 p-0"
+      >
         <HeaderFields
           state={state}
           requesterEmail={requesterEmail}
@@ -155,9 +202,13 @@ export function RequestEditor({
           equipment={equipment}
           dispatch={dispatch}
         />
-      </div>
+      </fieldset>
 
-      <ApprovalRoutePanel route={route} requesterEmail={requesterEmail}>
+      <ApprovalRoutePanel
+        route={route}
+        requesterEmail={requesterEmail}
+        status={routeStatus === 'idle' ? undefined : routeStatus}
+      >
         {state.notice ? (
           <p role="status" className="rounded-md border border-border bg-surface px-3 py-2">
             {state.notice}

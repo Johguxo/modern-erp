@@ -10,7 +10,9 @@ import {
   type CostCenterView,
   type EquipmentView,
 } from '@/modules/catalog';
+import { createTenantCurrencyFor } from '@/modules/identity';
 import { createGetRequestDeps, getEditableDraft, type RequestView } from '@/modules/requests';
+import type { Currency } from '@/modules/requests/contracts';
 import type { Ctx } from '@/shared/context';
 
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
@@ -24,6 +26,7 @@ export interface EditorData {
   readonly costCenters: SelectOption[];
   readonly equipment: SelectOption[];
   readonly route: RoutePreview;
+  readonly currency: Currency;
   readonly draft: RequestView | null;
 }
 
@@ -37,16 +40,26 @@ const toOption = (item: CostCenterView | EquipmentView): SelectOption => ({
 export function loadEditorData(ctx: Ctx, draftId?: string): Promise<EditorData> {
   return withTenant(ctx, async (tx) => {
     const catalog = createCatalogDeps(tx, readOnlyCatalogExtras());
-    const [draft, costCenters, equipment, route] = await Promise.all([
-      draftId ? getEditableDraft(ctx, { id: draftId }, createGetRequestDeps(tx)) : null,
+    // El borrador va primero: su total decide la ruta inicial y su moneda es la del documento.
+    const draft = draftId
+      ? await getEditableDraft(ctx, { id: draftId }, createGetRequestDeps(tx))
+      : null;
+    const [costCenters, equipment, route, currency] = await Promise.all([
       listCostCenters(ctx, ACTIVE_FIRST_PAGE, catalog),
       listEquipment(ctx, ACTIVE_FIRST_PAGE, catalog),
-      previewRoute(ctx, { docType: 'SOF' }, createPreviewRouteDeps(tx)),
+      previewRoute(
+        ctx,
+        { docType: 'SOF', total: draft ? draft.totalAmount : null },
+        createPreviewRouteDeps(tx),
+      ),
+      // Misma fuente que createDraft: tenant_settings.currency.
+      draft ? draft.currency : createTenantCurrencyFor(tx)(ctx.tenantId),
     ]);
     return {
       costCenters: costCenters.items.map(toOption),
       equipment: equipment.items.map(toOption),
       route,
+      currency,
       draft,
     };
   });

@@ -13,9 +13,8 @@ import { RequestEditor } from '../../_editor/request-editor';
 // usuario, otro tenant, ya enviado, id inválido, sin permiso) es 404 y no revela que existe.
 export default async function EditRequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) notFound();
-
   const { ctx, email } = await requireCtx();
+  if (!z.uuid().safeParse(id).success) notFound();
   if (!hasPermission(ctx, 'requests.create')) notFound();
 
   const data: EditorData = await loadEditorData(ctx, id).catch((error: unknown) => {
@@ -33,7 +32,7 @@ export default async function EditRequestPage({ params }: { params: Promise<{ id
         costCenters={data.costCenters}
         equipment={data.equipment}
         route={data.route}
-        currency={draft.currency}
+        currency={data.currency}
         requesterEmail={email}
         readOnly={ctx.readOnly}
       />

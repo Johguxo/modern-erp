@@ -9,13 +9,28 @@ export const STEP_RULES = ['any', 'all'] as const;
 /** `any`: basta que apruebe uno del rol. `all`: deben aprobar todos. */
 export type StepRule = (typeof STEP_RULES)[number];
 
-export interface PolicyStep {
+export interface ApproverName {
+  readonly userId: string;
+  readonly name: string;
+}
+
+/**
+ * Quién aprueba el paso: un rol del cliente (ADR-002) o usuarios concretos. `approvers` son los
+ * nombres ya resueltos (puede estar vacío cuando aún no se resuelven).
+ */
+export type StepApprover =
+  | {
+      readonly approverType: 'role';
+      readonly role: Role;
+      readonly approvers: ApproverName[];
+    }
+  | { readonly approverType: 'users'; readonly approvers: ApproverName[] };
+
+export type PolicyStep = {
   readonly order: number;
   readonly name: string;
-  /** Rol del cliente que aprueba el paso (ADR-002). */
-  readonly role: Role;
   readonly rule: StepRule;
-}
+} & StepApprover;
 
 export interface ApprovalPolicy {
   readonly name: string;
@@ -25,10 +40,19 @@ export interface ApprovalPolicy {
 export interface RoutePreview {
   readonly docType: DocType;
   readonly policyName: string;
-  readonly steps: readonly PolicyStep[];
+  readonly steps: PolicyStep[];
 }
 
-export function toRoutePreview(docType: DocType, policy: ApprovalPolicy): RoutePreview {
+/**
+ * `total` (texto decimal de dinero, o null si aún no hay monto) lo usará E4-H1 para elegir la
+ * política según `min_amount`; la política estándar no lo mira.
+ */
+export function toRoutePreview(
+  docType: DocType,
+  policy: ApprovalPolicy,
+  total: string | null,
+): RoutePreview {
+  void total;
   return {
     docType,
     policyName: policy.name,

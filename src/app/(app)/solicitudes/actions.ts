@@ -3,6 +3,8 @@
 // Acciones de solicitudes (E3-H2): validan con los contratos de requests y catalog y llaman al caso
 // de uso. Crear, editar y enviar son de escritura (no pasan en solo lectura); el buscador del
 // catálogo es de lectura.
+import { createPreviewRouteDeps, previewRoute } from '@/modules/approvals';
+import { previewRouteContract } from '@/modules/approvals/contracts';
 import { createCatalogDeps, searchProducts } from '@/modules/catalog';
 import { searchProductsContract } from '@/modules/catalog/contracts';
 import { createDraft, createRequestsDeps, submitRequest, updateDraft } from '@/modules/requests';
@@ -47,4 +49,12 @@ export const searchCatalogAction = action(
   ({ ctx, input, tx, shared }) =>
     searchProducts(ctx, input, createCatalogDeps(tx, catalogExtras(shared))),
   { name: 'catalog.searchProducts', access: 'read' },
+);
+
+// La ruta se recalcula con el total en vivo; solo lee, así que también corre en solo lectura.
+export const previewRouteAction = action(
+  previewRouteContract,
+  'requests.create',
+  ({ ctx, input, tx }) => previewRoute(ctx, input, createPreviewRouteDeps(tx)),
+  { name: 'approvals.previewRoute', access: 'read' },
 );

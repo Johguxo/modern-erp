@@ -477,6 +477,7 @@ export const messages = {
       stock: 'Stock: —',
       noPrice: 'Sin precio',
       otherCurrency: 'Otra moneda',
+      cannotAdd: (code: string) => `${code} no se puede agregar: otra moneda`,
       searching: 'Buscando…',
       empty: 'No encontramos productos con esa búsqueda.',
       error: 'No pudimos buscar en el catálogo. Inténtalo de nuevo.',
@@ -507,6 +508,10 @@ export const messages = {
       requester: (email: string) => `Solicitante · ${email}`,
       ruleAny: (role: string) => `Cualquier persona con el rol ${role}`,
       ruleAll: (role: string) => `Todas las personas con el rol ${role}`,
+      usersAny: 'Cualquiera de las personas designadas',
+      usersAll: 'Todas las personas designadas',
+      updating: 'Actualizando la ruta…',
+      updateError: 'No pudimos actualizar la ruta de aprobación.',
       notice: 'Cada aprobador recibe un aviso por correo.',
     },
     actions: {

@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 
 import { hasPermission } from '@/shared/authorization';
 
-import { getTenantBrand } from '../../../_lib/company';
 import { requireCtx } from '../../../_lib/session';
 import { EditorHeader } from '../_editor/editor-header';
 import { loadEditorData } from '../_editor/load-editor-data';
@@ -13,7 +12,7 @@ export default async function NewRequestPage() {
   const { ctx, email } = await requireCtx();
   if (!hasPermission(ctx, 'requests.create')) notFound();
 
-  const [data, brand] = await Promise.all([loadEditorData(ctx), getTenantBrand(ctx)]);
+  const data = await loadEditorData(ctx);
   return (
     <>
       <EditorHeader mode="new" />
@@ -22,7 +21,7 @@ export default async function NewRequestPage() {
         costCenters={data.costCenters}
         equipment={data.equipment}
         route={data.route}
-        currency={brand?.currency ?? 'PEN'}
+        currency={data.currency}
         requesterEmail={email}
         readOnly={ctx.readOnly}
       />

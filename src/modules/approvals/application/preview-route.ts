@@ -9,10 +9,10 @@ import type { PreviewRouteDeps } from './ports';
 
 export async function previewRoute(
   ctx: Ctx,
-  input: { readonly docType: DocType },
+  input: { readonly docType: DocType; readonly total: string | null },
   deps: PreviewRouteDeps,
 ): Promise<RoutePreview> {
   requireAnyPermission(ctx, ['requests.create', 'approval_policies.manage']);
-  const policy = await deps.policies.activeFor(ctx, input.docType);
-  return toRoutePreview(input.docType, policy);
+  const policy = await deps.policies.activeFor(ctx, input);
+  return toRoutePreview(input.docType, policy, input.total);
 }

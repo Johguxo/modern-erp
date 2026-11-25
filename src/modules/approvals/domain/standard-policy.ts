@@ -5,7 +5,21 @@ import type { ApprovalPolicy } from './route-preview';
 export const STANDARD_SOF_POLICY: ApprovalPolicy = {
   name: 'SOF estándar',
   steps: [
-    { order: 1, name: 'Almacén', role: 'warehouse', rule: 'any' },
-    { order: 2, name: 'Gerencia local', role: 'approver', rule: 'any' },
+    {
+      order: 1,
+      name: 'Almacén',
+      approverType: 'role',
+      role: 'warehouse',
+      approvers: [],
+      rule: 'any',
+    },
+    {
+      order: 2,
+      name: 'Gerencia local',
+      approverType: 'role',
+      role: 'approver',
+      approvers: [],
+      rule: 'any',
+    },
   ],
 };

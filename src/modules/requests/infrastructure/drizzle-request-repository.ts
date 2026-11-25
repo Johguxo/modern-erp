@@ -3,7 +3,7 @@
 // solo pasa con la solicitud en borrador (política restrictiva).
 import { and, asc, eq, sql } from 'drizzle-orm';
 
-import type { DbExecutor } from '@/db';
+import { isUniqueViolation, type DbExecutor } from '@/db';
 import { requestLines, requests } from '@/db/schema';
 import { ConflictError } from '@/shared/errors';
 
@@ -158,26 +158,38 @@ export function createDrizzleRequestRepository(db: DbExecutor): RequestRepositor
     },
 
     async updateHeader(tenantId, id, expectedVersion, patch: HeaderPatch) {
-      const [row] = await db
-        .update(requests)
-        .set({
-          ...(patch.costCenterId !== undefined ? { costCenterId: patch.costCenterId } : {}),
-          ...(patch.equipmentId !== undefined ? { equipmentId: patch.equipmentId } : {}),
-          ...(patch.reason !== undefined ? { reason: patch.reason } : {}),
-          ...(patch.totalAmount !== undefined ? { totalAmount: patch.totalAmount } : {}),
-          ...(patch.status !== undefined ? { status: patch.status } : {}),
-          ...(patch.number !== undefined ? { number: patch.number } : {}),
-          ...(patch.submittedAt !== undefined ? { submittedAt: patch.submittedAt } : {}),
-          version: sql`${requests.version} + 1`,
-        })
-        .where(
-          and(
-            eq(requests.tenantId, tenantId),
-            eq(requests.id, id),
-            eq(requests.version, expectedVersion),
-          ),
-        )
-        .returning();
+      let row: RequestRow | undefined;
+      try {
+        [row] = await db
+          .update(requests)
+          .set({
+            ...(patch.costCenterId !== undefined ? { costCenterId: patch.costCenterId } : {}),
+            ...(patch.equipmentId !== undefined ? { equipmentId: patch.equipmentId } : {}),
+            ...(patch.reason !== undefined ? { reason: patch.reason } : {}),
+            ...(patch.totalAmount !== undefined ? { totalAmount: patch.totalAmount } : {}),
+            ...(patch.status !== undefined ? { status: patch.status } : {}),
+            ...(patch.number !== undefined ? { number: patch.number } : {}),
+            ...(patch.submittedAt !== undefined ? { submittedAt: patch.submittedAt } : {}),
+            version: sql`${requests.version} + 1`,
+          })
+          .where(
+            and(
+              eq(requests.tenantId, tenantId),
+              eq(requests.id, id),
+              eq(requests.version, expectedVersion),
+            ),
+          )
+          .returning();
+      } catch (error) {
+        if (isUniqueViolation(error, 'requests_tenant_doc_number_key')) {
+          throw new ConflictError({
+            reason: 'number_taken',
+            params: { number: patch.number ?? '' },
+            message: 'Document number already used in this tenant',
+          });
+        }
+        throw error;
+      }
       if (!row) {
         throw new ConflictError({
           reason: 'stale_version',

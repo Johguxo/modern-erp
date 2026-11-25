@@ -116,7 +116,6 @@ export const messages = {
         ? 'Aún no se envió ninguna solicitud: puedes elegir cualquier número desde 1.'
         : `Último número usado: ${last}. El siguiente debe ser mayor.`,
     preview: (number: string) => `La próxima solicitud enviada saldrá como ${number}.`,
-    previewLabel: 'Vista previa',
     save: 'Guardar numeración',
     notices: {
       saved: 'Numeración actualizada.',
@@ -561,6 +560,8 @@ export const messages = {
         'El monto de la solicitud es demasiado grande. Reduce las cantidades.',
       sequence_below_last_used: (p: Params) =>
         `El siguiente número debe ser mayor que el último usado (${p.last ?? '?'}).`,
+      number_taken: () =>
+        'Este número ya fue usado. Pide al administrador revisar la numeración de SOF.',
       sequence_exhausted: () => 'La numeración llegó a su límite. Contacta a LinkUs.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
       // Importación del catálogo (E2-H3): el archivo en sí.

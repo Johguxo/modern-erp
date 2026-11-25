@@ -5,7 +5,6 @@ import type { AfterCommit } from '@/shared/ports/after-commit';
 import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 import type { JobQueue } from '@/shared/ports/job-queue';
-import type { SpreadsheetReader } from '@/shared/ports/spreadsheet';
 
 import type { ImportKind } from '../domain/import';
 import type { Currency } from '../domain/money';
@@ -71,7 +70,6 @@ interface AuditDeps {
 
 /** Lo que usa la vista previa (la web). */
 export interface ImportReadDeps {
-  readonly reader: SpreadsheetReader;
   /** Moneda de la empresa: la de los precios que vienen sin moneda. */
   readonly tenantCurrency: (tenantId: string) => Promise<Currency>;
 }

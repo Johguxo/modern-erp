@@ -5,7 +5,6 @@ import type { AfterCommit } from '@/shared/ports/after-commit';
 import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 import type { JobQueue } from '@/shared/ports/job-queue';
-import type { SpreadsheetReader } from '@/shared/ports/spreadsheet';
 
 import type {
   ImportCreateDeps,
@@ -23,23 +22,19 @@ import { createDrizzleImportJobRepository } from './drizzle-import-job-repositor
 /** Lo que la entrega aporta a la importación de la web (además de la transacción). */
 export interface ImportExtras {
   readonly client: ClientInfo;
-  readonly reader: SpreadsheetReader;
   readonly queue: JobQueue;
   readonly afterCommit: AfterCommit;
 }
 
-/** Vista previa: solo leer el archivo y la moneda de la empresa. */
-export function createImportReadDeps(
-  tx: DbExecutor,
-  extras: Pick<ImportExtras, 'reader'>,
-): ImportReadDeps {
-  return { reader: extras.reader, tenantCurrency: createTenantCurrencyFor(tx) };
+/** Vista previa: la moneda de la empresa (el archivo ya se leyó antes de la transacción). */
+export function createImportReadDeps(tx: DbExecutor): ImportReadDeps {
+  return { tenantCurrency: createTenantCurrencyFor(tx) };
 }
 
-/** Confirmar: leer, guardar el trabajo, encolar después del commit. */
+/** Confirmar: validar, guardar el trabajo, encolar después del commit. */
 export function createImportCreateDeps(tx: DbExecutor, extras: ImportExtras): ImportCreateDeps {
   return {
-    ...createImportReadDeps(tx, extras),
+    ...createImportReadDeps(tx),
     importJobs: createDrizzleImportJobRepository(tx),
     audit: createAuditLogFor(tx),
     client: extras.client,

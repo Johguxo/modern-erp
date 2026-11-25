@@ -94,6 +94,20 @@ async function runAfterCommit<T>(
   return data;
 }
 
+/** Permiso y solo lectura (ADR-006): los mismos cortes tempranos de runPipeline. */
+export function assertAllowed(
+  ctx: Ctx,
+  permission: Permission | null,
+  access: 'read' | 'write',
+): void {
+  if (permission && !hasPermission(ctx, permission)) {
+    throw new ForbiddenError({ message: `Missing permission: ${permission}` });
+  }
+  if (ctx.readOnly && access === 'write') {
+    throw new ForbiddenError({ reason: 'tenant_read_only', message: 'Tenant is read-only' });
+  }
+}
+
 /**
  * Ejecuta una acción. `permission: null` exige solo sesión. El caso de uso vuelve a revisar el
  * permiso con requirePermission (ADR-002); este es un corte temprano que no toca la base.
@@ -115,13 +129,7 @@ export async function runPipeline<C extends Contract>(
     if (!ctx) throw new UnauthenticatedError();
     logger = logger.child({ tenantId: ctx.tenantId, userId: ctx.userId });
 
-    if (permission && !hasPermission(ctx, permission)) {
-      throw new ForbiddenError({ message: `Missing permission: ${permission}` });
-    }
-
-    if (ctx.readOnly && (request.access ?? 'write') === 'write') {
-      throw new ForbiddenError({ reason: 'tenant_read_only', message: 'Tenant is read-only' });
-    }
+    assertAllowed(ctx, permission, request.access ?? 'write');
 
     const parsed = contract.inputSchema.safeParse(request.rawInput);
     if (!parsed.success) {

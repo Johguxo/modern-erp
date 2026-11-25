@@ -1,20 +1,15 @@
-// Vista previa de una importación (E2-H3, catalog.manage): lee el archivo, valida todas las filas
-// y devuelve totales, las primeras filas y los errores. No guarda nada.
+// Vista previa de una importación (E2-H3, catalog.manage): valida todas las filas ya extraídas del
+// archivo (ver read-import-rows) y devuelve totales, las primeras filas y los errores. No guarda
+// nada.
 import type { Ctx } from '@/shared/context';
 
 import type { RowError } from '../contracts/import';
-import { IMPORT_LIMITS, extractRows, type ImportKind, type ImportRow } from '../domain/import';
+import { IMPORT_LIMITS, type ImportKind, type ImportRow } from '../domain/import';
 
 import type { ImportReadDeps } from './import-ports';
 import { validateImportRows } from './import-rows';
 import { requireCatalogWrite } from './master-data';
-
-export interface ImportFileInput {
-  readonly kind: ImportKind;
-  /** Nombre original: su extensión decide si es .xlsx o .csv. */
-  readonly name: string;
-  readonly bytes: Uint8Array;
-}
+import type { ImportRowsInput } from './read-import-rows';
 
 export interface ImportPreview {
   readonly kind: ImportKind;
@@ -25,36 +20,33 @@ export interface ImportPreview {
   readonly errors: RowError[];
 }
 
-/** Lee y valida el archivo; también lo usa la creación del trabajo. */
-export async function readImportFile(
+/** Valida las filas con la moneda de la empresa; también lo usa la creación del trabajo. */
+export async function validateImportInput(
   ctx: Ctx,
-  input: ImportFileInput,
+  input: ImportRowsInput,
   deps: ImportReadDeps,
 ): Promise<{
-  rows: ImportRow[];
   defaultCurrency: Awaited<ReturnType<ImportReadDeps['tenantCurrency']>>;
   validation: ReturnType<typeof validateImportRows>;
 }> {
-  const sheet = await deps.reader.readFirstSheet({ name: input.name, bytes: input.bytes });
-  const rows = extractRows(sheet, input.kind);
   const defaultCurrency = await deps.tenantCurrency(ctx.tenantId);
-  const validation = validateImportRows(input.kind, rows, { defaultCurrency });
-  return { rows, defaultCurrency, validation };
+  const validation = validateImportRows(input.kind, input.rows, { defaultCurrency });
+  return { defaultCurrency, validation };
 }
 
 export async function previewImport(
   ctx: Ctx,
-  input: ImportFileInput,
+  input: ImportRowsInput,
   deps: ImportReadDeps,
 ): Promise<ImportPreview> {
   requireCatalogWrite(ctx);
-  const { rows, validation } = await readImportFile(ctx, input, deps);
+  const { validation } = await validateImportInput(ctx, input, deps);
   return {
     kind: input.kind,
-    total: rows.length,
+    total: input.rows.length,
     valid: validation.valid.length,
     failed: validation.failedRows,
-    rows: rows.slice(0, IMPORT_LIMITS.previewRows),
+    rows: input.rows.slice(0, IMPORT_LIMITS.previewRows),
     errors: validation.errors.slice(0, IMPORT_LIMITS.maxStoredErrors),
   };
 }

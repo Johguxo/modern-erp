@@ -1,7 +1,7 @@
 // E2-H3 · Importación del catálogo con la base real, sin Storage ni pg-boss: el trabajo se crea con
 // el caso de uso (lector real sobre un CSV) y el consumidor se llama directo. Cubre upsert por
 // código, inactivos, errores, idempotencia, permisos, solo lectura, aislamiento entre tenants y
-// el rendimiento de 2,000 filas.
+// el rendimiento de 2,000 filas en un .xlsx (todo el camino).
 import { makeCtx } from '@tests/support/ctx';
 import { CapturingLogger } from '@tests/support/fakes/capturing-logger';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -16,10 +16,12 @@ import {
   createImportJobHandler,
   createImportQueryDeps,
   getImportJob,
+  readImportRows,
   type ImportKind,
 } from '@/modules/catalog';
 import { NotFoundError } from '@/shared/errors';
 import { createSpreadsheetReader } from '@/shared/adapters/spreadsheet-reader';
+import { createSpreadsheetWriter } from '@/shared/adapters/spreadsheet-writer';
 import { systemClock } from '@/shared/adapters/system-clock';
 import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 import type { JobPayload } from '@/shared/ports/job-queue';
@@ -44,21 +46,26 @@ const manager = (tenantId: string, userId: string) =>
 const csv = (...lines: string[]) => new TextEncoder().encode(lines.join('\n') + '\n');
 const PRODUCT_HEADER = 'codigo,nombre,unidad,categoria,precio,moneda';
 
-/** Crea el trabajo como la acción de confirmar (una transacción) y devuelve su id. */
+/**
+ * Crea el trabajo como la acción de confirmar: lee el archivo fuera de la transacción y luego el
+ * caso de uso corre en una (withTenant). Devuelve el id.
+ */
 async function createJob(
   tenantId: string,
   userId: string,
   bytes: Uint8Array,
   kind: ImportKind = 'products',
+  name = 'datos.csv',
 ): Promise<string> {
   const queued: JobPayload[] = [];
+  const ctx = manager(tenantId, userId);
+  const rows = await readImportRows(ctx, { kind, name, bytes }, { reader });
   const result = await withTenant({ tenantId, userId }, (tx) =>
     createImportJob(
-      manager(tenantId, userId),
-      { kind, name: 'datos.csv', bytes },
+      ctx,
+      { kind, rows },
       createImportCreateDeps(tx, {
         client: UNKNOWN_CLIENT,
-        reader,
         queue: {
           enqueue: (_name, payload) => {
             queued.push(payload);
@@ -384,32 +391,47 @@ describe('aislamiento entre tenants', () => {
 });
 
 describe('rendimiento', () => {
-  it('2,000 filas se importan en menos de 30 segundos', async () => {
-    const lines = Array.from(
-      { length: 2000 },
-      (_, i) =>
-        `PERF-${String(i).padStart(4, '0')},Producto ${i},UND,Categoría ${i % 20},${(i % 500) + 0.25},PEN`,
-    );
-    const jobId = await createJob(A, ADMIN_A, csv(PRODUCT_HEADER, ...lines));
+  it('2,000 filas en un .xlsx: leer + crear el trabajo + procesarlo en menos de 30 segundos', async () => {
+    const rows = Array.from({ length: 2000 }, (_, i) => [
+      `PERF-${String(i).padStart(4, '0')}`,
+      `Producto ${i}`,
+      'UND',
+      `Categoría ${i % 20}`,
+      `${(i % 500) + 0.25}`,
+      'PEN',
+    ]);
+    const xlsx = await createSpreadsheetWriter().writeWorkbook([
+      {
+        name: 'Productos',
+        rows: [
+          ['Código', 'Nombre', 'Unidad', 'Categoría', 'Precio referencial', 'Moneda'],
+          ...rows,
+        ],
+        textColumns: [0, 1, 2, 3, 5],
+      },
+    ]);
 
-    const started = performance.now();
-    await runJob(A, ADMIN_A, jobId);
-    const elapsedMs = performance.now() - started;
+    // Todo el camino: lectura del .xlsx + validación + creación del job + worker.
+    const run = async () => {
+      const started = performance.now();
+      const jobId = await createJob(A, ADMIN_A, xlsx, 'products', 'productos.xlsx');
+      await runJob(A, ADMIN_A, jobId);
+      return { jobId, elapsedMs: performance.now() - started };
+    };
 
-    expect((await jobRow(jobId))?.summary).toEqual({
+    const first = await run();
+    expect((await jobRow(first.jobId))?.summary).toEqual({
       total: 2000,
       created: 2000,
       updated: 0,
       unchanged: 0,
       failed: 0,
     });
-    expect(elapsedMs).toBeLessThan(30_000);
-    console.warn(`[E2-H3] 2,000 filas importadas en ${Math.round(elapsedMs)} ms`);
+    expect(first.elapsedMs).toBeLessThan(30_000);
+
     // Reimportar el mismo archivo (todo sin cambios) tampoco debe tardar.
-    const again = await createJob(A, ADMIN_A, csv(PRODUCT_HEADER, ...lines));
-    const startedAgain = performance.now();
-    await runJob(A, ADMIN_A, again);
-    expect(performance.now() - startedAgain).toBeLessThan(30_000);
-    expect((await jobRow(again))?.summary).toMatchObject({ unchanged: 2000, created: 0 });
+    const again = await run();
+    expect(again.elapsedMs).toBeLessThan(30_000);
+    expect((await jobRow(again.jobId))?.summary).toMatchObject({ unchanged: 2000, created: 0 });
   }, 120_000);
 });

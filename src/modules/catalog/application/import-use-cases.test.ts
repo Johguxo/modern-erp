@@ -8,10 +8,14 @@ import type { AuditLog } from '@/modules/identity';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/shared/errors';
 import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 import type { JobPayload, JobQueue } from '@/shared/ports/job-queue';
-import type { SpreadsheetCell, SpreadsheetReader } from '@/shared/ports/spreadsheet';
+import {
+  SPREADSHEET_LIMITS,
+  type SpreadsheetCell,
+  type SpreadsheetReader,
+} from '@/shared/ports/spreadsheet';
 
 import { importPayloadSchema } from '../contracts/import';
-import { IMPORT_LIMITS, type ImportKind } from '../domain/import';
+import { IMPORT_LIMITS, extractRows, type ImportKind } from '../domain/import';
 
 import { createImportJob } from './create-import-job';
 import { getImportJob } from './get-import-job';
@@ -24,6 +28,7 @@ import type {
   UpsertManyResult,
 } from './import-ports';
 import { previewImport } from './preview-import';
+import { readImportRows } from './read-import-rows';
 import { failImportJob, processImportJob } from './process-import-job';
 
 const MANAGER = makeCtx({ roles: ['admin'], permissions: ['catalog.manage'] });
@@ -32,10 +37,6 @@ const FILE = { name: 'datos.csv', bytes: new Uint8Array([1]) };
 
 const HEADER: SpreadsheetCell[] = ['codigo', 'nombre', 'unidad', 'precio'];
 const sheet = (...rows: SpreadsheetCell[][]) => [HEADER, ...rows];
-
-function fakeReader(rows: readonly (readonly SpreadsheetCell[])[]): SpreadsheetReader {
-  return { readFirstSheet: () => Promise.resolve(rows) };
-}
 
 class MemoryJobs implements ImportJobRepository {
   readonly jobs = new Map<string, ImportJobRecord>();
@@ -131,7 +132,6 @@ function createDeps(
   };
   const { audit, events } = auditSpy();
   const deps: ImportCreateDeps = {
-    reader: fakeReader(rows),
     tenantCurrency: () => Promise.resolve(currency),
     importJobs: jobs,
     queue,
@@ -139,7 +139,9 @@ function createDeps(
     audit,
     client: UNKNOWN_CLIENT,
   };
-  return { deps, jobs, queued, tasks, events };
+  /** Filas ya extraídas del archivo, como las entrega readImportRows a la vista previa y al job. */
+  const input = (kind: ImportKind = 'products') => ({ kind, rows: extractRows(rows, kind) });
+  return { deps, jobs, queued, tasks, events, input };
 }
 
 function processDeps(
@@ -168,9 +170,9 @@ describe('previewImport', () => {
       null,
     ]);
     body[3] = ['P-3', null, 'UND', null];
-    const { deps, jobs } = createDeps(sheet(...body));
+    const { deps, jobs, input } = createDeps(sheet(...body));
 
-    const result = await previewImport(MANAGER, { kind: 'products', ...FILE }, deps);
+    const result = await previewImport(MANAGER, input(), deps);
 
     expect(result).toMatchObject({ kind: 'products', total: 25, valid: 24, failed: 1 });
     expect(result.rows).toHaveLength(IMPORT_LIMITS.previewRows);
@@ -192,28 +194,80 @@ describe('previewImport', () => {
   });
 
   it('sin catalog.manage → ForbiddenError (quien solo crea SOF no importa)', async () => {
-    const { deps } = createDeps(sheet(['P-1', 'Tubo', 'UND', null]));
-    await expect(previewImport(REQUESTER, { kind: 'products', ...FILE }, deps)).rejects.toThrow(
-      ForbiddenError,
-    );
+    const { deps, input } = createDeps(sheet(['P-1', 'Tubo', 'UND', null]));
+    await expect(previewImport(REQUESTER, input(), deps)).rejects.toThrow(ForbiddenError);
+  });
+});
+
+describe('readImportRows', () => {
+  const reading = (rows: readonly (readonly SpreadsheetCell[])[]) => {
+    let calls = 0;
+    const reader: SpreadsheetReader = {
+      readFirstSheet: () => {
+        calls += 1;
+        return Promise.resolve(rows);
+      },
+    };
+    return { reader, calls: () => calls };
+  };
+
+  it('devuelve las filas de datos con su número de fila de la hoja', async () => {
+    const { reader } = reading(sheet(['P-1', 'Tubo', 'UND', null]));
+
+    const rows = await readImportRows(MANAGER, { kind: 'products', ...FILE }, { reader });
+
+    expect(rows).toEqual([
+      {
+        row: 2,
+        values: {
+          code: 'P-1',
+          name: 'Tubo',
+          unit: 'UND',
+          category: null,
+          price: null,
+          currency: null,
+        },
+      },
+    ]);
   });
 
   it('un archivo sin las columnas obligatorias → missing_columns', async () => {
-    const { deps } = createDeps([['codigo'], ['P-1']]);
-    await expect(previewImport(MANAGER, { kind: 'products', ...FILE }, deps)).rejects.toMatchObject(
-      { reason: 'missing_columns' },
-    );
+    const { reader } = reading([['codigo'], ['P-1']]);
+    await expect(
+      readImportRows(MANAGER, { kind: 'products', ...FILE }, { reader }),
+    ).rejects.toMatchObject({ reason: 'missing_columns' });
+  });
+
+  it('sin catalog.manage → ForbiddenError y no lee el archivo', async () => {
+    const { reader, calls } = reading(sheet(['P-1', 'Tubo', 'UND', null]));
+    await expect(
+      readImportRows(REQUESTER, { kind: 'products', ...FILE }, { reader }),
+    ).rejects.toThrow(ForbiddenError);
+    expect(calls()).toBe(0);
+  });
+
+  it('los errores del lector se propagan tal cual (ValidationError con su reason)', async () => {
+    const reader: SpreadsheetReader = {
+      readFirstSheet: () => Promise.reject(new ValidationError({ reason: 'file_unsupported' })),
+    };
+    await expect(
+      readImportRows(MANAGER, { kind: 'products', ...FILE }, { reader }),
+    ).rejects.toMatchObject({ reason: 'file_unsupported' });
+  });
+
+  it('el tope de filas del lector es el del dominio', () => {
+    expect(SPREADSHEET_LIMITS.maxDataRows).toBe(IMPORT_LIMITS.maxRows);
   });
 });
 
 describe('createImportJob', () => {
   it('guarda las filas SIN validar con la moneda de la empresa, y encola después del commit', async () => {
-    const { deps, jobs, queued, tasks } = createDeps(
+    const { deps, jobs, queued, tasks, input } = createDeps(
       sheet(['p-1', 'Tubo', 'und', '12.5'], ['P-2', null, 'UND', null]),
       'USD',
     );
 
-    const result = await createImportJob(MANAGER, { kind: 'products', ...FILE }, deps);
+    const result = await createImportJob(MANAGER, input(), deps);
 
     expect(result.queued).toBe(false);
     const job = jobs.jobs.get(result.jobId);
@@ -244,27 +298,25 @@ describe('createImportJob', () => {
   });
 
   it('sin filas válidas → no_valid_rows y no crea el trabajo', async () => {
-    const { deps, jobs, tasks } = createDeps(sheet([null, 'Tubo', 'UND', null]));
+    const { deps, jobs, tasks, input } = createDeps(sheet([null, 'Tubo', 'UND', null]));
 
-    await expect(
-      createImportJob(MANAGER, { kind: 'products', ...FILE }, deps),
-    ).rejects.toMatchObject({ reason: 'no_valid_rows' });
+    await expect(createImportJob(MANAGER, input(), deps)).rejects.toMatchObject({
+      reason: 'no_valid_rows',
+    });
     expect(jobs.jobs.size).toBe(0);
     expect(tasks).toEqual([]);
   });
 
   it('sin catalog.manage → ForbiddenError', async () => {
-    const { deps } = createDeps(sheet(['P-1', 'Tubo', 'UND', null]));
-    await expect(createImportJob(REQUESTER, { kind: 'products', ...FILE }, deps)).rejects.toThrow(
-      ForbiddenError,
-    );
+    const { deps, input } = createDeps(sheet(['P-1', 'Tubo', 'UND', null]));
+    await expect(createImportJob(REQUESTER, input(), deps)).rejects.toThrow(ForbiddenError);
   });
 });
 
 /** Trabajo pendiente creado como lo crea createImportJob. */
 async function pendingJob(rows: SpreadsheetCell[][], kind: ImportKind = 'products') {
   const env = createDeps(kind === 'products' ? sheet(...rows) : [['codigo', 'nombre'], ...rows]);
-  const { jobId } = await createImportJob(MANAGER, { kind, ...FILE }, env.deps);
+  const { jobId } = await createImportJob(MANAGER, env.input(kind), env.deps);
   return { jobs: env.jobs, jobId };
 }
 
@@ -476,17 +528,5 @@ describe('getImportJob', () => {
       getImportJob(MANAGER, { id: '00000000-0000-4000-8000-0000000000ff' }, deps),
     ).rejects.toThrow(NotFoundError);
     await expect(getImportJob(REQUESTER, { id: jobId }, deps)).rejects.toThrow(ForbiddenError);
-  });
-});
-
-describe('errores de archivo del lector', () => {
-  it('se propagan tal cual (ValidationError con su reason)', async () => {
-    const { deps } = createDeps([]);
-    deps.reader.readFirstSheet = () =>
-      Promise.reject(new ValidationError({ reason: 'file_unsupported' }));
-
-    await expect(previewImport(MANAGER, { kind: 'products', ...FILE }, deps)).rejects.toMatchObject(
-      { reason: 'file_unsupported' },
-    );
   });
 });

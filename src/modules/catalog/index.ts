@@ -41,11 +41,12 @@ export type {
   ImportQueryDeps,
   ImportReadDeps,
 } from './application/import-ports';
+export { previewImport, type ImportPreview } from './application/preview-import';
 export {
-  previewImport,
+  readImportRows,
   type ImportFileInput,
-  type ImportPreview,
-} from './application/preview-import';
+  type ImportRowsInput,
+} from './application/read-import-rows';
 export { createImportJob } from './application/create-import-job';
 export { getImportJob, type ImportJobView } from './application/get-import-job';
 export { processImportJob, type ImportJobOutcome } from './application/process-import-job';

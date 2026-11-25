@@ -2,7 +2,7 @@
 // resumen. Solo Zod: aptos para el cliente.
 import { z } from 'zod';
 
-import { IMPORT_KINDS } from '../domain/import';
+import { IMPORT_KINDS, IMPORT_LIMITS } from '../domain/import';
 import { PRICE_PATTERN, normalizePrice } from '../domain/money';
 
 import {
@@ -69,6 +69,21 @@ export const importRowSchema = z.object({
   row: z.number().int().min(2),
   values: z.record(z.string(), z.string().nullable()),
 });
+
+/**
+ * Filas que entran a la vista previa y a la creación del job: las acota por si algo las arma mal
+ * (máximo de filas, columnas conocidas y largo de celda del adaptador).
+ */
+export const importRowsInputSchema = z
+  .array(
+    z.object({
+      row: z.number().int().min(2).max(1_048_576),
+      values: z
+        .record(z.string().max(30), z.string().max(1001).nullable())
+        .refine((values) => Object.keys(values).length <= 10),
+    }),
+  )
+  .max(IMPORT_LIMITS.maxRows);
 
 /** Lo que se guarda en import_jobs.payload hasta que el worker lo procesa. */
 export const importPayloadSchema = z.object({

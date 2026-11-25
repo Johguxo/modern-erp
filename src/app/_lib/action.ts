@@ -12,13 +12,16 @@ import { cryptoIdGenerator } from '@/shared/adapters/crypto-id-generator';
 import { getLogger } from '@/shared/adapters/pino-logger';
 import { systemClock } from '@/shared/adapters/system-clock';
 import type { Contract } from '@/shared/contract';
+import type { Ctx } from '@/shared/context';
+import { UnauthenticatedError } from '@/shared/errors';
 import type { Permission } from '@/shared/permissions';
 import { REQUEST_ID_HEADER, resolveRequestId } from '@/shared/request-id';
 import type { ActionResult } from '@/shared/result';
 
 import { sessionCtxResolver } from './session';
 import { clientInfoFromHeaders } from './client-info';
-import { runPipeline, type Handler, type PipelineDeps } from './pipeline';
+import { toActionError } from './error-response';
+import { assertAllowed, runPipeline, type Handler, type PipelineDeps } from './pipeline';
 
 export function createAction(deps: () => PipelineDeps) {
   return function action<C extends Contract>(
@@ -44,6 +47,33 @@ export function createAction(deps: () => PipelineDeps) {
   };
 }
 
+/**
+ * Trabajo previo a la transacción que no debe correr sin permiso (p. ej. leer y descomprimir un
+ * archivo subido): resuelve la sesión, exige el permiso y que la empresa no esté en solo lectura, y
+ * solo entonces corre `work` con el ctx. Devuelve ActionResult con los mismos errores que el
+ * pipeline (sin sesión, sin permiso, solo lectura, errores de dominio de `work`).
+ */
+export function createPrepare(deps: () => PipelineDeps) {
+  return async function prepare<T>(
+    permission: Permission,
+    name: string,
+    work: (ctx: Ctx) => Promise<T>,
+  ): Promise<ActionResult<T>> {
+    const requestHeaders = await headers();
+    const resolved = deps();
+    const requestId = resolveRequestId(requestHeaders.get(REQUEST_ID_HEADER), resolved.ids);
+    const logger = resolved.logger.child({ requestId, action: name });
+    try {
+      const ctx = await resolved.resolveCtx({ headers: requestHeaders, requestId });
+      if (!ctx) throw new UnauthenticatedError();
+      assertAllowed(ctx, permission, 'write');
+      return { ok: true, data: await work(ctx) };
+    } catch (error) {
+      return { ok: false, error: toActionError(error, requestId, logger) };
+    }
+  };
+}
+
 /** Dependencias reales: el ctx sale de la sesión de Supabase + la cookie de empresa activa. */
 export function productionPipelineDeps(): PipelineDeps {
   return {
@@ -56,3 +86,4 @@ export function productionPipelineDeps(): PipelineDeps {
 }
 
 export const action = createAction(productionPipelineDeps);
+export const prepare = createPrepare(productionPipelineDeps);

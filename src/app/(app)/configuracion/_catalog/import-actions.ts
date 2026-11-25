@@ -1,57 +1,72 @@
 'use server';
 
 // Acciones de la importación del catálogo (E2-H3): el archivo llega en FormData (campos `kind` y
-// `file`). Exigen catalog.manage y son de escritura (no pasan en solo lectura). El tamaño se revisa
-// antes de leer el archivo a memoria; el tipo y el contenido, en el adaptador.
+// `file`). Exigen catalog.manage y son de escritura (no pasan en solo lectura).
+//
+// El archivo se lee ANTES de abrir la transacción (descomprimir y parsear es trabajo de CPU y
+// memoria que no debe retener una conexión), pero solo después de comprobar sesión, permiso y que la
+// empresa no esté en solo lectura (`prepare`): sin permiso no se lee ni un byte. Las acciones
+// internas (no exportadas, no invocables desde el cliente) reciben las filas ya extraídas.
 import {
   createImportCreateDeps,
   createImportReadDeps,
   createImportJob,
   previewImport,
+  readImportRows,
 } from '@/modules/catalog';
 import {
   confirmImportContract,
+  importKindSchema,
   previewImportContract,
-  type ImportKind,
 } from '@/modules/catalog/contracts';
+import type { Ctx } from '@/shared/context';
+import { ValidationError } from '@/shared/errors';
 
-import { action } from '../../../_lib/action';
+import { action, prepare } from '../../../_lib/action';
 import { importExtras } from '../../../_lib/catalog';
 import { getSpreadsheetReader, readUpload } from '../../../_lib/spreadsheet';
 
 const preview = action(
   previewImportContract,
   'catalog.manage',
-  async ({ ctx, input, tx }) =>
-    previewImport(
-      ctx,
-      { kind: input.kind, ...(await readUpload(input.file)) },
-      createImportReadDeps(tx, { reader: getSpreadsheetReader() }),
-    ),
+  ({ ctx, input, tx }) => previewImport(ctx, input, createImportReadDeps(tx)),
   { name: 'catalog.previewImport' },
 );
 
 const confirm = action(
   confirmImportContract,
   'catalog.manage',
-  async ({ ctx, input, tx, shared }) =>
-    createImportJob(
-      ctx,
-      { kind: input.kind, ...(await readUpload(input.file)) },
-      createImportCreateDeps(tx, importExtras(shared)),
-    ),
+  ({ ctx, input, tx, shared }) =>
+    createImportJob(ctx, input, createImportCreateDeps(tx, importExtras(shared))),
   { name: 'catalog.confirmImport' },
 );
 
-/** Los campos de FormData se validan con el contrato (tipo y archivo); aquí solo se leen. */
-function fromForm(formData: FormData) {
-  return { kind: formData.get('kind') as ImportKind, file: formData.get('file') as File };
+/** Tipo y archivo del FormData → filas de datos; revisa el tamaño antes de leer a memoria. */
+async function rowsFromForm(ctx: Ctx, formData: FormData) {
+  const kind = importKindSchema.safeParse(formData.get('kind'));
+  const file = formData.get('file');
+  if (!kind.success || !(file instanceof File)) {
+    throw new ValidationError({ message: 'Import form needs a kind and a file' });
+  }
+  const upload = await readUpload(file);
+  const rows = await readImportRows(
+    ctx,
+    { kind: kind.data, ...upload },
+    { reader: getSpreadsheetReader() },
+  );
+  return { kind: kind.data, rows };
 }
 
 export async function previewImportAction(formData: FormData) {
-  return preview(fromForm(formData));
+  const read = await prepare('catalog.manage', 'catalog.previewImport.read', (ctx) =>
+    rowsFromForm(ctx, formData),
+  );
+  return read.ok ? preview(read.data) : read;
 }
 
 export async function confirmImportAction(formData: FormData) {
-  return confirm(fromForm(formData));
+  const read = await prepare('catalog.manage', 'catalog.confirmImport.read', (ctx) =>
+    rowsFromForm(ctx, formData),
+  );
+  return read.ok ? confirm(read.data) : read;
 }

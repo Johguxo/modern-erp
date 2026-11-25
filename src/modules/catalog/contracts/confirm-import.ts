@@ -1,10 +1,10 @@
-// Confirmar una importación (E2-H3): el servidor vuelve a leer el archivo (no confía en filas que
-// mande el cliente), guarda las filas sin validar en el trabajo y lo encola para el worker.
+// Confirmar una importación (E2-H3): el servidor lee el archivo (el cliente nunca manda filas),
+// guarda las filas sin validar en el trabajo y lo encola para el worker.
 import { z } from 'zod';
 
-import { importKindSchema } from './import';
+import { importKindSchema, importRowsInputSchema } from './import';
 
-export const inputSchema = z.object({ kind: importKindSchema, file: z.instanceof(File) });
+export const inputSchema = z.object({ kind: importKindSchema, rows: importRowsInputSchema });
 
 export const outputSchema = z.object({
   jobId: z.uuid(),

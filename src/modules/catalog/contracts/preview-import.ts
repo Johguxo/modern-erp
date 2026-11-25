@@ -2,10 +2,13 @@
 // devuelve los totales, las primeras filas y los errores.
 import { z } from 'zod';
 
-import { importKindSchema, importRowSchema, rowErrorSchema } from './import';
+import { importKindSchema, importRowSchema, importRowsInputSchema, rowErrorSchema } from './import';
 
-/** El archivo llega en FormData; el tipo y el tamaño los revisa el adaptador por sus bytes. */
-export const inputSchema = z.object({ kind: importKindSchema, file: z.instanceof(File) });
+/**
+ * Las filas ya extraídas del archivo: la acción web lee el archivo (FormData) antes de abrir la
+ * transacción y llama a la acción interna con esto.
+ */
+export const inputSchema = z.object({ kind: importKindSchema, rows: importRowsInputSchema });
 
 export const outputSchema = z.object({
   kind: importKindSchema,

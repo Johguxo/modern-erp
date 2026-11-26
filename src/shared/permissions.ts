@@ -11,6 +11,7 @@ export const PERMISSIONS = [
   'requests.read_all',
   'requests.correct_line',
   'requests.deliver',
+  'requests.cancel_any',
   'approvals.decide',
   'catalog.manage',
   'inventory.manage',

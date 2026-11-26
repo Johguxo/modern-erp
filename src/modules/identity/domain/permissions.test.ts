@@ -13,6 +13,7 @@ const ADR_002_MATRIX = `
 | \`requests.read_all\` | ✓ | | ✓ | ✓ |
 | \`requests.correct_line\` | ✓ | | ✓ | |
 | \`requests.deliver\` | ✓ | | ✓ | |
+| \`requests.cancel_any\` | ✓ | | | |
 | \`approvals.decide\` | ✓ | | ✓ | ✓ |
 | \`catalog.manage\` | ✓ | | ✓ | |
 | \`inventory.manage\` | ✓ | | ✓ | |
@@ -47,8 +48,8 @@ function expectedFromAdr(): Record<Role, Set<string>> {
 const EXPECTED = expectedFromAdr();
 
 describe('ROLE_PERMISSIONS es la tabla de ADR-002 rol por rol', () => {
-  it('la tabla copiada tiene las 11 filas de permisos', () => {
-    expect(ADR_002_MATRIX.trim().split('\n')).toHaveLength(11);
+  it('la tabla copiada tiene las 12 filas de permisos', () => {
+    expect(ADR_002_MATRIX.trim().split('\n')).toHaveLength(12);
   });
 
   it.each(TENANT_ROLES)('el rol %s tiene exactamente los permisos de la tabla', (role) => {

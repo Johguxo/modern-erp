@@ -241,6 +241,11 @@ export interface GetRequestDeps {
   readonly assignments: ApprovalAssignments;
 }
 
+/** Detalle del SOF (E3-H4): lo de getRequest más los nombres a mostrar. */
+export interface GetRequestDetailDeps extends GetRequestDeps {
+  readonly labels: RequestLabels;
+}
+
 export interface ListRequestsDeps {
   readonly queries: RequestQueryRepository;
   readonly assignments: ApprovalAssignments;

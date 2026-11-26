@@ -1,6 +1,9 @@
 // Vistas (salida) de los casos de uso de requests: fechas en ISO 8601 (UTC) y dinero como texto.
 import { formatDocumentNumber, type SequenceState } from '../domain/numbering';
+import type { DisplayStatus } from '../domain/inbox';
 import type { Request, RequestLine } from '../domain/request';
+import type { RequestAction } from '../domain/request-actions';
+import type { TimelineItem, TimelineKind, TimelineState } from '../domain/request-timeline';
 
 export type RequestLineView = RequestLine;
 
@@ -73,4 +76,63 @@ export function toSequenceView(state: SequenceState): SequenceView {
     lastIssuedNumber: state.lastIssuedNumber,
     preview: formatDocumentNumber(state.prefix, state.nextNumber, state.padding),
   };
+}
+
+// ── Detalle del SOF (E3-H4) ──────────────────────────────────────────────────────────────────
+
+export interface RequestDetailLine {
+  readonly id: string;
+  readonly lineNo: number;
+  readonly productCode: string;
+  readonly description: string;
+  readonly unit: string;
+  /** Texto con 3 decimales. */
+  readonly quantity: string;
+  /** Texto con 2 decimales. */
+  readonly subtotal: string;
+  /** «CODE · Nombre» del equipo de la línea; null si no tiene. */
+  readonly equipmentLabel: string | null;
+}
+
+export interface TimelineItemView {
+  readonly kind: TimelineKind;
+  readonly state: TimelineState;
+  /** ISO 8601 (UTC); null si aún no ocurre. */
+  readonly at: string | null;
+  readonly actorName: string | null;
+}
+
+export interface RequestDetail {
+  readonly id: string;
+  readonly docType: 'SOF';
+  /** Null mientras es borrador. */
+  readonly number: string | null;
+  readonly status: Request['status'];
+  /** «Espera mi aprobación» cuando el paso pendiente es del usuario. */
+  readonly displayStatus: DisplayStatus;
+  readonly requesterId: string;
+  readonly requesterName: string | null;
+  readonly costCenterLabel: string | null;
+  /** «CODE · Nombre» del equipo de la cabecera. */
+  readonly equipmentLabel: string | null;
+  readonly reason: string | null;
+  readonly currency: Request['currency'];
+  readonly totalAmount: string;
+  readonly version: number;
+  /** Solo líneas activas, por número de línea. Mutable para encajar con los contratos Zod. */
+  readonly lines: RequestDetailLine[];
+  readonly timeline: TimelineItemView[];
+  readonly actions: RequestAction[];
+}
+
+export function toTimelineItems(
+  items: readonly TimelineItem[],
+  names: ReadonlyMap<string, string>,
+): TimelineItemView[] {
+  return items.map((item) => ({
+    kind: item.kind,
+    state: item.state,
+    at: iso(item.at),
+    actorName: item.actorId ? (names.get(item.actorId) ?? null) : null,
+  }));
 }

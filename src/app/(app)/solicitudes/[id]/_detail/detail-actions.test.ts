@@ -13,10 +13,10 @@ import {
 } from './detail-actions';
 
 describe('isActionEnabled', () => {
-  it('solo editar borrador funciona hoy', () => {
-    expect(IMPLEMENTED_ACTIONS).toEqual(['edit_draft']);
+  it('editar borrador y anular funcionan hoy', () => {
+    expect(IMPLEMENTED_ACTIONS).toEqual(['edit_draft', 'cancel']);
     for (const action of REQUEST_ACTIONS) {
-      expect(isActionEnabled(action, false)).toBe(action === 'edit_draft');
+      expect(isActionEnabled(action, false)).toBe(action === 'edit_draft' || action === 'cancel');
     }
   });
 
@@ -32,6 +32,7 @@ describe('isActionEnabled', () => {
     expect(isImplemented('download_pdf')).toBe(false);
     expect(isActionEnabled('download_pdf', true)).toBe(false);
     expect(isActionEnabled('edit_draft', true)).toBe(false);
+    expect(isActionEnabled('cancel', true)).toBe(false);
   });
 });
 
@@ -44,7 +45,7 @@ describe('panelActions y showsSoonNote', () => {
   });
 
   it('la nota aparece si alguna acción visible (panel, ítems o documento) está sin conectar', () => {
-    expect(showsSoonNote(['edit_draft'])).toBe(false);
+    expect(showsSoonNote(['edit_draft', 'cancel'])).toBe(false);
     expect(showsSoonNote(['edit_draft', 'download_pdf'])).toBe(true);
     expect(showsSoonNote(['correct_line', 'download_pdf'])).toBe(true);
     expect(showsSoonNote(['correct_line'])).toBe(true);

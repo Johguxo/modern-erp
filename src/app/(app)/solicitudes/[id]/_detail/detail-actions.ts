@@ -1,9 +1,8 @@
 // Qué acciones del detalle del SOF funcionan hoy. Las demás se muestran deshabilitadas con la nota
-// «Esta acción se habilita pronto.» hasta que las historias siguientes las conecten (E3-H5, E4 y
-// E5-H1). Al conectar una, se agrega aquí.
+// «Esta acción se habilita pronto.» hasta que las historias siguientes las conecten (E4 y E5-H1). Al conectar una, se agrega aquí.
 import type { RequestAction } from '@/modules/requests';
 
-export const IMPLEMENTED_ACTIONS: readonly RequestAction[] = ['edit_draft'];
+export const IMPLEMENTED_ACTIONS: readonly RequestAction[] = ['edit_draft', 'cancel'];
 
 /** Acciones que viven fuera del panel lateral: en la tarjeta de ítems y en la del documento. */
 const ELSEWHERE: readonly RequestAction[] = ['correct_line', 'download_pdf'];

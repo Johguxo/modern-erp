@@ -10,6 +10,7 @@ import {
 import { REQUEST_STATUSES, type RequestStatus } from './request-state-machine';
 
 const REQUESTER = '11111111-1111-4111-8111-111111111111';
+const ADMIN = '33333333-3333-4333-8333-333333333333';
 const CREATED = new Date('2026-11-20T10:00:00.000Z');
 const SUBMITTED = new Date('2026-11-21T10:00:00.000Z');
 const APPROVED = new Date('2026-11-22T10:00:00.000Z');
@@ -29,6 +30,8 @@ const source = (
   approvedAt: null,
   deliveredAt: null,
   closedAt: null,
+  closedBy: null,
+  closeComment: null,
   ...overrides,
 });
 
@@ -38,19 +41,19 @@ const shape = (items: ReturnType<typeof deriveTimeline>) =>
 describe('deriveTimeline', () => {
   it('borrador: creada y lo que falta', () => {
     expect(deriveTimeline(source('draft'))).toEqual([
-      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER },
-      { kind: 'approval', state: 'upcoming', at: null, actorId: null },
-      { kind: 'delivery', state: 'upcoming', at: null, actorId: null },
+      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null },
+      { kind: 'approval', state: 'upcoming', at: null, actorId: null, comment: null },
+      { kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null },
     ]);
   });
 
   it('en aprobación: la aprobación está pendiente', () => {
     const items = deriveTimeline(source('in_approval', { submittedAt: SUBMITTED }));
     expect(items).toEqual([
-      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER },
-      { kind: 'submitted', state: 'done', at: SUBMITTED, actorId: REQUESTER },
-      { kind: 'approval', state: 'pending', at: null, actorId: null },
-      { kind: 'delivery', state: 'upcoming', at: null, actorId: null },
+      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null },
+      { kind: 'submitted', state: 'done', at: SUBMITTED, actorId: REQUESTER, comment: null },
+      { kind: 'approval', state: 'pending', at: null, actorId: null, comment: null },
+      { kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null },
     ]);
   });
 
@@ -61,6 +64,7 @@ describe('deriveTimeline', () => {
       state: 'stopped',
       at: UPDATED,
       actorId: null,
+      comment: null,
     });
     expect(shape(items)).toEqual([
       'created:done',
@@ -75,7 +79,13 @@ describe('deriveTimeline', () => {
     const items = deriveTimeline(
       source('approved', { submittedAt: SUBMITTED, approvedAt: APPROVED }),
     );
-    expect(items.at(2)).toEqual({ kind: 'approved', state: 'done', at: APPROVED, actorId: null });
+    expect(items.at(2)).toEqual({
+      kind: 'approved',
+      state: 'done',
+      at: APPROVED,
+      actorId: null,
+      comment: null,
+    });
     expect(shape(items).slice(3)).toEqual(['delivery:upcoming']);
   });
 
@@ -84,8 +94,8 @@ describe('deriveTimeline', () => {
       source('delivered', { submittedAt: SUBMITTED, approvedAt: APPROVED, deliveredAt: DELIVERED }),
     );
     expect(items.slice(2)).toEqual([
-      { kind: 'approved', state: 'done', at: APPROVED, actorId: null },
-      { kind: 'delivery', state: 'done', at: DELIVERED, actorId: null },
+      { kind: 'approved', state: 'done', at: APPROVED, actorId: null, comment: null },
+      { kind: 'delivery', state: 'done', at: DELIVERED, actorId: null, comment: null },
     ]);
   });
 
@@ -102,6 +112,25 @@ describe('deriveTimeline', () => {
       state: 'stopped',
       at: UPDATED,
       actorId: null,
+      comment: null,
+    });
+  });
+
+  it('anulada: lleva quién anuló y su comentario', () => {
+    const items = deriveTimeline(
+      source('cancelled', {
+        submittedAt: SUBMITTED,
+        closedAt: CLOSED,
+        closedBy: ADMIN,
+        closeComment: 'Duplicada',
+      }),
+    );
+    expect(items.at(-1)).toEqual({
+      kind: 'cancelled',
+      state: 'stopped',
+      at: CLOSED,
+      actorId: ADMIN,
+      comment: 'Duplicada',
     });
   });
 

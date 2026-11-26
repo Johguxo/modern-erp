@@ -26,6 +26,8 @@ Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Botones en la pantalla 3 y contador en la bandeja.
 - [ ] Eventos en `approval_events` y registro en `audit_events`.
 
+> Nota (E3-H5): implementar el puerto `ApprovalCanceller.cancel(ctx, {requestId, comment})` de requests (hoy `noopApprovalCanceller`): instancia `cancelled`, pasos `pending`/`waiting` cerrados (decidir `skipped` o agregar `cancelled` al check) y evento `cancelled` con el comentario. Bloquear primero la solicitud, como `cancelRequest`.
+
 > Nota (E3-H3): implementar el puerto `ApprovalAssignments` de requests (`assignedRequestIds`, `pendingRequestIds`, `isAssigned`) sobre `approval_steps`/`approval_step_assignees` y pasarlo en `createRequestsDeps`/`createGetRequestDeps`/`createListRequestsDeps` (hoy `noopApprovalAssignments`). Si las listas de ids crecen, cambiar a `= any($1::uuid[])` o a subconsulta.
 
 > Nota (E3-H1/H2): `submitRequest` llama al puerto `ApprovalStarter` (hoy `noopApprovalStarter`). Aquí se reemplaza por el real. Los SOF enviados antes de esta historia quedaron en `in_approval` sin instancia: crearles su instancia (o confirmar que no hay ninguno en producción).
@@ -39,7 +41,7 @@ Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] `getTimeline(requestId)` combina eventos y pasos futuros en una lista ordenada para la interfaz.
 - [ ] Panel de la pantalla 3 igual al prototipo: hechos en verde con check, pendiente en ámbar, futuros en gris; cada ítem con quién y cuándo (zona del tenant).
 
-> Nota (E3-H4): la línea de tiempo sale hoy de `deriveTimeline` (fechas de la solicitud, sin autor en aprobada/rechazada/anulada). Aquí: puerto `ApprovalTimeline` con `approval_events`; `deriveTimeline` queda de respaldo para SOF sin instancia. El tipo `TimelineItem` ya trae `actorName`, `title` y `comment`.
+> Nota (E3-H4): la línea de tiempo sale hoy de `deriveTimeline` (fechas de la solicitud, sin autor en aprobada/rechazada/anulada). Aquí: puerto `ApprovalTimeline` con `approval_events`; `deriveTimeline` queda de respaldo para SOF sin instancia. El tipo `TimelineItem` ya trae `actorId`/`actorName` y `comment`. El ítem `cancelled` de los SOF sin instancia sale de `closed_by`/`close_comment` (E3-H5).
 
 Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/23)
 

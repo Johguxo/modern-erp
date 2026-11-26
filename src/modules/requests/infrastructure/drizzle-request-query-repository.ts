@@ -2,7 +2,7 @@
 // explícito por tenantId (primera defensa). Solo toca esta tabla; los nombres de otros módulos se
 // resuelven aparte. Índices de E3-H1: (tenant, updated_at desc), (tenant, status, updated_at desc)
 // y (tenant, requester, updated_at desc).
-import { and, count, desc, eq, inArray, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 
 import { escapeLike, searchWords, type DbExecutor } from '@/db';
 import { requests } from '@/db/schema';
@@ -36,10 +36,13 @@ const NONE = sql`false`;
 const idIn = (ids: readonly string[]): SQL =>
   ids.length === 0 ? NONE : inArray(requests.id, [...ids]);
 
-/** Visibilidad: lo propio y, si no es borrador, lo que lee todo el mundo o tiene asignado. */
+/**
+ * Visibilidad: lo propio y, si se envió alguna vez (tiene número), lo que lee todo el mundo o tiene
+ * asignado. Un borrador anulado sigue sin número: solo lo ve su dueño.
+ */
 function visibleCondition(scope: InboxScope): SQL {
   const mine = eq(requests.requesterId, scope.viewerId);
-  const sent = ne(requests.status, 'draft');
+  const sent = isNotNull(requests.number);
   const others = scope.readAll ? sent : and(sent, idIn(scope.assignedIds));
   return or(mine, others) as SQL;
 }

@@ -8,6 +8,7 @@ import { Button } from '@/ui/components/button';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
+import { CancelRequestDialog } from './cancel-request-dialog';
 import { isActionEnabled, isImplemented } from './detail-actions';
 
 const t = messages.requests.detail.actions;
@@ -31,6 +32,8 @@ export function ActionButton({
   large = false,
   noteId,
   className,
+  version,
+  number = null,
 }: {
   action: RequestAction;
   requestId: string;
@@ -40,6 +43,9 @@ export function ActionButton({
   /** Id de la nota «se habilita pronto»; solo lo usan las acciones aún sin conectar. */
   noteId?: string;
   className?: string;
+  /** Versión y número del documento: «Anular» los necesita. */
+  version?: number;
+  number?: string | null;
 }) {
   const style = STYLE[action];
   const size = large ? 'lg' : 'default';
@@ -50,6 +56,17 @@ export function ActionButton({
       <Button asChild variant={style.variant} size={size} className={classes}>
         <Link href={`/solicitudes/${requestId}/editar` as Route}>{t[action]}</Link>
       </Button>
+    );
+  }
+  if (isActionEnabled(action, readOnly) && action === 'cancel' && version !== undefined) {
+    return (
+      <CancelRequestDialog
+        requestId={requestId}
+        version={version}
+        number={number}
+        large={large}
+        className={classes}
+      />
     );
   }
   // aria-disabled (y no disabled): el botón recibe el foco y el lector de pantalla oye la nota. Sin

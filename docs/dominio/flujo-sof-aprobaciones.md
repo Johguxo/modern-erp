@@ -21,17 +21,19 @@ El SOF (solicitud de almacén) es el primer tipo de documento. El motor de aprob
 | Desde | Acción | Hacia | Quién |
 |---|---|---|---|
 | `draft` | `submit` | `in_approval` | Solicitante (permiso `requests.create`) |
-| `draft` | `cancel` | `cancelled` | Solicitante o admin |
+| `draft` | `cancel` | `cancelled` | Solicitante (solo su propio borrador: los borradores ajenos no se ven) |
 | `in_approval` | último paso `approve` | `approved` | Aprobador del paso |
 | `in_approval` | `reject` | `rejected` | Aprobador del paso actual |
 | `in_approval` | `request_changes` | `changes_requested` | Aprobador del paso actual |
 | `in_approval` | `correct_line` | `in_approval` (sin cambiar) | Almacén o admin |
-| `in_approval` | `cancel` | `cancelled` | Solicitante o admin |
+| `in_approval` | `cancel` | `cancelled` | Solicitante o admin (`requests.cancel_any`) |
 | `changes_requested` | `resubmit` | `in_approval` | Solicitante |
-| `changes_requested` | `cancel` | `cancelled` | Solicitante o admin |
+| `changes_requested` | `cancel` | `cancelled` | Solicitante o admin (`requests.cancel_any`) |
 | `approved` | `correct_line` | `approved` o `in_approval` (ver §4) | Almacén o admin |
 | `approved` | `deliver` | `delivered` | Almacén (permiso `requests.deliver`) |
-| `approved` | `cancel` | `cancelled` | Admin |
+| `approved` | `cancel` | `cancelled` | Admin (`requests.cancel_any`), si no se entregó |
+
+Anular exige un comentario (1 a 500 caracteres) que se guarda en `requests.close_comment` junto con `closed_by` y `closed_at` (E3-H5); los pasos de aprobación pendientes se cierran (puerto `ApprovalCanceller`, que implementa E4-H2). Lo que nunca se envió (sin número, incluido un borrador anulado) solo lo ve su solicitante.
 
 Cualquier otra transición es un error de dominio (`InvalidTransitionError`). La máquina de estados vive en `src/modules/requests/domain/request-state-machine.ts` y se prueba con todas las combinaciones.
 

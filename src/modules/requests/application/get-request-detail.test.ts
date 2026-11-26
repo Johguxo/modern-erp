@@ -39,6 +39,8 @@ const request = (overrides: Partial<Request> = {}): Request => ({
   approvedAt: null,
   deliveredAt: null,
   closedAt: null,
+  closedBy: null,
+  closeComment: null,
   version: 3,
   createdAt: T,
   updatedAt: T,
@@ -185,7 +187,7 @@ describe('getRequestDetail', () => {
   });
 
   it('un borrador ajeno es 404 aunque tenga requests.read_all o esté asignado', async () => {
-    const { deps } = setup(request({ status: 'draft', submittedAt: null }), [], {
+    const { deps } = setup(request({ status: 'draft', number: null, submittedAt: null }), [], {
       assigned: [REQ],
     });
     await expect(getRequestDetail(approverCtx, { id: REQ }, deps)).rejects.toBeInstanceOf(

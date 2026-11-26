@@ -9,6 +9,8 @@ import type { RequestStatus } from './request-state-machine';
 export const MAX_LINES = 200;
 export const REASON_MAX = 500;
 export const NOTES_MAX = 500;
+/** Comentario obligatorio al anular (también es el check de la base). */
+export const CANCEL_COMMENT_MAX = 500;
 
 /** En E3-H1 solo se edita en borrador; «Cambios solicitados» se decide en E4-H2. */
 export const EDITABLE_STATUSES: readonly RequestStatus[] = ['draft'];
@@ -53,6 +55,9 @@ export interface Request {
   readonly approvedAt: Date | null;
   readonly deliveredAt: Date | null;
   readonly closedAt: Date | null;
+  /** Quién anuló la solicitud y su comentario; null mientras sigue abierta (E3-H5). */
+  readonly closedBy: string | null;
+  readonly closeComment: string | null;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -91,17 +96,17 @@ export function assertSubmittable(parts: SubmittableParts): void {
 }
 
 /**
- * Un borrador solo lo ve su solicitante. Lo demás lo ve el solicitante, quien tiene
- * `requests.read_all` o el aprobador asignado (`opts.assigned`, que pone el puerto
- * ApprovalAssignments).
+ * Lo que nunca se envió (sin número, sea borrador o borrador anulado) solo lo ve su solicitante.
+ * Lo demás lo ve el solicitante, quien tiene `requests.read_all` o el aprobador asignado
+ * (`opts.assigned`, que pone el puerto ApprovalAssignments).
  */
 export function canView(
-  request: Pick<Request, 'requesterId' | 'status'>,
+  request: Pick<Request, 'requesterId' | 'number'>,
   ctx: Pick<Ctx, 'userId' | 'permissions'>,
   opts: { readonly assigned?: boolean } = {},
 ): boolean {
   if (request.requesterId === ctx.userId) return true;
-  if (request.status === 'draft') return false;
+  if (request.number === null) return false;
   return hasPermission(ctx, 'requests.read_all') || opts.assigned === true;
 }
 

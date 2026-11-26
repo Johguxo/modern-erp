@@ -50,9 +50,13 @@ export interface SeedLine {
 
 export interface SeedRequest {
   readonly requesterId: string;
-  readonly status: 'draft' | 'in_approval' | 'approved' | 'rejected';
-  /** Obligatorio salvo en borradores. */
+  readonly status:
+    'draft' | 'in_approval' | 'changes_requested' | 'approved' | 'rejected' | 'cancelled';
+  /** Obligatorio salvo en borradores y en borradores anulados (`cancelled` sin número). */
   readonly number?: string;
+  /** Solo `cancelled`: quién anuló y su comentario (E3-H5). */
+  readonly closedById?: string;
+  readonly closeComment?: string;
   readonly reason?: string;
   /** Código del equipo (EQ-1, EQ-2) o null. Por defecto, sin equipo. */
   readonly equipmentCode?: string | null;
@@ -233,7 +237,9 @@ export function createAccounts(): Accounts {
       if (!warehouse || !costCenter) throw new Error('falta addRequestCatalog');
       const ids: string[] = [];
       for (const row of rows) {
-        const draft = row.status === 'draft';
+        // Sin número ni envío: un borrador o un borrador anulado (nunca enviado).
+        const draft = row.status === 'draft' || (row.status === 'cancelled' && !row.number);
+        const cancelled = row.status === 'cancelled';
         const updatedAt = row.updatedAt ?? new Date();
         const [equipment] = row.equipmentCode
           ? await sql<{ id: string }[]>`
@@ -242,13 +248,15 @@ export function createAccounts(): Accounts {
         const [inserted] = await sql<{ id: string }[]>`
           insert into requests (
             tenant_id, number, status, requester_id, cost_center_id, warehouse_id, equipment_id,
-            reason, currency, total_amount, submitted_at, approved_at, created_at, updated_at
+            reason, currency, total_amount, submitted_at, approved_at, closed_at, closed_by,
+            close_comment, created_at, updated_at
           ) values (
             ${tenantId}, ${draft ? null : (row.number ?? null)}, ${row.status}, ${row.requesterId},
             ${costCenter.id}, ${warehouse.id}, ${equipment?.id ?? null},
             ${row.reason ?? 'Mantenimiento'}, 'PEN', ${row.totalAmount ?? '100.00'},
             ${draft ? null : updatedAt}, ${row.status === 'approved' ? updatedAt : null},
-            ${updatedAt}, ${updatedAt}
+            ${cancelled ? updatedAt : null}, ${cancelled ? (row.closedById ?? null) : null},
+            ${cancelled ? (row.closeComment ?? null) : null}, ${updatedAt}, ${updatedAt}
           ) returning id`;
         if (!inserted) throw new Error('solicitud no creada');
         ids.push(inserted.id);

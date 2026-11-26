@@ -51,6 +51,7 @@ export async function getRequestDetail(
     displayStatus: displayStatus(request.status, pendingForMe),
     requesterId: request.requesterId,
     requesterName: names.get(request.requesterId) ?? null,
+    closedById: request.closedBy,
     costCenterLabel: request.costCenterId
       ? (areas.costCenters.get(request.costCenterId) ?? null)
       : null,

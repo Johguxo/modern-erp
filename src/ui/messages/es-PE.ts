@@ -573,6 +573,8 @@ export const messages = {
       draftNumber: 'Borrador',
       totalOf: (amount: string) => `Total ${amount}`,
       submittedNotice: (number: string) => `Enviaste ${number} a aprobación.`,
+      cancelledNotice: (number: string | null) =>
+        number === null ? 'Anulaste el borrador.' : `Anulaste ${number}.`,
       noValue: '—',
       items: {
         title: 'Ítems',
@@ -610,6 +612,8 @@ export const messages = {
           approvalUpcoming: 'Empieza cuando se envía a aprobación.',
           deliveryUpcoming: 'Descuenta stock automáticamente.',
         },
+        /** Comentario de la anulación, en el paso «Anulada». */
+        commentLabel: 'Comentario',
         /** Texto solo para lectores de pantalla: el estado de cada paso. */
         states: {
           done: 'Completado',
@@ -630,6 +634,23 @@ export const messages = {
         deliver: 'Registrar entrega',
         download_pdf: 'Descargar PDF',
         soon: 'Esta acción se habilita pronto.',
+      },
+      cancel: {
+        title: (number: string | null) => (number ? `Anular ${number}` : 'Anular borrador'),
+        description:
+          'La anulación no se puede deshacer. El comentario queda en la línea de tiempo y lo ve quien tenga acceso al documento.',
+        commentLabel: 'Comentario (obligatorio)',
+        commentPlaceholder: 'Cuenta por qué se anula esta solicitud',
+        counter: (used: number, max: number) => `${used} / ${max}`,
+        // Aviso para lectores de pantalla: solo cuando quedan pocos caracteres o se pasó.
+        remaining: (left: number) =>
+          left < 0
+            ? `Te pasaste por ${-left} ${left === -1 ? 'carácter' : 'caracteres'}`
+            : `Quedan ${left} ${left === 1 ? 'carácter' : 'caracteres'}`,
+        submit: 'Anular solicitud',
+        submitting: 'Anulando…',
+        back: 'Volver',
+        reload: 'Recargar',
       },
     },
   },
@@ -732,6 +753,10 @@ export const messages = {
       // Solicitudes (E3-H1).
       request_incomplete: () =>
         'Completa el centro de costo, el motivo y al menos un ítem para enviar la solicitud.',
+      cancel_not_allowed: () => 'No puedes anular esta solicitud en su estado actual.',
+      cancel_comment_required: () => 'Escribe el motivo de la anulación.',
+      cancel_comment_too_long: (p: Params) =>
+        `El comentario puede tener hasta ${p.max ?? '?'} caracteres.`,
       request_not_editable: () =>
         'Esta solicitud ya no se puede editar porque salió de borrador. Recarga la página.',
       quantity_invalid: () => 'Ingresa una cantidad mayor que cero, con hasta 3 decimales.',

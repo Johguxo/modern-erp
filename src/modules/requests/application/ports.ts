@@ -62,6 +62,15 @@ export interface ApprovalStarter {
 }
 
 /**
+ * Cierra la aprobación del documento anulado, dentro de la misma transacción de la anulación: si
+ * lanza, la anulación completa se revierte. En E3-H5 la implementación está vacía; E4-H2 la
+ * reemplaza por la del motor (cierra los pasos pendientes y escribe el evento `cancelled`).
+ */
+export interface ApprovalCanceller {
+  cancel(ctx: Ctx, input: { readonly requestId: string; readonly comment: string }): Promise<void>;
+}
+
+/**
  * Aprobador asignado (bandeja y visibilidad, E3-H3). En E3-H3 la implementación devuelve listas
  * vacías; E4-H2 la reemplaza por el motor de aprobaciones. Si las listas crecen mucho, el adaptador
  * pasa a una subconsulta (ver el plan de E3-H3, riesgos).
@@ -128,6 +137,10 @@ export interface HeaderPatch {
   readonly status?: RequestStatus;
   readonly number?: string;
   readonly submittedAt?: Date;
+  /** Cierre por anulación (E3-H5): fecha, autor y comentario. */
+  readonly closedAt?: Date;
+  readonly closedBy?: string;
+  readonly closeComment?: string;
 }
 
 export interface RequestRepository {
@@ -235,6 +248,15 @@ export interface SubmitDeps extends DraftDeps {
   readonly clock: Clock;
 }
 
+/** Anular un SOF (E3-H5): bloquea, cambia el estado, cierra la aprobación y audita. */
+export interface CancelDeps extends AuditDeps {
+  readonly requests: RequestRepository;
+  /** Aprobador asignado (E4-H2): ve el documento aunque no lo haya creado. */
+  readonly assignments: ApprovalAssignments;
+  readonly canceller: ApprovalCanceller;
+  readonly clock: Clock;
+}
+
 export interface GetRequestDeps {
   readonly requests: RequestRepository;
   /** Aprobador asignado (E4-H2); hoy vacío. */
@@ -258,7 +280,10 @@ export interface SequenceDeps extends AuditDeps {
 }
 
 /** Todo lo que arma la entrega para requests, sobre la transacción de withTenant. */
-export type RequestsDeps = SubmitDeps & SequenceDeps & Pick<GetRequestDeps, 'assignments'>;
+export type RequestsDeps = SubmitDeps &
+  SequenceDeps &
+  Pick<GetRequestDeps, 'assignments'> &
+  Pick<CancelDeps, 'canceller'>;
 
 // ── Consola de plataforma (conexión dueño, ADR-007) ──────────────────────────────────────────
 

@@ -3,6 +3,7 @@
 export * as createDraftContract from './create-draft';
 export * as updateDraftContract from './update-draft';
 export * as submitRequestContract from './submit-request';
+export * as cancelRequestContract from './cancel-request';
 export * as getRequestContract from './get-request';
 export * as getRequestDetailContract from './get-request-detail';
 export * as listRequestsContract from './list-requests';
@@ -25,7 +26,7 @@ export {
   VISIBLE_TABS,
   type InboxTab,
 } from '../domain/inbox';
-export { MAX_LINES } from '../domain/request';
+export { CANCEL_COMMENT_MAX, MAX_LINES } from '../domain/request';
 export { PREFIX_MAX, formatDocumentNumber, normalizePrefix } from '../domain/numbering';
 // Dinero y cantidades: el editor del cliente calcula el total en vivo con las mismas funciones
 // decimal.js (HALF_UP) que usa el servidor, nunca con number.

@@ -110,6 +110,12 @@ export function TimelinePanel({
                 {t.timeline.steps[item.kind]}
               </p>
               {hint ? <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p> : null}
+              {item.comment ? (
+                <p className="mt-1 text-[13px] break-words whitespace-pre-wrap text-foreground">
+                  <span className="sr-only">{t.timeline.commentLabel}: </span>
+                  {item.comment}
+                </p>
+              ) : null}
             </li>
           );
         })}
@@ -147,6 +153,8 @@ export function TimelinePanel({
               readOnly={readOnly}
               large={index === 0 && !panel.includes('approve')}
               noteId={noteId}
+              version={detail.version}
+              number={detail.number}
             />
           ))}
         </div>

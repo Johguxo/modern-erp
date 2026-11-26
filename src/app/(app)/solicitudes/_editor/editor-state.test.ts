@@ -401,6 +401,8 @@ function view(overrides: Partial<RequestView> = {}): RequestView {
     approvedAt: null,
     deliveredAt: null,
     closedAt: null,
+    closedBy: null,
+    closeComment: null,
     version: 3,
     createdAt: '2026-11-25T10:00:00.000Z',
     updatedAt: '2026-11-25T10:00:00.000Z',

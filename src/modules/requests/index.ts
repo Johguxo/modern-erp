@@ -14,10 +14,13 @@ export {
   type DocumentSequenceConfig,
 } from './infrastructure/document-sequence-step';
 export { noopApprovalAssignments } from './infrastructure/noop-approval-assignments';
+export { noopApprovalCanceller } from './infrastructure/noop-approval-canceller';
 export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
   ApprovalAssignments,
+  ApprovalCanceller,
   ApprovalStarter,
+  CancelDeps,
   GetRequestDeps,
   GetRequestDetailDeps,
   ListRequestsDeps,
@@ -37,6 +40,7 @@ export type {
 export { createDraft, type CreateDraftInput } from './application/create-draft';
 export { updateDraft, type UpdateDraftInput } from './application/update-draft';
 export { submitRequest, type SubmitRequestInput } from './application/submit-request';
+export { cancelRequest, type CancelRequestInput } from './application/cancel-request';
 export { getRequest } from './application/get-request';
 export { getRequestDetail } from './application/get-request-detail';
 export {

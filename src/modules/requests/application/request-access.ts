@@ -3,9 +3,14 @@ import { hasPermission, requireAnyPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 import { ConflictError, NotFoundError } from '@/shared/errors';
 
-import { canView } from '../domain/request';
+import { canView, type Request } from '../domain/request';
 
-import type { GetRequestDeps, RequestRepository, RequestWithLines } from './ports';
+import type {
+  ApprovalAssignments,
+  GetRequestDeps,
+  RequestRepository,
+  RequestWithLines,
+} from './ports';
 
 /** Bloquea (FOR UPDATE) una solicitud propia: el borrador solo lo edita su solicitante. */
 export async function lockOwnRequest(
@@ -30,10 +35,24 @@ export function assertVersion(current: number, expected: number): void {
   }
 }
 
+/** ¿El usuario ve este documento? Solo consulta las asignaciones cuando pueden cambiar la respuesta. */
+async function isVisibleTo(
+  ctx: Ctx,
+  request: Request,
+  assignments: ApprovalAssignments,
+): Promise<boolean> {
+  const needsAssignment =
+    request.requesterId !== ctx.userId &&
+    request.number !== null &&
+    !hasPermission(ctx, 'requests.read_all');
+  const assigned = needsAssignment ? await assignments.isAssigned(ctx, request.id) : false;
+  return canView(request, ctx, { assigned });
+}
+
 /**
  * Una solicitud que el usuario puede ver (el solicitante, quien tiene `requests.read_all` o el
- * aprobador asignado; un borrador solo lo ve su solicitante). Si no existe, es de otro tenant o no
- * la puede ver: NotFoundError (404, no revela existencia).
+ * aprobador asignado; lo que nunca se envió, sin número, solo lo ve su solicitante). Si no existe,
+ * es de otro tenant o no la puede ver: NotFoundError (404, no revela existencia).
  */
 export async function findVisibleRequest(
   ctx: Ctx,
@@ -42,16 +61,23 @@ export async function findVisibleRequest(
 ): Promise<RequestWithLines> {
   requireAnyPermission(ctx, ['requests.create', 'requests.read_own', 'requests.read_all']);
   const found = await deps.requests.find(ctx.tenantId, id);
-  if (!found) throw new NotFoundError({ message: 'Request not found' });
-  // Solo se consultan las asignaciones cuando pueden cambiar la respuesta.
-  const needsAssignment =
-    found.request.requesterId !== ctx.userId &&
-    found.request.status !== 'draft' &&
-    !hasPermission(ctx, 'requests.read_all');
-  const assigned = needsAssignment
-    ? await deps.assignments.isAssigned(ctx, found.request.id)
-    : false;
-  if (!canView(found.request, ctx, { assigned })) {
+  if (!found || !(await isVisibleTo(ctx, found.request, deps.assignments))) {
+    throw new NotFoundError({ message: 'Request not found' });
+  }
+  return found;
+}
+
+/**
+ * Como `findVisibleRequest`, pero bloquea la fila (FOR UPDATE) para una transición. El permiso
+ * lo revisa el caso de uso antes (la anulación admite más de uno).
+ */
+export async function lockVisibleRequest(
+  ctx: Ctx,
+  id: string,
+  deps: Pick<GetRequestDeps, 'requests' | 'assignments'>,
+): Promise<RequestWithLines> {
+  const found = await deps.requests.lockById(ctx.tenantId, id);
+  if (!found || !(await isVisibleTo(ctx, found.request, deps.assignments))) {
     throw new NotFoundError({ message: 'Request not found' });
   }
   return found;

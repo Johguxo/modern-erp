@@ -11,7 +11,7 @@ Las épicas se hacen en orden; dentro de cada épica, las historias también, sa
 | E0 | Fundaciones del proyecto | — | En revisión |
 | E1 | Identidad, acceso y SuperAdmin | E0 | En revisión |
 | E2 | Catálogo y datos maestros | E1 | En revisión |
-| E3 | Solicitudes SOF | E2 | En curso |
+| E3 | Solicitudes SOF | E2 | En revisión |
 | E4 | Motor de aprobaciones | E3 | Pendiente |
 | E5 | Documentos y avisos | E4 | Pendiente |
 | E6 | Inventario y entrega | E4 | Pendiente (puede ir en paralelo con E5) |

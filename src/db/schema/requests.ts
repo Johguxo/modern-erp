@@ -86,6 +86,9 @@ export const requests = pgTable(
     approvedAt: timestamp({ withTimezone: true }),
     deliveredAt: timestamp({ withTimezone: true }),
     closedAt: timestamp({ withTimezone: true }),
+    /** Quién cerró la solicitud (anulación) y su comentario; null mientras sigue abierta. */
+    closedBy: uuid().references(() => users.id),
+    closeComment: text(),
     /** Bloqueo optimista: arranca en 1 y sube con cada cambio. */
     version: integer().notNull().default(1),
     createdAt: createdAt(),
@@ -112,6 +115,10 @@ export const requests = pgTable(
     check('requests_total_amount_check', sql`${t.totalAmount} >= 0`),
     check('requests_version_check', sql`${t.version} >= 1`),
     check('requests_reason_length_check', sql`char_length(${t.reason}) <= 500`),
+    check(
+      'requests_close_comment_check',
+      sql`${t.closeComment} is null or (btrim(${t.closeComment}) <> '' and char_length(${t.closeComment}) <= 500)`,
+    ),
     check(
       'requests_draft_without_number_check',
       sql`${t.status} <> 'draft' or ${t.number} is null`,

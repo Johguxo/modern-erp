@@ -102,6 +102,7 @@ describe('availableActions · decisión de aprobación', () => {
 describe('availableActions · administrador (todos los permisos)', () => {
   it('no dueño, con paso pendiente suyo, en aprobación', () => {
     expect(actionsOf('in_approval', 'admin', OTHER, { pendingForMe: true })).toEqual([
+      'cancel',
       'approve',
       'request_changes',
       'reject',
@@ -136,15 +137,36 @@ describe('availableActions · invariantes', () => {
     }
   });
 
-  it('editar y anular son solo del dueño', () => {
+  it('editar es solo del dueño', () => {
     for (const status of REQUEST_STATUSES) {
       const actions = actionsOf(status, 'admin', OTHER, { pendingForMe: true });
       expect(actions).not.toContain('edit_draft');
-      expect(actions).not.toContain('cancel');
     }
   });
 
+  it('anular: el dueño hasta antes de aprobar; cancel_any en lo enviado, nunca un borrador ajeno', () => {
+    const cancellable = (status: RequestStatus, role: Role, userId: string) =>
+      actionsOf(status, role, userId).includes('cancel');
+    for (const status of REQUEST_STATUSES) {
+      const ownerCan = ['draft', 'in_approval', 'changes_requested'].includes(status);
+      expect(cancellable(status, 'requester', OWNER)).toBe(ownerCan);
+      const adminCan = ['in_approval', 'changes_requested', 'approved'].includes(status);
+      expect(cancellable(status, 'admin', OTHER)).toBe(adminCan);
+      expect(cancellable(status, 'warehouse', OTHER)).toBe(false);
+      expect(cancellable(status, 'approver', OTHER)).toBe(false);
+    }
+  });
+
+  it('el dueño sin requests.create (aprobador) no anula', () => {
+    expect(actionsOf('in_approval', 'approver', OWNER)).not.toContain('cancel');
+  });
+
+  it('el dueño con almacén anula en aprobación pero no tras aprobar', () => {
+    expect(actionsOf('in_approval', 'warehouse', OWNER)).toContain('cancel');
+    expect(actionsOf('approved', 'warehouse', OWNER)).not.toContain('cancel');
+  });
+
   it('editar exige requests.create: el aprobador dueño de un borrador no edita', () => {
-    expect(actionsOf('draft', 'approver', OWNER)).toEqual(['cancel', 'download_pdf']);
+    expect(actionsOf('draft', 'approver', OWNER)).toEqual(['download_pdf']);
   });
 });

@@ -125,6 +125,8 @@ function memoryRequests(): RequestRepository & { store: Map<string, RequestWithL
         approvedAt: null,
         deliveredAt: null,
         closedAt: null,
+        closedBy: null,
+        closeComment: null,
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -162,6 +164,9 @@ function memoryRequests(): RequestRepository & { store: Map<string, RequestWithL
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.number !== undefined ? { number: patch.number } : {}),
         ...(patch.submittedAt !== undefined ? { submittedAt: patch.submittedAt } : {}),
+        ...(patch.closedAt !== undefined ? { closedAt: patch.closedAt } : {}),
+        ...(patch.closedBy !== undefined ? { closedBy: patch.closedBy } : {}),
+        ...(patch.closeComment !== undefined ? { closeComment: patch.closeComment } : {}),
         version: found.request.version + 1,
       };
       store.set(id, { request, lines: found.lines });

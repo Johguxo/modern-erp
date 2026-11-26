@@ -148,10 +148,9 @@ test('el solicitante ve el detalle de su SOF, del borrador y del aprobado, y los
   await expect(steps.nth(3)).toContainText(t.timeline.steps.delivery);
   await expect(steps.nth(3)).toContainText(t.timeline.states.upcoming);
 
-  // Botones: el dueño puede anular (aún sin conectar); nadie decide ni corrige.
+  // Botones: el dueño puede anular (abre el diálogo, E3-H5); nadie decide ni corrige.
   const cancel = button(page, t.actions.cancel);
-  await expect(cancel).toBeDisabled();
-  await expect(cancel).toHaveAttribute('aria-describedby', 'detail-soon-note');
+  await expect(cancel).toBeEnabled();
   expect((await cancel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await expect(page.getByText(t.actions.soon)).toHaveCount(1);
   for (const absent of [
@@ -197,7 +196,7 @@ test('el solicitante ve el detalle de su SOF, del borrador y del aprobado, y los
   await expect(
     page.getByRole('complementary', { name: t.timeline.title }).getByRole('listitem'),
   ).toHaveCount(3);
-  await expect(button(page, t.actions.cancel)).toBeDisabled();
+  await expect(button(page, t.actions.cancel)).toBeEnabled();
   await expectNoPageOverflow(page);
   await page.getByRole('link', { name: t.actions.edit_draft }).click();
   await expect(page).toHaveURL(EDIT_URL);

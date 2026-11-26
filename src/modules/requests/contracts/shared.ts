@@ -84,6 +84,8 @@ export const requestViewSchema = z.object({
   approvedAt: z.iso.datetime().nullable(),
   deliveredAt: z.iso.datetime().nullable(),
   closedAt: z.iso.datetime().nullable(),
+  closedBy: z.uuid().nullable(),
+  closeComment: z.string().nullable(),
   version: z.number().int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

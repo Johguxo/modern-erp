@@ -82,26 +82,26 @@ describe('assertSubmittable (G5)', () => {
 });
 
 describe('canView', () => {
-  it('un borrador solo lo ve su solicitante, aunque otro tenga read_all', () => {
-    const draft = { requesterId: 'u1', status: 'draft' as const };
+  it('lo nunca enviado (sin número) solo lo ve su solicitante, aunque otro tenga read_all', () => {
+    const draft = { requesterId: 'u1', number: null };
     expect(canView(draft, viewer('u1'))).toBe(true);
     expect(canView(draft, viewer('u2', ['requests.read_all']))).toBe(false);
   });
 
-  it('lo demás lo ve el solicitante o requests.read_all', () => {
-    const sent = { requesterId: 'u1', status: 'in_approval' as const };
+  it('lo enviado (con número) lo ve el solicitante o requests.read_all', () => {
+    const sent = { requesterId: 'u1', number: 'SOF-0001' };
     expect(canView(sent, viewer('u1'))).toBe(true);
     expect(canView(sent, viewer('u2', ['requests.read_all']))).toBe(true);
     expect(canView(sent, viewer('u2', ['requests.read_own']))).toBe(false);
     expect(canView(sent, viewer('u2'))).toBe(false);
   });
 
-  it('el aprobador asignado ve lo enviado, pero nunca un borrador ajeno', () => {
-    const sent = { requesterId: 'u1', status: 'in_approval' as const };
-    const draft = { requesterId: 'u1', status: 'draft' as const };
+  it('el aprobador asignado ve lo enviado, pero nunca lo que no tiene número', () => {
+    const sent = { requesterId: 'u1', number: 'SOF-0001' };
+    const unsent = { requesterId: 'u1', number: null };
     expect(canView(sent, viewer('u2', ['requests.read_own']), { assigned: true })).toBe(true);
     expect(canView(sent, viewer('u2', ['requests.read_own']), { assigned: false })).toBe(false);
-    expect(canView(draft, viewer('u2', ['requests.read_own']), { assigned: true })).toBe(false);
+    expect(canView(unsent, viewer('u2', ['requests.read_own']), { assigned: true })).toBe(false);
   });
 });
 

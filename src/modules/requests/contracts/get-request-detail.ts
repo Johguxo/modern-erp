@@ -26,6 +26,7 @@ export const timelineItemSchema = z.object({
   state: z.enum(TIMELINE_STATES),
   at: z.iso.datetime().nullable(),
   actorName: z.string().nullable(),
+  comment: z.string().nullable(),
 });
 
 export const outputSchema = z.object({
@@ -36,6 +37,7 @@ export const outputSchema = z.object({
   displayStatus: z.enum([...REQUEST_STATUSES, 'awaiting_my_approval']),
   requesterId: z.uuid(),
   requesterName: z.string().nullable(),
+  closedById: z.uuid().nullable(),
   costCenterLabel: z.string().nullable(),
   equipmentLabel: z.string().nullable(),
   reason: z.string().nullable(),

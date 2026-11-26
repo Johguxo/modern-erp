@@ -50,9 +50,9 @@ Estado: en revisión · Issue: [#19](https://github.com/Johguxo/modern-erp/issue
 
 ### E3-H5 · Anular
 **Criterios de aceptación**
-- [ ] El solicitante anula sus borradores o documentos `in_approval`/`changes_requested`; el admin también los `approved` no entregados.
-- [ ] Comentario obligatorio; evento `cancelled`; los pasos pendientes se cierran.
+- [x] El solicitante anula sus borradores o documentos `in_approval`/`changes_requested`; el admin también los `approved` no entregados.
+- [x] Comentario obligatorio; evento `cancelled`; los pasos pendientes se cierran.
 
 > Nota (E3-H4): la acción `cancel` ya se muestra (deshabilitada) al dueño en `draft`, `in_approval` y `changes_requested` (`availableActions` en `requests/domain/request-actions.ts`). Aquí: conectarla (agregar a `IMPLEMENTED_ACTIONS` en `solicitudes/[id]/_detail/detail-actions.ts`) y decidir la rama admin (propuesta: permiso `requests.cancel_any`, nota en ADR-002).
 
-Estado: pendiente · Issue: [#20](https://github.com/Johguxo/modern-erp/issues/20)
+Estado: en revisión · Issue: [#20](https://github.com/Johguxo/modern-erp/issues/20)

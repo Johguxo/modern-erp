@@ -8,8 +8,12 @@ import { eq, inArray } from 'drizzle-orm';
 import { getDbAdmin } from '@/db/admin';
 import { pgErrorCode } from '@/db/errors';
 import {
+  approvalEvents,
+  approvalInstances,
   approvalPolicies,
   approvalPolicySteps,
+  approvalStepAssignees,
+  approvalSteps,
   auditEvents,
   costCenters,
   documentSequences,
@@ -216,6 +220,13 @@ export function createIdentityFixtures(): IdentityFixtures {
         for (const { id } of created) if (!userIds.includes(id)) userIds.push(id);
       }
       if (tenantIds.length > 0) {
+        // Aprobaciones (E4-H2): eventos, asignados, pasos e instancias apuntan a las solicitudes.
+        await admin.delete(approvalEvents).where(inArray(approvalEvents.tenantId, tenantIds));
+        await admin
+          .delete(approvalStepAssignees)
+          .where(inArray(approvalStepAssignees.tenantId, tenantIds));
+        await admin.delete(approvalSteps).where(inArray(approvalSteps.tenantId, tenantIds));
+        await admin.delete(approvalInstances).where(inArray(approvalInstances.tenantId, tenantIds));
         // Solicitudes (E3-H1): primero, porque apuntan al catálogo y a users.
         await admin
           .delete(requestLineRevisions)

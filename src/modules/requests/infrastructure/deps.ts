@@ -13,6 +13,7 @@ import type {
   ApprovalHistory,
   ApprovalDecider,
   ApprovalStarter,
+  ApprovalTimeline,
   GetRequestDeps,
   GetRequestDetailDeps,
   ListRequestsDeps,
@@ -45,6 +46,7 @@ export interface RequestsExtras {
   readonly assignments?: ApprovalAssignments;
   readonly decider?: ApprovalDecider;
   readonly history?: ApprovalHistory;
+  readonly timeline?: ApprovalTimeline;
 }
 
 export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
@@ -93,13 +95,13 @@ export function createGetRequestDetailDeps(
   tx: DbExecutor,
   extras: Pick<RequestsExtras, 'client'> & {
     readonly assignments: ApprovalAssignments;
-    readonly history: ApprovalHistory;
+    readonly timeline: ApprovalTimeline;
   },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
     labels: createRequestLabels(tx, { client: extras.client }),
-    history: extras.history,
+    timeline: extras.timeline,
   };
 }
 

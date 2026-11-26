@@ -2,9 +2,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildTimeline,
   deriveTimeline,
   TIMELINE_KINDS,
   TIMELINE_STATES,
+  type ApprovalTimelineEntry,
   type TimelineSource,
 } from './request-timeline';
 import { REQUEST_STATUSES, type RequestStatus } from './request-state-machine';
@@ -35,37 +37,48 @@ const source = (
   ...overrides,
 });
 
+/** Un ítem esperado: los campos del paso van vacíos en la línea derivada. */
+const plain = (fields: {
+  kind: string;
+  state: string;
+  at: Date | null;
+  actorId: string | null;
+  comment: string | null;
+}) => ({ ...fields, stepName: null, rule: null, assigneeIds: [] });
+
 const shape = (items: ReturnType<typeof deriveTimeline>) =>
   items.map((entry) => `${entry.kind}:${entry.state}`);
 
 describe('deriveTimeline', () => {
   it('borrador: creada y lo que falta', () => {
     expect(deriveTimeline(source('draft'))).toEqual([
-      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null },
-      { kind: 'approval', state: 'upcoming', at: null, actorId: null, comment: null },
-      { kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null },
+      plain({ kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null }),
+      plain({ kind: 'approval', state: 'upcoming', at: null, actorId: null, comment: null }),
+      plain({ kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null }),
     ]);
   });
 
   it('en aprobación: la aprobación está pendiente', () => {
     const items = deriveTimeline(source('in_approval', { submittedAt: SUBMITTED }));
     expect(items).toEqual([
-      { kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null },
-      { kind: 'submitted', state: 'done', at: SUBMITTED, actorId: REQUESTER, comment: null },
-      { kind: 'approval', state: 'pending', at: null, actorId: null, comment: null },
-      { kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null },
+      plain({ kind: 'created', state: 'done', at: CREATED, actorId: REQUESTER, comment: null }),
+      plain({ kind: 'submitted', state: 'done', at: SUBMITTED, actorId: REQUESTER, comment: null }),
+      plain({ kind: 'approval', state: 'pending', at: null, actorId: null, comment: null }),
+      plain({ kind: 'delivery', state: 'upcoming', at: null, actorId: null, comment: null }),
     ]);
   });
 
   it('cambios solicitados: se detiene ahí y la aprobación vuelve a ser próxima', () => {
     const items = deriveTimeline(source('changes_requested', { submittedAt: SUBMITTED }));
-    expect(items.at(2)).toEqual({
-      kind: 'changes_requested',
-      state: 'stopped',
-      at: UPDATED,
-      actorId: null,
-      comment: null,
-    });
+    expect(items.at(2)).toEqual(
+      plain({
+        kind: 'changes_requested',
+        state: 'stopped',
+        at: UPDATED,
+        actorId: null,
+        comment: null,
+      }),
+    );
     expect(shape(items)).toEqual([
       'created:done',
       'submitted:done',
@@ -75,58 +88,19 @@ describe('deriveTimeline', () => {
     ]);
   });
 
-  it('cambios solicitados con la decisión: lleva autor, comentario y fecha del aprobador', () => {
-    const at = new Date('2026-11-24T09:00:00.000Z');
-    const items = deriveTimeline(source('changes_requested', { submittedAt: SUBMITTED }), {
-      kind: 'request_changes',
-      actorId: ADMIN,
-      comment: 'Falta el equipo',
-      at,
-    });
-    expect(items.at(2)).toEqual({
-      kind: 'changes_requested',
-      state: 'stopped',
-      at,
-      actorId: ADMIN,
-      comment: 'Falta el equipo',
-    });
-  });
-
-  it('rechazada con la decisión: lleva autor y comentario; una decisión de otro tipo no se usa', () => {
-    const at = new Date('2026-11-24T09:00:00.000Z');
-    const rejected = deriveTimeline(source('rejected', { submittedAt: SUBMITTED }), {
-      kind: 'reject',
-      actorId: ADMIN,
-      comment: 'No corresponde',
-      at,
-    });
-    expect(rejected.at(-1)).toEqual({
-      kind: 'rejected',
-      state: 'stopped',
-      at,
-      actorId: ADMIN,
-      comment: 'No corresponde',
-    });
-    const mismatched = deriveTimeline(source('rejected', { submittedAt: SUBMITTED }), {
-      kind: 'request_changes',
-      actorId: ADMIN,
-      comment: 'x',
-      at,
-    });
-    expect(mismatched.at(-1)).toMatchObject({ actorId: null, comment: null });
-  });
-
   it('aprobada: solo la fecha, sin autor', () => {
     const items = deriveTimeline(
       source('approved', { submittedAt: SUBMITTED, approvedAt: APPROVED }),
     );
-    expect(items.at(2)).toEqual({
-      kind: 'approved',
-      state: 'done',
-      at: APPROVED,
-      actorId: null,
-      comment: null,
-    });
+    expect(items.at(2)).toEqual(
+      plain({
+        kind: 'approved',
+        state: 'done',
+        at: APPROVED,
+        actorId: null,
+        comment: null,
+      }),
+    );
     expect(shape(items).slice(3)).toEqual(['delivery:upcoming']);
   });
 
@@ -135,8 +109,8 @@ describe('deriveTimeline', () => {
       source('delivered', { submittedAt: SUBMITTED, approvedAt: APPROVED, deliveredAt: DELIVERED }),
     );
     expect(items.slice(2)).toEqual([
-      { kind: 'approved', state: 'done', at: APPROVED, actorId: null, comment: null },
-      { kind: 'delivery', state: 'done', at: DELIVERED, actorId: null, comment: null },
+      plain({ kind: 'approved', state: 'done', at: APPROVED, actorId: null, comment: null }),
+      plain({ kind: 'delivery', state: 'done', at: DELIVERED, actorId: null, comment: null }),
     ]);
   });
 
@@ -148,13 +122,15 @@ describe('deriveTimeline', () => {
 
   it('anulada sin cierre registrado usa la última actualización', () => {
     const items = deriveTimeline(source('cancelled', { submittedAt: SUBMITTED }));
-    expect(items.at(-1)).toEqual({
-      kind: 'cancelled',
-      state: 'stopped',
-      at: UPDATED,
-      actorId: null,
-      comment: null,
-    });
+    expect(items.at(-1)).toEqual(
+      plain({
+        kind: 'cancelled',
+        state: 'stopped',
+        at: UPDATED,
+        actorId: null,
+        comment: null,
+      }),
+    );
   });
 
   it('anulada: lleva quién anuló y su comentario', () => {
@@ -166,13 +142,15 @@ describe('deriveTimeline', () => {
         closeComment: 'Duplicada',
       }),
     );
-    expect(items.at(-1)).toEqual({
-      kind: 'cancelled',
-      state: 'stopped',
-      at: CLOSED,
-      actorId: ADMIN,
-      comment: 'Duplicada',
-    });
+    expect(items.at(-1)).toEqual(
+      plain({
+        kind: 'cancelled',
+        state: 'stopped',
+        at: CLOSED,
+        actorId: ADMIN,
+        comment: 'Duplicada',
+      }),
+    );
   });
 
   it('un borrador anulado nunca enviado no muestra «enviada»', () => {
@@ -191,5 +169,91 @@ describe('deriveTimeline', () => {
         expect(TIMELINE_STATES).toContain(entry.state);
       }
     }
+  });
+});
+
+describe('buildTimeline', () => {
+  const entry = (
+    kind: ApprovalTimelineEntry['kind'],
+    overrides: Partial<Omit<ApprovalTimelineEntry, 'kind'>> = {},
+  ): ApprovalTimelineEntry => ({
+    kind,
+    at: SUBMITTED,
+    actorId: null,
+    comment: null,
+    stepName: null,
+    rule: null,
+    assigneeIds: [],
+    ...overrides,
+  });
+  const base = (status: RequestStatus) => ({
+    status,
+    requesterId: REQUESTER,
+    createdAt: CREATED,
+    deliveredAt: null,
+  });
+
+  it('en aprobación: creada, hechos, el pendiente, los que esperan y la entrega próxima', () => {
+    const items = buildTimeline(base('in_approval'), [
+      entry('submitted', { actorId: REQUESTER }),
+      entry('step_approved', { actorId: ADMIN, stepName: 'Almacén', comment: 'Hay stock' }),
+      entry('step_pending', { stepName: 'Gerencia', rule: 'all', assigneeIds: [ADMIN] }),
+      entry('step_waiting', { at: null, stepName: 'Dirección', rule: 'any' }),
+    ]);
+    expect(shape(items)).toEqual([
+      'created:done',
+      'submitted:done',
+      'step_approved:done',
+      'approval:pending',
+      'approval:upcoming',
+      'delivery:upcoming',
+    ]);
+    expect(items[2]).toMatchObject({ stepName: 'Almacén', actorId: ADMIN, comment: 'Hay stock' });
+    expect(items[3]).toMatchObject({ stepName: 'Gerencia', rule: 'all', assigneeIds: [ADMIN] });
+    expect(items[4]).toMatchObject({ at: null, stepName: 'Dirección' });
+  });
+
+  it('dos rondas: lo detenido queda como detenido y el reenvío sigue', () => {
+    const items = buildTimeline(base('in_approval'), [
+      entry('submitted'),
+      entry('changes_requested', { actorId: ADMIN, comment: 'Falta el equipo' }),
+      entry('resubmitted'),
+      entry('step_pending', { stepName: 'Almacén', rule: 'any' }),
+    ]);
+    expect(shape(items)).toEqual([
+      'created:done',
+      'submitted:done',
+      'changes_requested:stopped',
+      'resubmitted:done',
+      'approval:pending',
+      'delivery:upcoming',
+    ]);
+  });
+
+  it('con cambios pedidos la entrega sigue próxima; aprobada también', () => {
+    expect(shape(buildTimeline(base('changes_requested'), [entry('changes_requested')]))).toEqual([
+      'created:done',
+      'changes_requested:stopped',
+      'delivery:upcoming',
+    ]);
+    expect(shape(buildTimeline(base('approved'), [entry('approved')])).at(-1)).toBe(
+      'delivery:upcoming',
+    );
+  });
+
+  it('entregada: la entrega queda hecha con su fecha', () => {
+    const items = buildTimeline({ ...base('delivered'), deliveredAt: DELIVERED }, [
+      entry('approved'),
+    ]);
+    expect(items.at(-1)).toMatchObject({ kind: 'delivery', state: 'done', at: DELIVERED });
+  });
+
+  it('rechazada y anulada terminan sin entrega', () => {
+    expect(
+      shape(buildTimeline(base('rejected'), [entry('step_rejected', { comment: 'No' })])),
+    ).toEqual(['created:done', 'rejected:stopped']);
+    expect(
+      shape(buildTimeline(base('cancelled'), [entry('submitted'), entry('cancelled')])),
+    ).toEqual(['created:done', 'submitted:done', 'cancelled:stopped']);
   });
 });

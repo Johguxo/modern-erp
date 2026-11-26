@@ -669,6 +669,8 @@ export const messages = {
         steps: {
           created: 'Solicitud creada',
           submitted: 'Enviada a aprobación',
+          resubmitted: 'Reenviada a aprobación',
+          step_approved: 'Paso aprobado',
           changes_requested: 'Se pidieron cambios',
           approval: 'Aprobación',
           approved: 'Aprobada',

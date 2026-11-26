@@ -38,12 +38,9 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { decideRequestAction } from '../../actions';
 
-const t = messages.requests.detail.decision;
+import { commentRequired, needsReload } from './decision-rules';
 
-/** Aprobar no exige comentario; rechazar y pedir cambios, sí. */
-export function commentRequired(decision: DecisionKind): boolean {
-  return decision !== 'approve';
-}
+const t = messages.requests.detail.decision;
 
 function commentSchema(decision: DecisionKind) {
   const base = z.string().trim();
@@ -52,17 +49,6 @@ function commentSchema(decision: DecisionKind) {
       ? base.min(1).max(DECISION_COMMENT_MAX)
       : base.max(DECISION_COMMENT_MAX),
   });
-}
-
-/** Errores tras los cuales el usuario debe recargar para ver el estado actual. */
-export function needsReload(error: { code: string; reason?: string | undefined }): boolean {
-  return (
-    error.code === 'CONFLICT' ||
-    error.code === 'INVALID_TRANSITION' ||
-    error.reason === 'step_already_decided' ||
-    error.reason === 'not_an_approver' ||
-    error.reason === 'approval_not_started'
-  );
 }
 
 export function DecisionDialog({
@@ -144,6 +130,7 @@ export function DecisionDialog({
                     <Textarea
                       rows={4}
                       autoComplete="off"
+                      aria-required={commentRequired(decision)}
                       placeholder={copy.commentPlaceholder}
                       {...field}
                     />

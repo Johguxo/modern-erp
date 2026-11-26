@@ -15,25 +15,12 @@ import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
 import { DetailHeader } from './_detail/detail-header';
 import { DetailItems } from './_detail/detail-items';
 import { DocumentCard } from './_detail/document-card';
-import { MOBILE_BAR_SPACE, MobileDecisionBar, showsMobileBar } from './_detail/mobile-decision-bar';
+import { decidedNotice } from './_detail/decided-notice';
+import { showsMobileBar } from './_detail/mobile-bar-rules';
+import { MOBILE_BAR_SPACE, MobileDecisionBar } from './_detail/mobile-decision-bar';
 import { TimelinePanel } from './_detail/timeline-panel';
 
 const t = messages.requests.detail;
-
-/** Aviso tras decidir (?decision=<resultado>): solo valores conocidos y para quien no es el dueño. */
-function decidedNotice(
-  param: string | string[] | undefined,
-  notOwner: boolean,
-  number: string | null,
-) {
-  if (!notOwner || typeof param !== 'string') return undefined;
-  const outcome = Object.keys(t.decidedNotice).find((key) => key === param);
-  if (outcome === undefined) return undefined;
-  return {
-    tone: 'success',
-    text: t.decidedNotice[outcome as keyof typeof t.decidedNotice](number),
-  } as const;
-}
 
 // Detalle del SOF (E3-H4, pantalla 3): ítems, documento, línea de tiempo y acciones. Quien no puede
 // ver la solicitud (otro tenant, borrador ajeno, id inválido o sin permisos) recibe 404 y no se
@@ -71,7 +58,12 @@ export default async function RequestPage({
         ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
         : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
           ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
-          : decidedNotice(decision, detail.requesterId !== ctx.userId, detail.number);
+          : decidedNotice(
+              decision,
+              detail.status,
+              detail.requesterId !== ctx.userId,
+              detail.number,
+            );
 
   const mobileBar = showsMobileBar(detail, ctx.readOnly);
 

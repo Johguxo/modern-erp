@@ -77,10 +77,10 @@ test('el solicitante anula un borrador y uno en aprobación, con comentario obli
   const confirm = dialog.getByRole('button', { name: dialogText.submit });
   const backBox = await back.boundingBox();
   const confirmBox = await confirm.boundingBox();
-  // Redondeado: en el celular el alto llega con una fracción de píxel (43.99).
-  expect(
-    Math.round(Math.min(backBox?.height ?? 0, confirmBox?.height ?? 0)),
-  ).toBeGreaterThanOrEqual(44);
+  // Tolerancia: en el celular el alto llega con una fracción de píxel (43.99).
+  expect(Math.min(backBox?.height ?? 0, confirmBox?.height ?? 0)).toBeGreaterThanOrEqual(43.9);
+  const closeBox = await dialog.getByRole('button', { name: messages.common.close }).boundingBox();
+  expect(Math.min(closeBox?.width ?? 0, closeBox?.height ?? 0)).toBeGreaterThanOrEqual(43.9);
   if (isMobile(page)) {
     expect(Math.abs((backBox?.x ?? 0) - (confirmBox?.x ?? 99))).toBeLessThan(2);
     expect(Math.abs((backBox?.y ?? 0) - (confirmBox?.y ?? 0))).toBeGreaterThan(20);
@@ -193,6 +193,11 @@ test('almacén ve lo anulado pero no anula; un borrador anulado ajeno sigue ocul
   await expect(last).toContainText(t.timeline.steps.cancelled);
   await expect(last).toContainText('Cambió el alcance de la obra');
   await expect(page.getByRole('button', { name: t.actions.cancel })).toHaveCount(0);
+
+  // El aviso «Anulaste…» es solo de quien anuló: otro usuario con ?anulado=1 no lo ve.
+  await page.goto(`/solicitudes/${cancelledId}?anulado=1`);
+  await expect(page.getByRole('heading', { level: 1, name: /SOF-0402/ })).toBeVisible();
+  await expect(page.getByText(t.cancelledNotice('SOF-0402'))).toHaveCount(0);
 
   // El borrador anulado nunca se envió: sigue privado aunque tenga requests.read_all.
   await expectNotFound(page, `/solicitudes/${cancelledDraftId}`);

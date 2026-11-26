@@ -146,7 +146,9 @@ describe('grants de app_user', () => {
     expect(row).toMatchObject({ reason: 'ok', totalAmount: '5.00', version: 2 });
   });
 
-  it('requests: closed_by y close_comment sí se actualizan (migración 0014); closed_by no apunta a otro tenant', async () => {
+  // La FK de closed_by es global (como requester_id): que el autor pertenezca al tenant lo garantiza
+  // el caso de uso con ctx.userId, no la base de datos.
+  it('requests: closed_by y close_comment sí se actualizan (migración 0014)', async () => {
     const id = await insertRequest(A, {
       status: 'cancelled',
       number: 'SOF-8801',

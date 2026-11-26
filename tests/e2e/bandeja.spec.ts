@@ -168,7 +168,7 @@ test('la bandeja muestra resumen, pestañas, búsqueda y navega al detalle y al 
   await expect(
     page.getByRole('heading', {
       level: 1,
-      name: messages.requests.detail.title('SOF-0101', 'Reposición de pernos'),
+      name: messages.requests.detail.title('SOF-0101', 'Mantenimiento'),
     }),
   ).toBeVisible();
   await page.goBack();

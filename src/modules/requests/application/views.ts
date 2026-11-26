@@ -119,6 +119,8 @@ export interface RequestDetail {
   readonly displayStatus: DisplayStatus;
   readonly requesterId: string;
   readonly requesterName: string | null;
+  /** Quién cerró (anuló) el documento; null si sigue abierto. */
+  readonly closedById: string | null;
   readonly costCenterLabel: string | null;
   /** «CODE · Nombre» del equipo de la cabecera. */
   readonly equipmentLabel: string | null;

@@ -50,7 +50,7 @@ export default async function RequestPage({
     detail.requesterId === ctx.userId &&
     detail.status === 'in_approval'
       ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
-      : anulado === '1' && detail.status === 'cancelled'
+      : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
         ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
         : undefined;
 

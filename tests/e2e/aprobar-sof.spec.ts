@@ -89,6 +89,8 @@ test('aprobación completa en dos pasos, con el contador de la bandeja', async (
   page,
   accounts,
 }) => {
+  // Flujo largo (varios inicios de sesión y rondas): necesita más que el tiempo por defecto.
+  test.slow();
   const world = await seedWorld(accounts);
   await sendDraft(page, world);
 
@@ -205,6 +207,8 @@ test('pedir cambios, editar y reenviar vuelve a abrir la aprobación', async ({
   page,
   accounts,
 }) => {
+  // Flujo largo (varios inicios de sesión y rondas): necesita más que el tiempo por defecto.
+  test.slow();
   const world = await seedWorld(accounts);
   await sendDraft(page, world);
 

@@ -20,6 +20,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -59,13 +60,18 @@ export function CancelRequestDialog({
     comment: '',
   });
   const used = form.watch('comment').trim().length;
+  const left = CANCEL_COMMENT_MAX - used;
 
   const onSubmit = form.handleSubmit(async (values) => {
     // La versión viene de la página (puede haberse recargado desde que se abrió el formulario).
     const result = await cancelRequestAction({ ...values, id: requestId, version });
     if (!result.ok) {
       applyActionError(form.setError, result.error);
-      setReload(result.error.code === 'CONFLICT' || result.error.code === 'INVALID_TRANSITION');
+      setReload(
+        result.error.code === 'CONFLICT' ||
+          result.error.code === 'INVALID_TRANSITION' ||
+          (result.error.code === 'FORBIDDEN' && result.error.reason === 'cancel_not_allowed'),
+      );
       return;
     }
     setOpen(false);
@@ -115,20 +121,29 @@ export function CancelRequestDialog({
                       {...field}
                     />
                   </FormControl>
-                  <p
-                    aria-live="polite"
-                    className={cn(
-                      'text-[13px] text-muted-foreground',
-                      used > CANCEL_COMMENT_MAX && 'text-danger',
-                    )}
+                  <FormDescription
+                    className={cn('text-[13px]', used > CANCEL_COMMENT_MAX && 'text-danger')}
                   >
                     {t.cancel.counter(used, CANCEL_COMMENT_MAX)}
+                  </FormDescription>
+                  {/* Aviso hablado aparte: solo cuando quedan pocos caracteres o se pasó. */}
+                  <p aria-live="polite" className="sr-only">
+                    {left <= 50 ? t.cancel.remaining(left) : ''}
                   </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <DialogFooter>
+            {/* Orden en el DOM = orden de tabulación y de lectura: Anular, Volver, Recargar. En el
+                celular se apilan en ese orden; desde sm se invierte la fila para dejar Anular a la
+                derecha. */}
+            <DialogFooter className="flex-col sm:flex-row-reverse sm:justify-start">
+              <Button type="submit" variant="destructive" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? t.cancel.submitting : t.cancel.submit}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                {t.cancel.back}
+              </Button>
               {reload ? (
                 <Button
                   type="button"
@@ -141,12 +156,6 @@ export function CancelRequestDialog({
                   {t.cancel.reload}
                 </Button>
               ) : null}
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                {t.cancel.back}
-              </Button>
-              <Button type="submit" variant="destructive" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? t.cancel.submitting : t.cancel.submit}
-              </Button>
             </DialogFooter>
           </form>
         </Form>

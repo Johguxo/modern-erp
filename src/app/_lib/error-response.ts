@@ -9,6 +9,9 @@ import { messages } from '@/ui/messages/es-PE';
 
 type Reasons = typeof messages.errors.reasons;
 
+/** Motivos que la UI necesita para decidir qué ofrecer (p. ej. «Recargar»); el resto no sale. */
+const CLIENT_REASONS: ReadonlySet<string> = new Set(['cancel_not_allowed']);
+
 function messageFor(
   code: ErrorCode,
   reason?: string,
@@ -43,6 +46,7 @@ export function toActionError(error: unknown, requestId: string, logger: Logger)
     return {
       code: error.code,
       message: messageFor(error.code, error.reason, error.params),
+      ...(error.reason && CLIENT_REASONS.has(error.reason) ? { reason: error.reason } : {}),
       // Por código y no por instanceof (misma razón que la marca de DomainError).
       fieldErrors:
         error.code === 'VALIDATION' && 'fieldErrors' in error

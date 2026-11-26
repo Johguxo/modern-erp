@@ -642,6 +642,11 @@ export const messages = {
         commentLabel: 'Comentario (obligatorio)',
         commentPlaceholder: 'Cuenta por qué se anula esta solicitud',
         counter: (used: number, max: number) => `${used} / ${max}`,
+        // Aviso para lectores de pantalla: solo cuando quedan pocos caracteres o se pasó.
+        remaining: (left: number) =>
+          left < 0
+            ? `Te pasaste por ${-left} ${left === -1 ? 'carácter' : 'caracteres'}`
+            : `Quedan ${left} ${left === 1 ? 'carácter' : 'caracteres'}`,
         submit: 'Anular solicitud',
         submitting: 'Anulando…',
         back: 'Volver',

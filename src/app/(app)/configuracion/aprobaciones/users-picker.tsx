@@ -30,7 +30,6 @@ export function UsersPicker({
   value,
   onChange,
   disabled,
-  invalid,
 }: {
   /** Miembros activos que se pueden elegir. */
   members: readonly PickerMember[];
@@ -39,7 +38,6 @@ export function UsersPicker({
   value: readonly string[];
   onChange: (userIds: string[]) => void;
   disabled?: boolean;
-  invalid?: boolean;
 }) {
   const baseId = useId();
   const [query, setQuery] = useState('');
@@ -64,8 +62,8 @@ export function UsersPicker({
                 key={userId}
                 className={
                   inactive
-                    ? 'flex items-center gap-1 rounded-full border border-warning-border bg-warning-bg py-1 pr-1 pl-3 text-[13px] text-warning-text'
-                    : 'flex items-center gap-1 rounded-full border border-border bg-background py-1 pr-1 pl-3 text-[13px]'
+                    ? 'flex items-center gap-1 rounded-full border border-warning-border bg-warning-bg py-0 pr-0 pl-3 text-[13px] text-warning-text'
+                    : 'flex items-center gap-1 rounded-full border border-border bg-background py-0 pr-0 pl-3 text-[13px]'
                 }
               >
                 <span>{inactive ? `${name} (${t.inactiveTag})` : name}</span>
@@ -74,7 +72,7 @@ export function UsersPicker({
                   disabled={disabled}
                   aria-label={t.removeUser(name)}
                   onClick={() => toggle(userId, false)}
-                  className="flex size-7 items-center justify-center rounded-full hover:bg-accent disabled:opacity-50"
+                  className="flex size-11 items-center justify-center rounded-full hover:bg-accent disabled:opacity-50"
                 >
                   <XIcon aria-hidden="true" className="size-3.5" />
                 </button>
@@ -89,7 +87,6 @@ export function UsersPicker({
         onChange={(event) => setQuery(event.target.value)}
         placeholder={t.usersSearch}
         aria-label={t.usersSearch}
-        aria-invalid={invalid || undefined}
         disabled={disabled}
       />
       <div className="max-h-48 overflow-y-auto rounded-md border border-border">

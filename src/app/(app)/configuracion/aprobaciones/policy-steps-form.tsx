@@ -3,7 +3,7 @@
 // Formulario de los pasos de la política SOF (E4-H1): una tarjeta por paso, que se reordena con
 // Subir y Bajar. Los avisos (rol sin miembros, usuarios desactivados) se recalculan en vivo con la
 // misma función del servidor. En solo lectura queda deshabilitado (el servidor igual bloquea).
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useFieldArray } from 'react-hook-form';
 
 import type { PolicyView } from '@/modules/approvals';
@@ -21,6 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  useFormField,
 } from '@/ui/components/form';
 import { Input } from '@/ui/components/input';
 import { NativeSelect } from '@/ui/components/native-select';
@@ -57,6 +58,28 @@ function Warning({ children }: { children: string }) {
   );
 }
 
+/**
+ * Etiqueta, selector y mensaje del campo de usuarios. El selector no es un control único, así que
+ * se agrupa y el grupo lleva la etiqueta y apunta al mensaje de error.
+ */
+function UsersFieldBody({ children }: { children: ReactNode }) {
+  const { formItemId, formMessageId, error } = useFormField();
+  const labelId = `${formItemId}-label`;
+  return (
+    <>
+      <FormLabel id={labelId}>{t.users}</FormLabel>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        aria-describedby={error ? formMessageId : undefined}
+      >
+        {children}
+      </div>
+      <FormMessage />
+    </>
+  );
+}
+
 export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; readOnly: boolean }) {
   const [view, setView] = useState(policy);
   const [notice, setNotice] = useState<string>();
@@ -74,6 +97,10 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
     const result = await updatePolicyStepsAction(values);
     if (!result.ok) {
       applyActionError(form.setError, result.error);
+      // Texto propio de esta pantalla (el genérico habla de «documento»).
+      if (result.error.reason === 'stale_version') {
+        form.setError('root.server', { type: 'server', message: t.stale });
+      }
       return;
     }
     setView(result.data);
@@ -81,7 +108,11 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
     setNotice(t.saved);
   });
 
-  const disabled = readOnly || form.formState.isSubmitting;
+  // Con pasos que esta pantalla no sabe editar, guardar los borraría: solo se puede mirar.
+  const locked = readOnly || view.hasReservedSteps;
+  const disabled = locked || form.formState.isSubmitting;
+  // El aviso de guardado se va en cuanto el usuario vuelve a editar.
+  const shownNotice = form.formState.isDirty ? '' : (notice ?? '');
 
   return (
     <Form {...form}>
@@ -91,16 +122,20 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
         noValidate
       >
         <p className="text-[13px] font-medium text-muted-foreground">{t.policyLabel(view.name)}</p>
-        {notice ? (
-          <p
-            role="status"
-            className="rounded-md border border-border bg-surface px-3 py-2 text-foreground"
-          >
-            {notice}
-          </p>
-        ) : null}
+        {view.hasReservedSteps ? <Warning>{t.reservedSteps}</Warning> : null}
+        {/* Siempre montado: los lectores de pantalla solo anuncian los cambios de su texto. */}
+        <p
+          role="status"
+          className={
+            shownNotice
+              ? 'rounded-md border border-border bg-surface px-3 py-2 text-foreground'
+              : 'empty:-mt-4'
+          }
+        >
+          {shownNotice}
+        </p>
         <FormError message={form.formState.errors.root?.server?.message} />
-        <fieldset disabled={readOnly} className="flex min-w-0 flex-col gap-4">
+        <fieldset disabled={locked} className="flex min-w-0 flex-col gap-4">
           <legend className="sr-only">{t.stepsLabel}</legend>
           {fields.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border bg-surface p-5 text-muted-foreground">
@@ -111,7 +146,6 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
               {fields.map((field, index) => {
                 const step = steps[index];
                 const warnings = step ? stepWarnings(step, view.members) : [];
-                const errors = form.formState.errors.steps?.[index];
                 return (
                   <li key={field.id}>
                     <fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-4 md:p-5">
@@ -171,16 +205,15 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
                           name={`steps.${index}.userIds`}
                           render={({ field: usersField }) => (
                             <FormItem>
-                              <FormLabel>{t.users}</FormLabel>
-                              <UsersPicker
-                                members={view.members}
-                                names={names}
-                                value={usersField.value}
-                                onChange={usersField.onChange}
-                                disabled={disabled}
-                                invalid={Boolean(errors?.userIds)}
-                              />
-                              <FormMessage />
+                              <UsersFieldBody>
+                                <UsersPicker
+                                  members={view.members}
+                                  names={names}
+                                  value={usersField.value}
+                                  onChange={usersField.onChange}
+                                  disabled={disabled}
+                                />
+                              </UsersFieldBody>
                             </FormItem>
                           )}
                         />
@@ -234,6 +267,7 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
                           type="button"
                           variant="outline"
                           disabled={disabled || index === 0}
+                          aria-label={t.moveUpStep(index + 1)}
                           onClick={() => move(index, index - 1)}
                         >
                           {t.moveUp}
@@ -242,6 +276,7 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
                           type="button"
                           variant="outline"
                           disabled={disabled || index === fields.length - 1}
+                          aria-label={t.moveDownStep(index + 1)}
                           onClick={() => move(index, index + 1)}
                         >
                           {t.moveDown}
@@ -250,6 +285,7 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
                           type="button"
                           variant="outline"
                           disabled={disabled}
+                          aria-label={t.removeStep(index + 1)}
                           onClick={() => remove(index)}
                         >
                           {t.remove}

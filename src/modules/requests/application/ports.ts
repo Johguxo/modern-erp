@@ -9,7 +9,8 @@ import type { DecisionKind, DecisionOutcome } from '../domain/decision';
 import type { InboxScope, InboxTab } from '../domain/inbox';
 import type { Currency } from '../domain/money';
 import type { SequenceState } from '../domain/numbering';
-import type { Request, RequestLine } from '../domain/request';
+import type { LineSyncPlan } from '../domain/line-sync';
+import type { LineInsert, Request, RequestLine } from '../domain/request';
 import type { ApprovalTimelineEntry } from '../domain/request-timeline';
 import type { RequestStatus } from '../domain/request-state-machine';
 
@@ -154,18 +155,7 @@ export interface HeaderInsert {
   readonly totalAmount: string;
 }
 
-export interface LineInsert {
-  readonly lineNo: number;
-  readonly productId: string;
-  readonly productCode: string;
-  readonly description: string;
-  readonly unit: string;
-  readonly equipmentId: string | null;
-  readonly quantity: string;
-  readonly unitPrice: string;
-  readonly subtotal: string;
-  readonly notes: string | null;
-}
+export type { LineInsert };
 
 export interface HeaderPatch {
   readonly costCenterId?: string | null;
@@ -195,6 +185,12 @@ export interface RequestRepository {
     requestId: string,
     lines: readonly LineInsert[],
   ): Promise<RequestLine[]>;
+  /**
+   * Edición en sitio de un SOF ya enviado («Cambios solicitados»): actualiza las líneas emparejadas,
+   * inserta las nuevas y marca como `removed` las que sobran (nunca borra: las revisiones apuntan a
+   * la línea). Devuelve todas las líneas de la solicitud, quitadas incluidas, por `lineNo`.
+   */
+  syncLines(tenantId: string, requestId: string, plan: LineSyncPlan): Promise<RequestLine[]>;
   /**
    * `update … where id and tenant_id and version = :v` y `version = version + 1`.
    * ConflictError stale_version si ninguna fila coincide.

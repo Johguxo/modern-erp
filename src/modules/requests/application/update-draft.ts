@@ -1,9 +1,10 @@
-// Editar un borrador propio (requests.create): reemplaza encabezado y líneas con bloqueo optimista
-// (`version`). Solo en borrador; después del envío, E4 decide cómo se corrige.
+// Editar un borrador propio (requests.create), o un SOF en «Cambios solicitados» antes de reenviarlo:
+// reemplaza el encabezado y las líneas (en sitio si ya se envió) con bloqueo optimista (`version`).
 import { recordAudit } from '@/modules/identity';
 import { requirePermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 
+import { planLineSync } from '../domain/line-sync';
 import { assertEditable } from '../domain/request';
 
 import { resolveDraft, type LineDraft } from './catalog-snapshot';
@@ -43,7 +44,16 @@ export async function updateDraft(
     deps.catalog,
   );
 
-  const lines = await deps.requests.replaceLines(ctx.tenantId, current.request.id, resolved.lines);
+  // Borrador: se reemplazan las líneas. Ya enviado («Cambios solicitados»): edición en sitio, porque
+  // las revisiones apuntan a las líneas (E4-H4).
+  const lines =
+    current.request.status === 'draft'
+      ? await deps.requests.replaceLines(ctx.tenantId, current.request.id, resolved.lines)
+      : await deps.requests.syncLines(
+          ctx.tenantId,
+          current.request.id,
+          planLineSync(current.lines, resolved.lines),
+        );
   const request = await deps.requests.updateHeader(
     ctx.tenantId,
     current.request.id,
@@ -63,7 +73,7 @@ export async function updateDraft(
       entityType: 'request',
       entityId: request.id,
       data: {
-        lineCount: lines.length,
+        lineCount: lines.filter((line) => line.status === 'active').length,
         totalAmount: request.totalAmount,
         previousTotalAmount: current.request.totalAmount,
         version: request.version,

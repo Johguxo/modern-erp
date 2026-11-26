@@ -522,7 +522,12 @@ describe('decidir', () => {
       ),
     );
     expect(edited.status).toBe('changes_requested');
-    expect(edited.lines).toHaveLength(1);
+    // La edición es en sitio: la línea sobrante queda quitada, no borrada (E4-H4).
+    expect(edited.lines.map((l) => [l.lineNo, l.status])).toEqual([
+      [1, 'active'],
+      [2, 'removed'],
+    ]);
+    expect(edited.totalAmount).toBe('37.50');
     const seqBefore = await sequenceOf(W.world.tenantId);
     const resent = await runRequests(W.world.ctx, (deps) =>
       submitRequest(W.world.ctx, { id: sent.id, version: edited.version }, deps),

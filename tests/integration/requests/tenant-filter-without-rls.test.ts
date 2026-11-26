@@ -87,6 +87,38 @@ describe('los repositorios de requests filtran por tenantId sin RLS', () => {
     expect((await requestRepo().find(B.tenantId, requestB))?.lines).toHaveLength(1);
   });
 
+  it('syncLines no actualiza, quita ni inserta líneas de otro tenant', async () => {
+    const before = await requestRepo().find(B.tenantId, requestB);
+    const line = before?.lines[0];
+    if (!line) throw new Error('sin línea');
+
+    const lines = await requestRepo().syncLines(A.tenantId, requestB, {
+      updates: [
+        {
+          id: line.id,
+          line: {
+            ...line,
+            productId: line.productId,
+            lineNo: line.lineNo,
+            productCode: 'HACK',
+            description: 'x',
+            unit: 'UND',
+            equipmentId: null,
+            quantity: '9.000',
+            unitPrice: '1.0000',
+            subtotal: '9.00',
+            notes: null,
+          },
+        },
+      ],
+      inserts: [],
+      removed: [line.id],
+    });
+
+    expect(lines).toEqual([]);
+    expect((await requestRepo().find(B.tenantId, requestB))?.lines).toEqual(before?.lines);
+  });
+
   it('la secuencia: find, lockForUpdate y update respetan el tenant', async () => {
     expect((await sequenceRepo().find(A.tenantId, 'SOF'))?.prefix).toBe('AAA-');
     expect((await sequenceRepo().find(B.tenantId, 'SOF'))?.prefix).toBe('BBB-');

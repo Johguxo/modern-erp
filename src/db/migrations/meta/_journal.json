@@ -92,6 +92,20 @@
       "when": 1795619949940,
       "tag": "0012_document_sequences_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795694282604,
+      "tag": "0013_requests_close_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795694291277,
+      "tag": "0014_requests_close_privileges",
+      "breakpoints": true
     }
   ]
 }

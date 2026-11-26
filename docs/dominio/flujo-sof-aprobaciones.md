@@ -122,6 +122,13 @@ Es el requisito diferencial del producto. Una corrección **nunca borra** firmas
 
 Cada acción crea un evento inmutable: `created`, `submitted`, `step_pending`, `step_approved`, `step_rejected`, `changes_requested`, `resubmitted`, `line_corrected`, `reconfirmation_requested`, `approved`, `delivered`, `cancelled`, `reminder_sent`. La pantalla 3 dibuja la línea de tiempo a partir de estos eventos y de los pasos.
 
+Cómo se arma (E4-H3):
+- **Orden:** primero «Solicitud creada»; luego los eventos de todas las rondas, ordenados por `created_at`; al final, el paso `pending` de la ronda vigente con los asignados que faltan («Ruby o Sergio» si basta uno, «Ruby y Sergio» si deben aprobar todos) y los pasos `waiting`, en gris. La entrega va como próxima mientras no esté entregada.
+- **Qué no se dibuja:** `step_pending`, los pasos `skipped` y los tipos que la pantalla aún no conoce.
+- **Regla `all`:** una firma que no cierra el paso se muestra como «Aprobación parcial · {paso}»; cuando firma el último, sale «Aprobado por {paso}».
+- **Rondas anteriores:** un pedido de cambios queda detenido, seguido de «Reenviada a aprobación». Mientras el SOF está en «Cambios solicitados», la aprobación figura como próxima.
+- **Sin instancia** (borradores, anulados antes de enviar): la línea se deriva de las fechas de la solicitud.
+
 ## 7. Numeración
 
 - Al pasar de `draft` a `in_approval` se asigna el número (`SOF-0143`) desde `document_sequences` con bloqueo de fila (`SELECT ... FOR UPDATE`), para no repetir números con usuarios simultáneos.

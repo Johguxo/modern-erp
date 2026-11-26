@@ -30,12 +30,16 @@ Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/2
 
 > Nota (E3-H1/H2): `submitRequest` llama al puerto `ApprovalStarter` (hoy `noopApprovalStarter`). Aquí se reemplaza por el real. Los SOF enviados antes de esta historia quedaron en `in_approval` sin instancia: crearles su instancia (o confirmar que no hay ninguno en producción).
 
+> Nota (E3-H4): el detalle ya muestra `approve`, `request_changes`, `reject` (si `pendingForMe`) y `resubmit` (dueño en `changes_requested`) deshabilitados. Aquí: conectarlos (con `stepId`) y agregarlos a `IMPLEMENTED_ACTIONS`; `pendingForMe` puede pasar a un `isPending(ctx, id)` del puerto `ApprovalAssignments`.
+
 Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
 
 ### E4-H3 · Línea de tiempo
 **Criterios de aceptación**
 - [ ] `getTimeline(requestId)` combina eventos y pasos futuros en una lista ordenada para la interfaz.
 - [ ] Panel de la pantalla 3 igual al prototipo: hechos en verde con check, pendiente en ámbar, futuros en gris; cada ítem con quién y cuándo (zona del tenant).
+
+> Nota (E3-H4): la línea de tiempo sale hoy de `deriveTimeline` (fechas de la solicitud, sin autor en aprobada/rechazada/anulada). Aquí: puerto `ApprovalTimeline` con `approval_events`; `deriveTimeline` queda de respaldo para SOF sin instancia. El tipo `TimelineItem` ya trae `actorName`, `title` y `comment`.
 
 Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/23)
 
@@ -49,5 +53,7 @@ Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Aviso naranja y línea resaltada en la pantalla 3 (texto del prototipo).
 - [ ] Evento `line_corrected` con antes/después; aviso informativo a quienes ya aprobaron.
 - [ ] Pruebas unitarias de las tres ramas de la regla y una E2E del caso del prototipo (cambiar `GEN-046` por `GEN-045`).
+
+> Nota (E3-H4): `correct_line` ya se muestra (deshabilitada) a quien tiene `requests.correct_line` en `in_approval`/`approved`. El resaltado y el aviso de línea corregida usan `revision`/`needsReconfirmation`, que ya vienen en la vista; la columna # muestra `lineNo`.
 
 Estado: pendiente · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)

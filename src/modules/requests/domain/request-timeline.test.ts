@@ -230,15 +230,44 @@ describe('buildTimeline', () => {
     ]);
   });
 
-  it('con cambios pedidos la entrega sigue próxima; aprobada también', () => {
+  it('con cambios pedidos la aprobación y la entrega siguen próximas; aprobada también', () => {
     expect(shape(buildTimeline(base('changes_requested'), [entry('changes_requested')]))).toEqual([
       'created:done',
       'changes_requested:stopped',
+      'approval:upcoming',
       'delivery:upcoming',
     ]);
     expect(shape(buildTimeline(base('approved'), [entry('approved')])).at(-1)).toBe(
       'delivery:upcoming',
     );
+  });
+
+  it('una firma parcial se dibuja como hecha, con su propio tipo', () => {
+    const items = buildTimeline(base('in_approval'), [
+      entry('submitted'),
+      entry('step_signed', { actorId: ADMIN, stepName: 'Almacén', rule: 'all', comment: 'Ok' }),
+      entry('step_pending', { stepName: 'Almacén', rule: 'all', assigneeIds: [REQUESTER] }),
+    ]);
+    expect(shape(items)).toEqual([
+      'created:done',
+      'submitted:done',
+      'step_signed:done',
+      'approval:pending',
+      'delivery:upcoming',
+    ]);
+    expect(items[2]).toMatchObject({ actorId: ADMIN, stepName: 'Almacén', comment: 'Ok' });
+  });
+
+  it('anulada con cambios pedidos antes: termina en «anulada» sin aprobación ni entrega', () => {
+    expect(
+      shape(
+        buildTimeline(base('cancelled'), [
+          entry('submitted'),
+          entry('changes_requested'),
+          entry('cancelled', { comment: 'Duplicada' }),
+        ]),
+      ),
+    ).toEqual(['created:done', 'submitted:done', 'changes_requested:stopped', 'cancelled:stopped']);
   });
 
   it('entregada: la entrega queda hecha con su fecha', () => {

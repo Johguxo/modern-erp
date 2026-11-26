@@ -158,11 +158,12 @@ describe('línea de tiempo con instancia', () => {
     expect(shape(detail)).toEqual([
       'created:done',
       'submitted:done',
-      'step_approved:done:Almacén',
+      'step_signed:done:Almacén',
       'approval:pending:Almacén',
       'approval:upcoming:Gerencia local',
       'delivery:upcoming',
     ]);
+    expect(detail.timeline[2]).toMatchObject({ actorName: 'Ana Almacén' });
     expect(detail.timeline[3]).toMatchObject({ rule: 'all', assigneeNames: ['Rosa Almacén'] });
   });
 
@@ -179,6 +180,7 @@ describe('línea de tiempo con instancia', () => {
       'created:done',
       'submitted:done',
       'changes_requested:stopped:Almacén',
+      'approval:upcoming',
       'delivery:upcoming',
     ]);
     expect(stopped.timeline[2]).toMatchObject({
@@ -236,6 +238,31 @@ describe('línea de tiempo con instancia', () => {
       'Ronda 2: no corresponde',
     ]);
     expect(detail.timeline.at(-1)?.actorName).toBe('Ana Almacén');
+  });
+
+  it('anular con cambios pedidos: la línea termina en «anulada», sin aprobación ni entrega', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    const asked = await decideAs(
+      W.ana,
+      decision(sent, await stepIdOf(sent.id, 1), 'request_changes', 'Falta el equipo'),
+    );
+    await runRequests(W.world.ctx, (deps) =>
+      cancelRequest(
+        W.world.ctx,
+        { id: sent.id, version: asked.version, comment: 'Ya no se necesita' },
+        deps,
+      ),
+    );
+    const detail = await detailOf(W.world.ctx, sent.id);
+
+    expect(shape(detail)).toEqual([
+      'created:done',
+      'submitted:done',
+      'changes_requested:stopped:Almacén',
+      'cancelled:stopped',
+    ]);
+    expect(detail.timeline.at(-1)).toMatchObject({ comment: 'Ya no se necesita' });
   });
 
   it('anular una enviada: quién anuló y el comentario, sin pasos abiertos ni entrega', async () => {

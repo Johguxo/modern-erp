@@ -27,6 +27,7 @@ describe('createApprovalTimeline', () => {
               createdAt: new Date('2026-11-25T14:00:00.000Z'),
               stepName: null,
               stepRule: null,
+              stepClosed: null,
             },
           ],
           openSteps: [],

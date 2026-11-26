@@ -3,11 +3,15 @@
 import type { InstanceStatus } from './approval-instance';
 import type { StepRule } from './route-preview';
 
-/** Lo que se dibuja: los eventos con hito propio y los pasos abiertos de la ronda vigente. */
+/**
+ * Lo que se dibuja: los eventos con hito propio y los pasos abiertos de la ronda vigente.
+ * `step_signed` es la firma parcial de un paso `all` que sigue abierto.
+ */
 export const TIMELINE_ENTRY_KINDS = [
   'submitted',
   'resubmitted',
   'step_approved',
+  'step_signed',
   'step_rejected',
   'changes_requested',
   'approved',
@@ -39,6 +43,11 @@ export interface TimelineEventRow {
   readonly createdAt: Date;
   readonly stepName: string | null;
   readonly stepRule: StepRule | null;
+  /**
+   * `data.stepClosed` del evento: false cuando la firma no cerró el paso (regla `all`); null si el
+   * evento no lo trae (datos viejos o eventos de otro tipo), que se trata como cerrado.
+   */
+  readonly stepClosed: boolean | null;
 }
 
 /** Un paso `pending` o `waiting` de la ronda vigente. */
@@ -83,8 +92,10 @@ export function buildApprovalTimeline(source: ApprovalTimelineSource): ApprovalT
   const entries: ApprovalTimelineEntry[] = [];
   for (const event of events) {
     if (!isDrawn(event.type)) continue;
+    // La firma parcial (regla `all`, el paso sigue abierto) se dibuja aparte de «aprobado».
+    const partial = event.type === 'step_approved' && event.stepClosed === false;
     entries.push({
-      kind: event.type,
+      kind: partial ? 'step_signed' : event.type,
       at: event.createdAt,
       actorId: event.actorUserId,
       comment: event.comment,

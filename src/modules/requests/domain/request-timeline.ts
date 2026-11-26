@@ -8,6 +8,7 @@ export const TIMELINE_KINDS = [
   'submitted',
   'resubmitted',
   'step_approved',
+  'step_signed',
   'changes_requested',
   'approval',
   'approved',
@@ -35,7 +36,7 @@ export interface TimelineItem {
   readonly actorId: string | null;
   /** Comentario del hito (la anulación guarda el suyo); null si no tiene. */
   readonly comment: string | null;
-  /** Nombre del paso tal como lo escribió el admin (`step_approved` y `approval`); si no, null. */
+  /** Nombre del paso tal como lo escribió el admin (`step_approved`, `step_signed` y `approval`); si no, null. */
   readonly stepName: string | null;
   /** Regla del paso (`approval`): `any` espera a uno, `all` a todos. */
   readonly rule: 'any' | 'all' | null;
@@ -124,6 +125,7 @@ export interface ApprovalTimelineEntry {
     | 'submitted'
     | 'resubmitted'
     | 'step_approved'
+    | 'step_signed'
     | 'step_rejected'
     | 'changes_requested'
     | 'approved'
@@ -143,6 +145,7 @@ const ENTRY_VIEW = {
   submitted: { kind: 'submitted', state: 'done' },
   resubmitted: { kind: 'resubmitted', state: 'done' },
   step_approved: { kind: 'step_approved', state: 'done' },
+  step_signed: { kind: 'step_signed', state: 'done' },
   step_rejected: { kind: 'rejected', state: 'stopped' },
   changes_requested: { kind: 'changes_requested', state: 'stopped' },
   approved: { kind: 'approved', state: 'done' },
@@ -176,8 +179,11 @@ export function buildTimeline(
     });
   }
   switch (request.status) {
-    case 'in_approval':
     case 'changes_requested':
+      // Como en `deriveTimeline`: tras reenviar, vuelve la aprobación y luego la entrega.
+      items.push(item('approval', 'upcoming', null), item('delivery', 'upcoming', null));
+      break;
+    case 'in_approval':
     case 'approved':
       items.push(item('delivery', 'upcoming', null));
       break;

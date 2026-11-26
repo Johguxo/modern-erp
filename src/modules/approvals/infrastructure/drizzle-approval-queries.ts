@@ -1,6 +1,6 @@
 // Consultas de asignaciones (E4-H2) para la bandeja y la visibilidad, con la transacción de
 // withTenant: RLS y filtro explícito por tenantId en ambas tablas.
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import {
@@ -11,9 +11,28 @@ import {
 } from '@/db/schema';
 
 import type { ApprovalQueries } from '../application/ports';
-import type { InstanceStatus } from '../domain/approval-instance';
-import type { StepRule } from '../domain/route-preview';
+import { INSTANCE_STATUSES, type InstanceStatus } from '../domain/approval-instance';
+import { STEP_RULES, type StepRule } from '../domain/route-preview';
 import type { OpenStepRow, TimelineEventRow } from '../domain/timeline';
+
+// Los valores salen de columnas de texto: un valor fuera de la lista es un dato corrupto y falla
+// como error interno (el usuario ve el mensaje genérico).
+function parseStepRule(value: string): StepRule {
+  const rule = STEP_RULES.find((r) => r === value);
+  if (!rule) throw new Error(`Unexpected approval step rule: ${value}`);
+  return rule;
+}
+
+function parseOpenStatus(value: string): 'pending' | 'waiting' {
+  if (value === 'pending' || value === 'waiting') return value;
+  throw new Error(`Unexpected open approval step status: ${value}`);
+}
+
+function parseInstanceStatus(value: string): InstanceStatus {
+  const status = INSTANCE_STATUSES.find((s) => s === value);
+  if (!status) throw new Error(`Unexpected approval instance status: ${value}`);
+  return status;
+}
 
 export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
   const joined = (tenantId: string, userId: string) =>
@@ -88,6 +107,7 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
           actorUserId: approvalEvents.actorUserId,
           comment: approvalEvents.comment,
           createdAt: approvalEvents.createdAt,
+          stepClosed: sql<string | null>`${approvalEvents.data}->>'stepClosed'`,
           stepName: approvalSteps.name,
           stepRule: approvalSteps.rule,
         })
@@ -98,9 +118,10 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
         )
         .where(and(eq(approvalEvents.tenantId, tenantId), eq(approvalEvents.requestId, requestId)))
         .orderBy(asc(approvalEvents.createdAt), asc(approvalEvents.id));
-      const events: TimelineEventRow[] = eventRows.map((row) => ({
+      const events: TimelineEventRow[] = eventRows.map(({ stepClosed, stepRule, ...row }) => ({
         ...row,
-        stepRule: row.stepRule as StepRule | null,
+        stepRule: stepRule === null ? null : parseStepRule(stepRule),
+        stepClosed: stepClosed === null ? null : stepClosed !== 'false',
       }));
 
       const stepRows = await db
@@ -137,8 +158,8 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
           step = {
             order: row.order,
             name: row.name,
-            rule: row.rule as StepRule,
-            status: row.status as 'pending' | 'waiting',
+            rule: parseStepRule(row.rule),
+            status: parseOpenStatus(row.status),
             pendingSince: row.pendingSince,
             assigneeIds: [],
           };
@@ -149,7 +170,7 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
         }
       }
       return {
-        instanceStatus: instance.status as InstanceStatus,
+        instanceStatus: parseInstanceStatus(instance.status),
         events,
         openSteps: [...open.values()],
       };

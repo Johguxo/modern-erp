@@ -20,6 +20,7 @@ const event = (
   createdAt: at(minute),
   stepName: null,
   stepRule: null,
+  stepClosed: null,
   ...overrides,
 });
 
@@ -70,6 +71,27 @@ describe('buildApprovalTimeline', () => {
     expect(entries[1]).toMatchObject({ actorId: ANA, comment: 'Hay stock', at: at(5) });
     expect(entries[2]).toMatchObject({ at: at(5), assigneeIds: [LUIS], rule: 'any' });
     expect(entries[3]).toMatchObject({ at: null, assigneeIds: [] });
+  });
+
+  it('una firma que no cierra el paso es parcial; sin stepClosed se trata como cerrada', () => {
+    const entries = buildApprovalTimeline({
+      instanceStatus: 'in_progress',
+      events: [
+        event('e1', 'step_approved', 1, {
+          stepName: 'Almacén',
+          stepRule: 'all',
+          stepClosed: false,
+        }),
+        event('e2', 'step_approved', 2, { stepName: 'Almacén', stepRule: 'all', stepClosed: true }),
+        event('e3', 'step_approved', 3, { stepName: 'Almacén', stepRule: 'all' }),
+      ],
+      openSteps: [],
+    });
+    expect(entries.map((entry) => entry.kind)).toEqual([
+      'step_signed',
+      'step_approved',
+      'step_approved',
+    ]);
   });
 
   it('ordena por fecha y desempata por id; conserva las rondas anteriores', () => {

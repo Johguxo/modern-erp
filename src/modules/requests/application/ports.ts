@@ -114,10 +114,6 @@ export interface ApprovalAssignments {
 }
 
 /**
- * Historial de la aprobación para la línea de tiempo (E4-H2). Lo implementa el motor de `approvals`.
- * E4-H3 lo reemplaza leyendo todos los eventos.
- */
-/**
  * Línea de tiempo de la aprobación (E4-H3). Lo implementa el motor de `approvals`: eventos de todas
  * las rondas más el paso pendiente y los que esperan. La solicitud ya la revisó quien llama.
  */

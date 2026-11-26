@@ -3,3 +3,4 @@
 export * from './identity';
 export * from './catalog';
 export * from './requests';
+export * from './approvals';

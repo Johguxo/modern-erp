@@ -106,6 +106,20 @@
       "when": 1795694291277,
       "tag": "0014_requests_close_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795701049778,
+      "tag": "0015_approval_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795701050771,
+      "tag": "0016_approval_policies_privileges",
+      "breakpoints": true
     }
   ]
 }

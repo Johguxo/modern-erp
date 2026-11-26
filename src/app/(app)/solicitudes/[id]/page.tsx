@@ -44,7 +44,7 @@ export default async function RequestPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const { enviado, anulado, decision } = await searchParams;
+  const { enviado, anulado, decision, reenviado } = await searchParams;
   const { ctx } = await requireCtx();
   if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
 
@@ -60,14 +60,16 @@ export default async function RequestPage({
   const noteId = soonNoteId(detail.actions);
   // Tras enviar, el editor llega con ?enviado=1; tras anular, el diálogo con ?anulado=1.
   const notice =
-    enviado === '1' &&
-    detail.number !== null &&
-    detail.requesterId === ctx.userId &&
-    detail.status === 'in_approval'
-      ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
-      : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
-        ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
-        : decidedNotice(decision, detail.requesterId !== ctx.userId, detail.number);
+    reenviado === '1' && detail.requesterId === ctx.userId && detail.status === 'in_approval'
+      ? ({ tone: 'success', text: t.resubmittedNotice(detail.number) } as const)
+      : enviado === '1' &&
+          detail.number !== null &&
+          detail.requesterId === ctx.userId &&
+          detail.status === 'in_approval'
+        ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
+        : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
+          ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
+          : decidedNotice(decision, detail.requesterId !== ctx.userId, detail.number);
 
   return (
     <div className="flex flex-col gap-5">

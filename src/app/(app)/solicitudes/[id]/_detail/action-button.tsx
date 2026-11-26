@@ -10,6 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { CancelRequestDialog } from './cancel-request-dialog';
 import { DecisionDialog } from './decision-dialog';
+import { ResubmitButton } from './resubmit-button';
 import { isActionEnabled, isImplemented } from './detail-actions';
 
 const t = messages.requests.detail.actions;
@@ -76,6 +77,11 @@ export function ActionButton({
         large={large}
         className={classes}
       />
+    );
+  }
+  if (isActionEnabled(action, readOnly) && action === 'resubmit' && version !== undefined) {
+    return (
+      <ResubmitButton requestId={requestId} version={version} large={large} className={classes} />
     );
   }
   if (

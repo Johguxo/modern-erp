@@ -20,6 +20,7 @@ describe('isActionEnabled', () => {
       'approve',
       'request_changes',
       'reject',
+      'resubmit',
     ]);
     for (const action of REQUEST_ACTIONS) {
       expect(isActionEnabled(action, false)).toBe(IMPLEMENTED_ACTIONS.includes(action));

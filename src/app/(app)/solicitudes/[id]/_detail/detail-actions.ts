@@ -8,6 +8,7 @@ export const IMPLEMENTED_ACTIONS: readonly RequestAction[] = [
   'approve',
   'request_changes',
   'reject',
+  'resubmit',
 ];
 
 /** Acciones que viven fuera del panel lateral: en la tarjeta de ítems y en la del documento. */

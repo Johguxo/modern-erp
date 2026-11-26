@@ -120,6 +120,20 @@
       "when": 1795701050771,
       "tag": "0016_approval_policies_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795705051188,
+      "tag": "0017_approval_instances",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795705057449,
+      "tag": "0018_approval_instances_privileges",
+      "breakpoints": true
     }
   ]
 }

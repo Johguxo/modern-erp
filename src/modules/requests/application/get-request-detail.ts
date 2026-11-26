@@ -5,7 +5,7 @@ import type { Ctx } from '@/shared/context';
 
 import { displayStatus } from '../domain/inbox';
 import { availableActions } from '../domain/request-actions';
-import { deriveTimeline } from '../domain/request-timeline';
+import { buildTimeline, deriveTimeline } from '../domain/request-timeline';
 
 import type { GetRequestDetailDeps } from './ports';
 import { findVisibleRequest } from './request-access';
@@ -31,12 +31,18 @@ export async function getRequestDetail(
   const pendingStepId = mayDecide ? await deps.assignments.pendingStepId(ctx, request.id) : null;
   const pendingForMe = pendingStepId !== null;
 
-  // Quién detuvo la ronda y con qué comentario solo importa si el documento quedó detenido.
-  const stopped = request.status === 'rejected' || request.status === 'changes_requested';
-  const decision = stopped ? await deps.history.latestDecision(ctx, request.id) : null;
-  const timeline = deriveTimeline(request, decision);
+  // Un borrador (sin número) nunca se envió: no hay instancia que consultar. Sin instancia, o con un
+  // legado, la línea sale de las fechas del documento.
+  const entries = request.number === null ? null : await deps.timeline.getTimeline(ctx, request.id);
+  const timeline = entries ? buildTimeline(request, entries) : deriveTimeline(request);
   const [names, areas] = await Promise.all([
-    deps.labels.userNames(ctx, nonNull([request.requesterId, ...timeline.map((i) => i.actorId)])),
+    deps.labels.userNames(
+      ctx,
+      nonNull([
+        request.requesterId,
+        ...timeline.flatMap((item) => [item.actorId, ...item.assigneeIds]),
+      ]),
+    ),
     deps.labels.areaLabels(ctx, {
       equipmentIds: nonNull([request.equipmentId, ...activeLines.map((line) => line.equipmentId)]),
       costCenterIds: nonNull([request.costCenterId]),

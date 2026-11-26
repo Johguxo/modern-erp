@@ -107,6 +107,14 @@ export interface TimelineItemView {
   readonly actorName: string | null;
   /** Comentario del hito (la anulación guarda el suyo); null si no tiene. */
   readonly comment: string | null;
+  /** Nombre del paso tal como lo escribió el admin; null si el hito no es de un paso. */
+  readonly stepName: string | null;
+  /** Regla del paso: `any` espera a uno de los asignados, `all` a todos. */
+  readonly rule: 'any' | 'all' | null;
+  /** Los asignados que aún no deciden (paso pendiente), por nombre; los sin nombre se omiten. */
+  readonly assigneeNames: string[];
+  /** Cuántos asignados aún no deciden, tengan nombre o no (0: el paso no tiene aprobadores). */
+  readonly assigneeCount: number;
 }
 
 export interface RequestDetail {
@@ -146,5 +154,14 @@ export function toTimelineItems(
     at: iso(item.at),
     actorName: item.actorId ? (names.get(item.actorId) ?? null) : null,
     comment: item.comment,
+    stepName: item.stepName,
+    rule: item.rule,
+    assigneeNames: item.assigneeIds
+      .flatMap((id) => {
+        const name = names.get(id);
+        return name ? [name] : [];
+      })
+      .sort((a, b) => a.localeCompare(b, 'es-PE')),
+    assigneeCount: item.assigneeIds.length,
   }));
 }

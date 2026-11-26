@@ -16,6 +16,7 @@ import type {
   StepStatus,
 } from '../domain/approval-instance';
 import type { PlannedStep } from '../domain/plan-instance';
+import type { ApprovalTimelineSource } from '../domain/timeline';
 import type { Policy, PolicyStepSpec } from '../domain/policy';
 import type { DocType } from '../domain/route-preview';
 
@@ -173,15 +174,11 @@ export interface ApprovalQueries {
   pendingRequestIds(tenantId: string, userId: string): Promise<string[]>;
   /** El paso `pending` del usuario en esta solicitud, si aún no decidió. */
   pendingStepId(tenantId: string, userId: string, requestId: string): Promise<string | null>;
-  /** El último paso que detuvo la solicitud (rechazado o con cambios pedidos), si hay alguno. */
-  latestStoppingStep(tenantId: string, requestId: string): Promise<StoppingStep | null>;
-}
-
-export interface StoppingStep {
-  readonly kind: 'reject' | 'request_changes';
-  readonly decidedBy: string;
-  readonly comment: string | null;
-  readonly decidedAt: Date;
+  /**
+   * Eventos de todas las rondas y pasos abiertos de la última (E4-H3); null si la solicitud nunca
+   * se envió (no tiene instancia).
+   */
+  timelineSource(tenantId: string, requestId: string): Promise<ApprovalTimelineSource | null>;
 }
 
 export interface ApprovalEngineDeps {

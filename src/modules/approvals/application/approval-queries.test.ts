@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Ctx } from '@/shared/context';
 
-import { createApprovalAssignments, createApprovalHistory } from './approval-queries';
+import { createApprovalAssignments } from './approval-queries';
 import type { ApprovalQueries } from './ports';
 
 function ctxWith(permissions: Ctx['permissions']): Ctx {
@@ -18,7 +18,7 @@ function queries(): ApprovalQueries {
     isAssigned: () => Promise.resolve(true),
     pendingRequestIds: pending,
     pendingStepId: () => Promise.resolve('s1'),
-    latestStoppingStep: () => Promise.resolve(null),
+    timelineSource: () => Promise.resolve(null),
   };
 }
 
@@ -41,33 +41,5 @@ describe('createApprovalAssignments', () => {
     expect(await view.isAssigned(ctx, 'r1')).toBe(true);
     expect(await view.pendingRequestIds(ctx)).toEqual(['r1']);
     expect(await view.pendingStepId(ctx, 'r1')).toBe('s1');
-  });
-});
-
-describe('createApprovalHistory', () => {
-  const ctx = ctxWith(new Set(['requests.read_own']));
-  const at = new Date('2026-11-25T15:00:00.000Z');
-
-  it('traduce el paso que detuvo la ronda a la decisión del puerto de requests', async () => {
-    const history = createApprovalHistory({
-      ...queries(),
-      latestStoppingStep: () =>
-        Promise.resolve({
-          kind: 'reject',
-          decidedBy: 'u9',
-          comment: 'No corresponde',
-          decidedAt: at,
-        }),
-    });
-    expect(await history.latestDecision(ctx, 'r1')).toEqual({
-      kind: 'reject',
-      actorId: 'u9',
-      comment: 'No corresponde',
-      at,
-    });
-  });
-
-  it('sin paso detenido devuelve null', async () => {
-    expect(await createApprovalHistory(queries()).latestDecision(ctx, 'r1')).toBeNull();
   });
 });

@@ -1,11 +1,38 @@
 // Consultas de asignaciones (E4-H2) para la bandeja y la visibilidad, con la transacción de
 // withTenant: RLS y filtro explícito por tenantId en ambas tablas.
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
-import { approvalInstances, approvalStepAssignees, approvalSteps } from '@/db/schema';
+import {
+  approvalEvents,
+  approvalInstances,
+  approvalStepAssignees,
+  approvalSteps,
+} from '@/db/schema';
 
 import type { ApprovalQueries } from '../application/ports';
+import { INSTANCE_STATUSES, type InstanceStatus } from '../domain/approval-instance';
+import { STEP_RULES, type StepRule } from '../domain/route-preview';
+import type { OpenStepRow, TimelineEventRow } from '../domain/timeline';
+
+// Los valores salen de columnas de texto: un valor fuera de la lista es un dato corrupto y falla
+// como error interno (el usuario ve el mensaje genérico).
+function parseStepRule(value: string): StepRule {
+  const rule = STEP_RULES.find((r) => r === value);
+  if (!rule) throw new Error(`Unexpected approval step rule: ${value}`);
+  return rule;
+}
+
+function parseOpenStatus(value: string): 'pending' | 'waiting' {
+  if (value === 'pending' || value === 'waiting') return value;
+  throw new Error(`Unexpected open approval step status: ${value}`);
+}
+
+function parseInstanceStatus(value: string): InstanceStatus {
+  const status = INSTANCE_STATUSES.find((s) => s === value);
+  if (!status) throw new Error(`Unexpected approval instance status: ${value}`);
+  return status;
+}
 
 export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
   const joined = (tenantId: string, userId: string) =>
@@ -62,34 +89,90 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
       return row?.stepId ?? null;
     },
 
-    async latestStoppingStep(tenantId, requestId) {
-      const [row] = await db
+    async timelineSource(tenantId, requestId) {
+      const [instance] = await db
+        .select({ id: approvalInstances.id, status: approvalInstances.status })
+        .from(approvalInstances)
+        .where(
+          and(eq(approvalInstances.tenantId, tenantId), eq(approvalInstances.requestId, requestId)),
+        )
+        .orderBy(desc(approvalInstances.round))
+        .limit(1);
+      if (!instance) return null;
+
+      const eventRows = await db
         .select({
+          id: approvalEvents.id,
+          type: approvalEvents.type,
+          actorUserId: approvalEvents.actorUserId,
+          comment: approvalEvents.comment,
+          createdAt: approvalEvents.createdAt,
+          stepClosed: sql<string | null>`${approvalEvents.data}->>'stepClosed'`,
+          stepName: approvalSteps.name,
+          stepRule: approvalSteps.rule,
+        })
+        .from(approvalEvents)
+        .leftJoin(
+          approvalSteps,
+          and(eq(approvalSteps.id, approvalEvents.stepId), eq(approvalSteps.tenantId, tenantId)),
+        )
+        .where(and(eq(approvalEvents.tenantId, tenantId), eq(approvalEvents.requestId, requestId)))
+        .orderBy(asc(approvalEvents.createdAt), asc(approvalEvents.id));
+      const events: TimelineEventRow[] = eventRows.map(({ stepClosed, stepRule, ...row }) => ({
+        ...row,
+        stepRule: stepRule === null ? null : parseStepRule(stepRule),
+        stepClosed: stepClosed === null ? null : stepClosed !== 'false',
+      }));
+
+      const stepRows = await db
+        .select({
+          id: approvalSteps.id,
+          order: approvalSteps.stepOrder,
+          name: approvalSteps.name,
+          rule: approvalSteps.rule,
           status: approvalSteps.status,
-          decidedBy: approvalSteps.decidedBy,
-          decidedAt: approvalSteps.decidedAt,
-          comment: approvalSteps.comment,
+          pendingSince: approvalSteps.pendingSince,
+          assigneeUserId: approvalStepAssignees.userId,
+          assigneeDecision: approvalStepAssignees.decision,
         })
         .from(approvalSteps)
-        .innerJoin(approvalInstances, eq(approvalInstances.id, approvalSteps.instanceId))
+        .leftJoin(
+          approvalStepAssignees,
+          and(
+            eq(approvalStepAssignees.stepId, approvalSteps.id),
+            eq(approvalStepAssignees.tenantId, tenantId),
+          ),
+        )
         .where(
           and(
             eq(approvalSteps.tenantId, tenantId),
-            eq(approvalInstances.tenantId, tenantId),
-            eq(approvalSteps.requestId, requestId),
-            inArray(approvalSteps.status, ['rejected', 'changes_requested']),
-            isNotNull(approvalSteps.decidedAt),
+            eq(approvalSteps.instanceId, instance.id),
+            inArray(approvalSteps.status, ['pending', 'waiting']),
           ),
         )
-        // La decisión que detuvo la última ronda: una ronda anterior no debe tapar a la actual.
-        .orderBy(desc(approvalInstances.round), sql`${approvalSteps.decidedAt} desc nulls last`)
-        .limit(1);
-      if (!row?.decidedBy || !row.decidedAt) return null;
+        .orderBy(asc(approvalSteps.stepOrder));
+      const open = new Map<string, OpenStepRow & { assigneeIds: string[] }>();
+      for (const row of stepRows) {
+        let step = open.get(row.id);
+        if (!step) {
+          step = {
+            order: row.order,
+            name: row.name,
+            rule: parseStepRule(row.rule),
+            status: parseOpenStatus(row.status),
+            pendingSince: row.pendingSince,
+            assigneeIds: [],
+          };
+          open.set(row.id, step);
+        }
+        if (row.assigneeUserId && row.assigneeDecision === null) {
+          step.assigneeIds.push(row.assigneeUserId);
+        }
+      }
       return {
-        kind: row.status === 'rejected' ? 'reject' : 'request_changes',
-        decidedBy: row.decidedBy,
-        comment: row.comment,
-        decidedAt: row.decidedAt,
+        instanceStatus: parseInstanceStatus(instance.status),
+        events,
+        openSteps: [...open.values()],
       };
     },
   };

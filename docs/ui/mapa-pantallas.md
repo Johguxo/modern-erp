@@ -17,7 +17,7 @@
 | 1 | Bandeja de solicitudes | `Main.dc.html` | `/bandeja` (también `/` redirige aquí) | `requests.read_own` | `requests.listRequests({tab, q, page})` (página, total y conteos de las tarjetas; «aprobador asignado» y «Esperan mi aprobación» vía el puerto `ApprovalAssignments`, que implementa E4-H2) |
 | 2 | Nuevo SOF | `NuevoSOF.dc.html` | `/solicitudes/nueva` | `requests.create` | `catalog.searchProducts(q)`, `catalog.listEquipment()`, `catalog.listCostCenters()`, `requests.createDraft()`, `requests.updateDraft()`, `requests.submit()`, `approvals.previewRoute(docType, total)` |
 | 2b | Editar borrador | `NuevoSOF.dc.html` | `/solicitudes/[id]/editar` | dueño del borrador | igual que 2 |
-| 3 | Detalle del SOF | `DetalleSOF.dc.html` | `/solicitudes/[id]` | `requests.read_*` | `requests.getRequest(id)`, `approvals.getTimeline(requestId)`, `requests.decideRequest({id, version, stepId, decision, comment})` (orquesta el motor de `approvals`, ADR-008), `requests.correctLine()`, `requests.deliver()`, `requests.cancel()`, `documents.getPdfUrl(requestId)` |
+| 3 | Detalle del SOF | `DetalleSOF.dc.html` | `/solicitudes/[id]` | `requests.read_*` | `requests.getRequestDetail(id)` (incluye la línea de tiempo vía el puerto `ApprovalTimeline`, ADR-008), `requests.decideRequest({id, version, stepId, decision, comment})` (orquesta el motor de `approvals`, ADR-008), `requests.correctLine()`, `requests.deliver()`, `requests.cancel()`, `documents.getPdfUrl(requestId)` |
 
 ### Administración del cliente (sin prototipo: usar el mismo lenguaje visual que la bandeja)
 

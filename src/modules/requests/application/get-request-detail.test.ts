@@ -7,6 +7,7 @@ import { ForbiddenError, NotFoundError } from '@/shared/errors';
 
 import { getRequestDetailContract } from '../contracts';
 import type { Request, RequestLine } from '../domain/request';
+import type { ApprovalTimelineEntry } from '../domain/request-timeline';
 
 import { getRequestDetail } from './get-request-detail';
 import type { GetRequestDetailDeps } from './ports';
@@ -69,9 +70,17 @@ const line = (n: number, overrides: Partial<RequestLine> = {}): RequestLine => (
 function setup(
   req: Request,
   lines: RequestLine[],
-  { assigned = [], pending = [] }: { assigned?: string[]; pending?: string[] } = {},
+  {
+    assigned = [],
+    pending = [],
+    entries = null,
+  }: {
+    assigned?: string[];
+    pending?: string[];
+    entries?: readonly ApprovalTimelineEntry[] | null;
+  } = {},
 ) {
-  const calls = { isAssigned: 0, pending: 0, userNames: [] as string[][] };
+  const calls = { isAssigned: 0, pending: 0, timeline: 0, userNames: [] as string[][] };
   const areaIds: { equipmentIds: readonly string[]; costCenterIds: readonly string[] }[] = [];
   const deps: GetRequestDetailDeps = {
     requests: {
@@ -89,7 +98,12 @@ function setup(
         return Promise.resolve(pending.includes(id) ? STEP_ID : null);
       },
     },
-    history: { latestDecision: () => Promise.resolve(null) },
+    timeline: {
+      getTimeline: () => {
+        calls.timeline += 1;
+        return Promise.resolve(entries);
+      },
+    },
     labels: {
       userNames: (_ctx, ids) => {
         calls.userNames.push([...ids]);
@@ -97,6 +111,7 @@ function setup(
           new Map([
             [ANA, 'Ana Torres'],
             [OWNER, 'Ruby Pérez'],
+            [APPROVER, 'Sergio Díaz'],
           ]),
         );
       },
@@ -158,6 +173,66 @@ describe('getRequestDetail', () => {
     expect(areaIds[0]?.equipmentIds).not.toContain(EQ_GONE);
     // La salida respeta el contrato.
     expect(() => getRequestDetailContract.outputSchema.parse(detail)).not.toThrow();
+  });
+
+  it('con instancia, la línea sale del motor: rondas, paso pendiente con asignados y entrega', async () => {
+    const entry = (
+      overrides: Partial<ApprovalTimelineEntry> & Pick<ApprovalTimelineEntry, 'kind'>,
+    ): ApprovalTimelineEntry => ({
+      at: T,
+      actorId: null,
+      comment: null,
+      stepName: null,
+      rule: null,
+      assigneeIds: [],
+      ...overrides,
+    });
+    const { deps, calls } = setup(request(), [line(1)], {
+      entries: [
+        entry({ kind: 'submitted', actorId: ANA }),
+        entry({ kind: 'step_approved', actorId: OWNER, stepName: 'Almacén', comment: 'Hay stock' }),
+        entry({
+          kind: 'step_pending',
+          stepName: 'Gerencia local',
+          rule: 'any',
+          assigneeIds: [APPROVER, OWNER, '99999999-9999-4999-8999-999999999999'],
+        }),
+      ],
+    });
+    const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+    expect(detail.timeline.map((i) => `${i.kind}:${i.state}`)).toEqual([
+      'created:done',
+      'submitted:done',
+      'step_approved:done',
+      'approval:pending',
+      'delivery:upcoming',
+    ]);
+    expect(detail.timeline[2]).toMatchObject({
+      stepName: 'Almacén',
+      actorName: 'Ruby Pérez',
+      comment: 'Hay stock',
+    });
+    // Los asignados sin nombre se omiten; el resto va ordenado por nombre.
+    expect(detail.timeline[3]).toMatchObject({
+      stepName: 'Gerencia local',
+      rule: 'any',
+      assigneeNames: ['Ruby Pérez', 'Sergio Díaz'],
+      assigneeCount: 3,
+    });
+    expect(calls.timeline).toBe(1);
+    // Un solo lote de nombres, con el aprobador incluido.
+    expect(calls.userNames).toHaveLength(1);
+    expect(calls.userNames[0]).toEqual(expect.arrayContaining([ANA, OWNER, APPROVER]));
+    expect(() => getRequestDetailContract.outputSchema.parse(detail)).not.toThrow();
+  });
+
+  it('un borrador no consulta la línea del motor', async () => {
+    const { deps, calls } = setup(
+      request({ status: 'draft', number: null, submittedAt: null }),
+      [],
+    );
+    await getRequestDetail(requesterCtx, { id: REQ }, deps);
+    expect(calls.timeline).toBe(0);
   });
 
   it('el solicitante dueño puede anular y no decide', async () => {

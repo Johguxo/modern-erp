@@ -10,6 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
 import { panelActions, soonNoteId } from './detail-actions';
+import { pendingHint, stepTitle } from './timeline-text';
 
 const t = messages.requests.detail;
 
@@ -52,11 +53,26 @@ function Marker({ item }: { item: TimelineItemView }) {
 }
 
 function stepHint(item: TimelineItemView, timeZone: string): ReactNode {
-  if (item.state === 'pending') return t.timeline.hints.approvalPending;
+  const hints = t.timeline.hints;
+  if (item.state === 'pending') {
+    const pending = pendingHint(item);
+    if (pending.kind === 'message') return pending.text;
+    const since = pending.since ? (
+      <>
+        {hints.pendingSince} <DateText value={pending.since} timeZone={timeZone} />
+      </>
+    ) : null;
+    if (!pending.who) return since;
+    return (
+      <>
+        {pending.who}
+        {since ? <> · {since}</> : null}
+      </>
+    );
+  }
   if (item.state === 'upcoming') {
-    return item.kind === 'delivery'
-      ? t.timeline.hints.deliveryUpcoming
-      : t.timeline.hints.approvalUpcoming;
+    if (item.kind === 'delivery') return hints.deliveryUpcoming;
+    return item.stepName === null ? hints.approvalUpcoming : hints.stepWaiting;
   }
   const date = item.at ? <DateText value={item.at} timeZone={timeZone} /> : null;
   if (item.actorName && date) {
@@ -110,7 +126,7 @@ export function TimelinePanel({
               <Marker item={item} />
               <p className="text-sm font-semibold">
                 <span className="sr-only">{t.timeline.states[item.state]}: </span>
-                {t.timeline.steps[item.kind]}
+                {stepTitle(item)}
               </p>
               {hint ? <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p> : null}
               {item.comment ? (

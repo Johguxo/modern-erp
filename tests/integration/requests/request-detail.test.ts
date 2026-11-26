@@ -9,7 +9,7 @@ import {
   createDraft,
   createGetRequestDetailDeps,
   getRequestDetail,
-  noopApprovalHistory,
+  noopApprovalTimeline,
   submitRequest,
   type ApprovalAssignments,
   type RequestDetail,
@@ -56,7 +56,7 @@ function detailOf(
       createGetRequestDetailDeps(tx, {
         client: UNKNOWN_CLIENT,
         assignments: assignments ?? NO_ASSIGNMENTS,
-        history: noopApprovalHistory,
+        timeline: noopApprovalTimeline,
       }),
     ),
   );

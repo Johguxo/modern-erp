@@ -45,7 +45,7 @@ Una **política** define los pasos para un tipo de documento. El MVP usa **una p
 approval_policies
   doc_type        'SOF'
   name            'SOF estándar'
-  conditions      {}          ← futuro: {"min_amount": 5000, "cost_center_ids": [...]}
+  conditions      {}          ← futuro: {"min_amount": "5000.00", "cost_center_ids": [...]}
   priority        100         ← futuro: se elige la de mayor prioridad cuyas condiciones se cumplan
   active          true
 
@@ -67,7 +67,7 @@ approval_policy_steps (en orden)
 | `any` | Basta con que apruebe uno de los asignados | ✓ |
 | `all` | Deben aprobar todos | ✓ |
 
-Además, cada paso puede tener `condition` (jsonb) para saltarse si no aplica (por ejemplo, Hong Kong solo desde cierto monto). En el MVP el evaluador de condiciones soporta solo `min_amount`; condiciones desconocidas hacen que el paso **sí** aplique (falla segura).
+Además, cada paso puede tener `condition` (jsonb) para saltarse si no aplica (por ejemplo, Hong Kong solo desde cierto monto). En el MVP el evaluador de condiciones soporta solo `min_amount`; condiciones desconocidas hacen que el paso **sí** aplique (falla segura). `min_amount` se guarda como texto decimal y se compara con decimal.js (límite inclusivo; un total nulo cuenta como 0).
 
 ## 3. Instancia de aprobación
 

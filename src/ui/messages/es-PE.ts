@@ -828,6 +828,23 @@ export const messages = {
       number_taken: () =>
         'Este número ya fue usado. Pide al administrador revisar la numeración de SOF.',
       sequence_exhausted: () => 'La numeración llegó a su límite. Contacta a LinkUs.',
+      // Aprobaciones (E4-H2).
+      approval_policy_missing: () =>
+        'Tu empresa no tiene una política de aprobación activa. Contacta al administrador.',
+      approval_policy_unsupported: () =>
+        'La política de aprobación tiene pasos que esta versión no puede ejecutar. Contacta al soporte de LinkUs.',
+      approval_route_empty: () =>
+        'Ningún paso de la política de aprobación aplica a esta solicitud. Contacta al administrador.',
+      approval_already_started: () => 'Esta solicitud ya está en aprobación. Recarga la página.',
+      approval_not_started: () =>
+        'Esta solicitud no tiene una ruta de aprobación iniciada. Pide al administrador que la anule y créala de nuevo.',
+      step_already_decided: () =>
+        'Este paso ya fue decidido por otra persona. Recarga la página para ver el estado actual.',
+      not_an_approver: () => 'No eres aprobador de este paso.',
+      own_request: () => 'No puedes decidir tu propia solicitud.',
+      decision_comment_required: () => 'Escribe un comentario para rechazar o pedir cambios.',
+      decision_comment_too_long: (p: Params) =>
+        `El comentario puede tener hasta ${p.max ?? '?'} caracteres.`,
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
       // Importación del catálogo (E2-H3): el archivo en sí.
       file_unsupported: () => 'El archivo debe ser un Excel moderno (.xlsx) o un CSV (.csv).',

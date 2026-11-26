@@ -34,7 +34,7 @@ export default async function RequestPage({
   if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
 
   const detail = await withTenant(ctx, (tx) =>
-    getRequestDetail(ctx, { id }, createGetRequestDetailDeps(tx, readOnlyRequestsExtras())),
+    getRequestDetail(ctx, { id }, createGetRequestDetailDeps(tx, readOnlyRequestsExtras(tx))),
   ).catch((error: unknown) => {
     if (isDomainError(error) && (error.code === 'NOT_FOUND' || error.code === 'FORBIDDEN')) {
       notFound();

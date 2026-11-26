@@ -9,6 +9,7 @@ import type { Clock } from '@/shared/ports/clock';
 
 import type {
   ApprovalAssignments,
+  ApprovalCanceller,
   ApprovalStarter,
   GetRequestDeps,
   GetRequestDetailDeps,
@@ -24,6 +25,7 @@ import { createDrizzleRequestQueryRepository } from './drizzle-request-query-rep
 import { createDrizzleRequestRepository } from './drizzle-request-repository';
 import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-store';
 import { noopApprovalAssignments } from './noop-approval-assignments';
+import { noopApprovalCanceller } from './noop-approval-canceller';
 import { noopApprovalStarter } from './noop-approval-starter';
 import { createRequestLabels } from './request-labels';
 
@@ -33,6 +35,8 @@ export interface RequestsExtras {
   readonly clock: Clock;
   /** E4-H2 pasa aquí el motor de aprobaciones; por defecto no hace nada. */
   readonly approvals?: ApprovalStarter;
+  /** E4-H2 pasa aquí el cierre de la aprobación al anular; por defecto no hace nada. */
+  readonly canceller?: ApprovalCanceller;
   /** E4-H2 pasa aquí las asignaciones del motor; por defecto nadie tiene nada asignado. */
   readonly assignments?: ApprovalAssignments;
 }
@@ -47,6 +51,7 @@ export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): Requ
     currency: { currencyOf },
     approvals: extras.approvals ?? noopApprovalStarter,
     assignments: extras.assignments ?? noopApprovalAssignments,
+    canceller: extras.canceller ?? noopApprovalCanceller,
     audit: createAuditLogFor(tx),
     client: extras.client,
     clock: extras.clock,

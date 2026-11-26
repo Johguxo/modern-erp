@@ -26,6 +26,7 @@ export const timelineItemSchema = z.object({
   state: z.enum(TIMELINE_STATES),
   at: z.iso.datetime().nullable(),
   actorName: z.string().nullable(),
+  comment: z.string().nullable(),
 });
 
 export const outputSchema = z.object({

@@ -4,6 +4,7 @@
 import { hasPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 
+import { canCancel } from './cancellation';
 import { EDITABLE_STATUSES, type Request } from './request';
 import { canTransition } from './request-state-machine';
 
@@ -43,10 +44,9 @@ export function availableActions(
   if (isOwner && hasPermission(ctx, 'requests.create') && canTransition(status, 'resubmit')) {
     actions.push('resubmit');
   }
-  // Una vez aprobado, anular ya no es del solicitante: lo decide E3-H5.
-  if (isOwner && status !== 'approved' && canTransition(status, 'cancel')) {
-    actions.push('cancel');
-  }
+  // El dueño anula hasta antes de la aprobación; quien tiene `requests.cancel_any`, cualquier
+  // documento enviado (E3-H5).
+  if (canCancel(request, ctx)) actions.push('cancel');
   if (canDecide && canTransition(status, 'approve')) actions.push('approve');
   if (canDecide && canTransition(status, 'request_changes')) actions.push('request_changes');
   if (canDecide && canTransition(status, 'reject')) actions.push('reject');

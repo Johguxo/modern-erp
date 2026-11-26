@@ -44,6 +44,8 @@ function toRequest(row: RequestRow): Request {
     approvedAt: row.approvedAt,
     deliveredAt: row.deliveredAt,
     closedAt: row.closedAt,
+    closedBy: row.closedBy,
+    closeComment: row.closeComment,
     version: row.version,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -170,6 +172,9 @@ export function createDrizzleRequestRepository(db: DbExecutor): RequestRepositor
             ...(patch.status !== undefined ? { status: patch.status } : {}),
             ...(patch.number !== undefined ? { number: patch.number } : {}),
             ...(patch.submittedAt !== undefined ? { submittedAt: patch.submittedAt } : {}),
+            ...(patch.closedAt !== undefined ? { closedAt: patch.closedAt } : {}),
+            ...(patch.closedBy !== undefined ? { closedBy: patch.closedBy } : {}),
+            ...(patch.closeComment !== undefined ? { closeComment: patch.closeComment } : {}),
             version: sql`${requests.version} + 1`,
           })
           .where(

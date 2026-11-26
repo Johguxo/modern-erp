@@ -24,6 +24,9 @@ export interface RequestView {
   readonly approvedAt: string | null;
   readonly deliveredAt: string | null;
   readonly closedAt: string | null;
+  /** Quién anuló y su comentario (E3-H5); null mientras sigue abierta. */
+  readonly closedBy: string | null;
+  readonly closeComment: string | null;
   readonly version: number;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -50,6 +53,8 @@ export function toRequestView(request: Request, lines: readonly RequestLine[]): 
     approvedAt: iso(request.approvedAt),
     deliveredAt: iso(request.deliveredAt),
     closedAt: iso(request.closedAt),
+    closedBy: request.closedBy,
+    closeComment: request.closeComment,
     version: request.version,
     createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
@@ -100,6 +105,8 @@ export interface TimelineItemView {
   /** ISO 8601 (UTC); null si aún no ocurre. */
   readonly at: string | null;
   readonly actorName: string | null;
+  /** Comentario del hito (la anulación guarda el suyo); null si no tiene. */
+  readonly comment: string | null;
 }
 
 export interface RequestDetail {
@@ -134,5 +141,6 @@ export function toTimelineItems(
     state: item.state,
     at: iso(item.at),
     actorName: item.actorId ? (names.get(item.actorId) ?? null) : null,
+    comment: item.comment,
   }));
 }

@@ -31,6 +31,8 @@ export interface TimelineItem {
   readonly at: Date | null;
   /** Quién lo hizo; null cuando solo se conoce la fecha. */
   readonly actorId: string | null;
+  /** Comentario del hito (la anulación guarda el suyo); null si no tiene. */
+  readonly comment: string | null;
 }
 
 export type TimelineSource = Pick<
@@ -43,6 +45,8 @@ export type TimelineSource = Pick<
   | 'approvedAt'
   | 'deliveredAt'
   | 'closedAt'
+  | 'closedBy'
+  | 'closeComment'
 >;
 
 const item = (
@@ -50,7 +54,8 @@ const item = (
   state: TimelineState,
   at: Date | null,
   actorId: string | null = null,
-): TimelineItem => ({ kind, state, at, actorId });
+  comment: string | null = null,
+): TimelineItem => ({ kind, state, at, actorId, comment });
 
 export function deriveTimeline(request: TimelineSource): TimelineItem[] {
   const items: TimelineItem[] = [item('created', 'done', request.createdAt, request.requesterId)];
@@ -89,7 +94,8 @@ export function deriveTimeline(request: TimelineSource): TimelineItem[] {
       items.push(item('rejected', 'stopped', endedAt));
       break;
     case 'cancelled':
-      items.push(item('cancelled', 'stopped', endedAt));
+      // Quien anuló y su comentario están en la cabecera (E3-H5); antes de eso, solo la fecha.
+      items.push(item('cancelled', 'stopped', endedAt, request.closedBy, request.closeComment));
       break;
   }
   return items;

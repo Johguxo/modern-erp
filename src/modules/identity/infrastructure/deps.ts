@@ -10,6 +10,7 @@ import type { SessionRepository } from '../application/session-ports';
 import type { SettingsDeps } from '../application/settings-ports';
 import type { AuditLog, UserAdminDeps } from '../application/user-admin-ports';
 
+import { createDrizzleActiveMembers, type ActiveMember } from './drizzle-active-members';
 import { createDrizzleAuditLog } from './drizzle-audit-log';
 import { createDrizzleEntitlementsRepository } from './drizzle-entitlements-repository';
 import { createDrizzleInvitationAcceptStore } from './drizzle-invitation-accept-store';
@@ -142,4 +143,14 @@ export function createUserNamesFor(
   db: DbExecutor,
 ): (tenantId: string, userIds: readonly string[]) => Promise<ReadonlyMap<string, string>> {
   return createDrizzleUserNames(db);
+}
+
+/**
+ * Miembros activos del tenant (membresía y usuario activos) con sus roles, ordenados por nombre.
+ * Los usa approvals para resolver y validar aprobadores (E4-H1).
+ */
+export function createActiveMembersFor(
+  db: DbExecutor,
+): (tenantId: string) => Promise<readonly ActiveMember[]> {
+  return createDrizzleActiveMembers(db);
 }

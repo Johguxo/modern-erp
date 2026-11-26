@@ -8,6 +8,8 @@ import { eq, inArray } from 'drizzle-orm';
 import { getDbAdmin } from '@/db/admin';
 import { pgErrorCode } from '@/db/errors';
 import {
+  approvalPolicies,
+  approvalPolicySteps,
   auditEvents,
   costCenters,
   documentSequences,
@@ -221,6 +223,11 @@ export function createIdentityFixtures(): IdentityFixtures {
         await admin.delete(requestLines).where(inArray(requestLines.tenantId, tenantIds));
         await admin.delete(requests).where(inArray(requests.tenantId, tenantIds));
         await admin.delete(documentSequences).where(inArray(documentSequences.tenantId, tenantIds));
+        // Políticas de aprobación (E4-H1): los pasos primero (FK a la política).
+        await admin
+          .delete(approvalPolicySteps)
+          .where(inArray(approvalPolicySteps.tenantId, tenantIds));
+        await admin.delete(approvalPolicies).where(inArray(approvalPolicies.tenantId, tenantIds));
         // Catálogo (E2-H1): sin FK entre ellas, solo hacia tenants y users.
         await admin.delete(importJobs).where(inArray(importJobs.tenantId, tenantIds));
         await admin.delete(products).where(inArray(products.tenantId, tenantIds));

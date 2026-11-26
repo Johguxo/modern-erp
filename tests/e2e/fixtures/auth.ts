@@ -150,6 +150,17 @@ export function createAccounts(): Accounts {
     tenantIds.push(row.id);
     await sql`insert into tenant_settings (tenant_id) values (${row.id})`;
     await sql`insert into document_sequences (tenant_id, doc_type, prefix, next_number) values (${row.id}, 'SOF', 'SOF-', 1)`;
+    // Política «SOF estándar» (E4-H1): sin ella la vista previa de la ruta del editor devuelve 404.
+    const [policy] = await sql<{ id: string }[]>`
+      insert into approval_policies (tenant_id, doc_type, name)
+      values (${row.id}, 'SOF', 'SOF estándar') returning id`;
+    if (!policy) throw new Error('política no creada');
+    await sql`
+      insert into approval_policy_steps
+        (tenant_id, policy_id, step_order, name, approver_type, approver_ref, rule)
+      values
+        (${row.id}, ${policy.id}, 1, 'Almacén', 'role', '"warehouse"'::jsonb, 'any'),
+        (${row.id}, ${policy.id}, 2, 'Gerencia local', 'role', '"approver"'::jsonb, 'any')`;
     await sql`
       insert into subscriptions (tenant_id, plan_id, status)
       select ${row.id}, id, 'active' from plans where code = 'starter'`;
@@ -306,6 +317,8 @@ export function createAccounts(): Accounts {
           await sql`delete from request_line_revisions where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from request_lines where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from requests where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_policy_steps where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_policies where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from document_sequences where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from products where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from equipment where tenant_id in ${sql(tenantIds)}`;

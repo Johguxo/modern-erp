@@ -1,6 +1,6 @@
 // Consultas de asignaciones (E4-H2) para la bandeja y la visibilidad, con la transacción de
 // withTenant: RLS y filtro explícito por tenantId en ambas tablas.
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
 import {
@@ -68,37 +68,6 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
         .where(and(pendingFor(tenantId, userId), eq(approvalSteps.requestId, requestId)))
         .limit(1);
       return row?.stepId ?? null;
-    },
-
-    async latestStoppingStep(tenantId, requestId) {
-      const [row] = await db
-        .select({
-          status: approvalSteps.status,
-          decidedBy: approvalSteps.decidedBy,
-          decidedAt: approvalSteps.decidedAt,
-          comment: approvalSteps.comment,
-        })
-        .from(approvalSteps)
-        .innerJoin(approvalInstances, eq(approvalInstances.id, approvalSteps.instanceId))
-        .where(
-          and(
-            eq(approvalSteps.tenantId, tenantId),
-            eq(approvalInstances.tenantId, tenantId),
-            eq(approvalSteps.requestId, requestId),
-            inArray(approvalSteps.status, ['rejected', 'changes_requested']),
-            isNotNull(approvalSteps.decidedAt),
-          ),
-        )
-        // La decisión que detuvo la última ronda: una ronda anterior no debe tapar a la actual.
-        .orderBy(desc(approvalInstances.round), sql`${approvalSteps.decidedAt} desc nulls last`)
-        .limit(1);
-      if (!row?.decidedBy || !row.decidedAt) return null;
-      return {
-        kind: row.status === 'rejected' ? 'reject' : 'request_changes',
-        decidedBy: row.decidedBy,
-        comment: row.comment,
-        decidedAt: row.decidedAt,
-      };
     },
 
     async timelineSource(tenantId, requestId) {

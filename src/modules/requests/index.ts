@@ -15,14 +15,12 @@ export {
 } from './infrastructure/document-sequence-step';
 export { noopApprovalAssignments } from './infrastructure/noop-approval-assignments';
 export { noopApprovalCanceller } from './infrastructure/noop-approval-canceller';
-export { noopApprovalHistory } from './infrastructure/noop-approval-history';
 export { noopApprovalTimeline } from './infrastructure/noop-approval-timeline';
 export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
   ApprovalAssignments,
   ApprovalCanceller,
   ApprovalDecider,
-  ApprovalHistory,
   ApprovalTimeline,
   DecideDeps,
   ApprovalStarter,

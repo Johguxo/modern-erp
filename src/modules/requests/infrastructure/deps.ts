@@ -10,7 +10,6 @@ import type { Clock } from '@/shared/ports/clock';
 import type {
   ApprovalAssignments,
   ApprovalCanceller,
-  ApprovalHistory,
   ApprovalDecider,
   ApprovalStarter,
   ApprovalTimeline,
@@ -45,7 +44,6 @@ export interface RequestsExtras {
   readonly canceller?: ApprovalCanceller;
   readonly assignments?: ApprovalAssignments;
   readonly decider?: ApprovalDecider;
-  readonly history?: ApprovalHistory;
   readonly timeline?: ApprovalTimeline;
 }
 

@@ -159,13 +159,13 @@ export function createAccounts(): Accounts {
       returning id`;
     if (!policy) throw new Error('política no creada');
     for (const [index, step] of STANDARD_SOF_POLICY.steps.entries()) {
-      const approverRef = JSON.stringify(step.approverType === 'role' ? step.role : step.userIds);
+      const approverRef = step.approverType === 'role' ? step.role : [...step.userIds];
       await sql`
         insert into approval_policy_steps
           (tenant_id, policy_id, step_order, name, approver_type, approver_ref, rule, condition)
         values
           (${row.id}, ${policy.id}, ${index + 1}, ${step.name}, ${step.approverType},
-           ${approverRef}::jsonb, ${step.rule}, ${JSON.stringify(step.condition)}::jsonb)`;
+           ${sql.json(approverRef)}, ${step.rule}, ${sql.json({ ...step.condition })})`;
     }
     await sql`
       insert into subscriptions (tenant_id, plan_id, status)

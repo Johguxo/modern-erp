@@ -134,13 +134,14 @@ test('aprobación completa en dos pasos, con el contador de la bandeja', async (
     .filter({
       hasText: t.timeline.approvedBy('Almacén'),
     });
-  await expect(approvedStep).toContainText('E2E');
+  await expect(approvedStep).toContainText(world.warehouse.fullName);
   await expect(approvedStep.locator('time')).toBeVisible();
   await expect(approvedStep).toContainText('Hay stock suficiente');
   const pendingStep = timeline(page).getByRole('listitem').filter({
     hasText: 'Gerencia local',
   });
   await expect(pendingStep).toContainText(t.timeline.states.pending);
+  await expect(pendingStep).toContainText(world.manager.fullName);
   await expect(pendingStep).toContainText(t.timeline.hints.pendingSince);
   await expect(pendingStep.locator('time')).toBeVisible();
   // Ya no tiene nada pendiente: sin botones de decisión y el contador baja a 0.

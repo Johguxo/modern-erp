@@ -38,6 +38,8 @@ export interface Account {
   readonly password: string;
   readonly authUserId: string;
   readonly userId: string;
+  /** `users.full_name` con el que se sembró la cuenta (el que ven los demás en la app). */
+  readonly fullName: string;
   readonly tenants: readonly { readonly id: string; readonly name: string }[];
 }
 
@@ -135,12 +137,13 @@ export function createAccounts(): Accounts {
     const authUserId = data.user.id;
     authUserIds.push(authUserId);
 
+    const fullName = `E2E ${tag}`;
     const [user] = await sql<{ id: string }[]>`
       insert into users (email, full_name, status, auth_user_id)
-      values (${email}, ${`E2E ${tag}`}, 'active', ${authUserId}) returning id`;
+      values (${email}, ${fullName}, 'active', ${authUserId}) returning id`;
     if (!user) throw new Error('user no creado');
     userIds.push(user.id);
-    return { email, password, authUserId, userId: user.id };
+    return { email, password, authUserId, userId: user.id, fullName };
   }
 
   async function tenant(name: string, status: 'active' | 'suspended') {

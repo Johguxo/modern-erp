@@ -18,13 +18,13 @@ Estado: en revisión · Issue: [#21](https://github.com/Johguxo/modern-erp/issue
 **Como** aprobador **quiero** aprobar, rechazar o pedir cambios **para** que la solicitud avance sin correos sueltos.
 
 **Criterios de aceptación**
-- [ ] Al enviar un SOF se crea la instancia con copia de la política, pasos y asignados (§3).
-- [ ] `decide({stepId, decision, comment})`: valida que el usuario sea asignado, que el paso esté `pending` y que no sea su propia solicitud; aplica la regla `any`/`all`; avanza al siguiente paso o cierra el documento (`approved`, `rejected`, `changes_requested`).
-- [ ] Rechazar y pedir cambios exigen comentario.
-- [ ] Concurrencia: dos decisiones simultáneas → solo la primera cuenta (prueba).
-- [ ] Reenvío tras `changes_requested` crea pasos nuevos desde el primero; los eventos anteriores se conservan.
-- [ ] Botones en la pantalla 3 y contador en la bandeja.
-- [ ] Eventos en `approval_events` y registro en `audit_events`.
+- [x] Al enviar un SOF se crea la instancia con copia de la política, pasos y asignados (§3).
+- [x] `decide({stepId, decision, comment})`: valida que el usuario sea asignado, que el paso esté `pending` y que no sea su propia solicitud; aplica la regla `any`/`all`; avanza al siguiente paso o cierra el documento (`approved`, `rejected`, `changes_requested`).
+- [x] Rechazar y pedir cambios exigen comentario.
+- [x] Concurrencia: dos decisiones simultáneas → solo la primera cuenta (prueba).
+- [x] Reenvío tras `changes_requested` crea pasos nuevos desde el primero; los eventos anteriores se conservan.
+- [x] Botones en la pantalla 3 y contador en la bandeja.
+- [x] Eventos en `approval_events` y registro en `audit_events`.
 
 > Nota (E4-H1): al enviar, leer la política activa y sus pasos en una sola consulta dentro de la transacción (`PolicyRepository.findActive`) y copiarlos a la instancia; si no hay política, el envío falla (la vista previa sí degrada a ruta vacía). Si la política tiene pasos que el MVP no soporta (`hasReservedSteps`), decidir si se bloquea el envío. Aplicar aquí la regla «nadie aprueba su propia solicitud» y `stepApplies` para marcar `skipped`.
 
@@ -36,7 +36,7 @@ Estado: en revisión · Issue: [#21](https://github.com/Johguxo/modern-erp/issue
 
 > Nota (E3-H4): el detalle ya muestra `approve`, `request_changes`, `reject` (si `pendingForMe`) y `resubmit` (dueño en `changes_requested`) deshabilitados. Aquí: conectarlos (con `stepId`) y agregarlos a `IMPLEMENTED_ACTIONS`; `pendingForMe` puede pasar a un `isPending(ctx, id)` del puerto `ApprovalAssignments`.
 
-Estado: en curso (H2a backend en revisión; H2b UI pendiente) · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
+Estado: en revisión · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
 
 ### E4-H3 · Línea de tiempo
 **Criterios de aceptación**

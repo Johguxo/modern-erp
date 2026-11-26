@@ -38,7 +38,7 @@ export function MobileDecisionBar({ detail }: { detail: RequestDetail }) {
   return (
     <div
       role="group"
-      aria-label={t.label}
+      aria-label={t.decisionLabel}
       className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2.5 border-t border-border bg-surface px-5 pt-4 pb-7 md:hidden"
     >
       <DecisionDialog

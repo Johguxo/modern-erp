@@ -693,6 +693,7 @@ export const messages = {
       },
       actions: {
         label: 'Acciones',
+        decisionLabel: 'Decidir',
         edit_draft: 'Editar borrador',
         edit_request: 'Editar solicitud',
         resubmit: 'Reenviar a aprobación',

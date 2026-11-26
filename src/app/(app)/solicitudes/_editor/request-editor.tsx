@@ -70,6 +70,7 @@ export function RequestEditor({
     view ? fromRequestView(view) : emptyState(),
   );
   const [busy, setBusy] = useState<Busy>(null);
+  const resubmitting = initial?.status === 'changes_requested';
   const totals = useMemo(() => computeTotals(state.lines), [state.lines]);
   const [route, setRoute] = useState<RoutePreview>(initialRoute);
   const [routeStatus, setRouteStatus] = useState<RouteStatus>('idle');
@@ -170,7 +171,7 @@ export function RequestEditor({
         return;
       }
       navigating = true;
-      router.push(`/solicitudes/${saved.id}?enviado=1` as Route);
+      router.push(`/solicitudes/${saved.id}?${resubmitting ? 'reenviado' : 'enviado'}=1` as Route);
     } catch {
       dispatch({
         type: 'setErrors',
@@ -182,7 +183,6 @@ export function RequestEditor({
     }
   }
 
-  const resubmitting = initial?.status === 'changes_requested';
   const disabled = readOnly || busy !== null;
 
   return (

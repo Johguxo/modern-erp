@@ -33,6 +33,7 @@ export function ResubmitButton({
   async function resubmit() {
     setBusy(true);
     setError(null);
+    let navigating = false;
     try {
       const result = await submitRequestAction({ id: requestId, version });
       if (!result.ok) {
@@ -42,12 +43,14 @@ export function ResubmitButton({
         });
         return;
       }
+      navigating = true;
       router.replace(`/solicitudes/${requestId}?reenviado=1`);
       router.refresh();
     } catch {
       setError({ message: messages.errors.codes.INTERNAL, reload: false });
     } finally {
-      setBusy(false);
+      // Al navegar se deja el botón ocupado para que no se pueda reenviar dos veces.
+      if (!navigating) setBusy(false);
     }
   }
 

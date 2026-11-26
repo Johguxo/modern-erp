@@ -2,7 +2,7 @@
 // (almacén y gerencia, con el contador de la bandeja), rechazo con comentario obligatorio, y pedir
 // cambios → editar → reenviar. En el celular, Rechazar y Aprobar viven en una barra fija inferior
 // que no tapa contenido.
-// Inicios de sesión por proyecto: 9 (tres pruebas, varios usuarios).
+// Inicios de sesión por proyecto: 10 (tres pruebas, varios usuarios).
 import type { Page } from '@playwright/test';
 
 import { messages } from '../../src/ui/messages/es-PE';
@@ -252,7 +252,8 @@ test('pedir cambios, editar y reenviar vuelve a abrir la aprobación', async ({
   await expect(page.getByText(messages.requests.notices.changesSaved)).toBeVisible();
   await button(page, actions.resubmit).click();
 
-  await expect(page).toHaveURL(/\/solicitudes\/[^/]+\?enviado=1$/);
+  await expect(page).toHaveURL(/\/solicitudes\/[^/]+\?reenviado=1$/);
+  await expect(page.getByText(t.resubmittedNotice('SOF-0001'))).toBeVisible();
   await expect(statusBadge(page, messages.status.in_approval)).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: /revisado/ })).toBeVisible();
 
@@ -262,4 +263,20 @@ test('pedir cambios, editar y reenviar vuelve a abrir la aprobación', async ({
   await openDetail(page, world);
   await expect(button(page, t.actions.approve)).toBeVisible();
   await expectNoPageOverflow(page);
+
+  // Almacén vuelve a pedir cambios (ronda 2): el solicitante reenvía directo desde el detalle, sin
+  // editar, con «Reenviar a aprobación» como botón principal.
+  await button(page, t.actions.request_changes).click();
+  const again = page.getByRole('dialog', { name: decision.request_changes.title('SOF-0001') });
+  await again.getByLabel(decision.request_changes.commentLabel).fill('Aclarar la cantidad');
+  await again.getByRole('button', { name: decision.request_changes.submit, exact: true }).click();
+  await expect(page.getByText(t.decidedNotice.changes_requested('SOF-0001'))).toBeVisible();
+
+  await switchTo(page, world.requester);
+  await openDetail(page, world);
+  await expect(statusBadge(page, messages.status.changes_requested)).toBeVisible();
+  await button(page, t.actions.resubmit).click();
+  await expect(page).toHaveURL(/\/solicitudes\/[^/]+\?reenviado=1$/);
+  await expect(page.getByText(t.resubmittedNotice('SOF-0001'))).toBeVisible();
+  await expect(statusBadge(page, messages.status.in_approval)).toBeVisible();
 });

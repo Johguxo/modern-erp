@@ -1,13 +1,10 @@
 // Leer una solicitud: el solicitante, quien tiene requests.read_all o el aprobador asignado (salvo
 // borradores ajenos). Si no existe, es de otro tenant o no tiene visibilidad → NotFoundError (404,
 // no revela existencia).
-import { hasPermission, requireAnyPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
-import { NotFoundError } from '@/shared/errors';
-
-import { canView } from '../domain/request';
 
 import type { GetRequestDeps } from './ports';
+import { findVisibleRequest } from './request-access';
 import { toRequestView, type RequestView } from './views';
 
 export async function getRequest(
@@ -15,19 +12,6 @@ export async function getRequest(
   input: { readonly id: string },
   deps: GetRequestDeps,
 ): Promise<RequestView> {
-  requireAnyPermission(ctx, ['requests.create', 'requests.read_own', 'requests.read_all']);
-  const found = await deps.requests.find(ctx.tenantId, input.id);
-  if (!found) throw new NotFoundError({ message: 'Request not found' });
-  // Solo se consultan las asignaciones cuando pueden cambiar la respuesta.
-  const needsAssignment =
-    found.request.requesterId !== ctx.userId &&
-    found.request.status !== 'draft' &&
-    !hasPermission(ctx, 'requests.read_all');
-  const assigned = needsAssignment
-    ? await deps.assignments.isAssigned(ctx, found.request.id)
-    : false;
-  if (!canView(found.request, ctx, { assigned })) {
-    throw new NotFoundError({ message: 'Request not found' });
-  }
+  const found = await findVisibleRequest(ctx, input.id, deps);
   return toRequestView(found.request, found.lines);
 }

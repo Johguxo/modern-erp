@@ -27,4 +27,6 @@ Estado: pendiente · Issue: [#29](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Si algún saldo queda negativo, se permite (configuración por defecto) y el evento guarda la advertencia; la interfaz la muestra antes de confirmar.
 - [ ] E2E del flujo completo: crear → aprobar → entregar → ver el stock reducido.
 
+> Nota (E3-H4): el detalle ya muestra «Registrar entrega» (acción `deliver`, deshabilitada) a quien tiene `requests.deliver` en `approved`. Aquí: conectarla en `IMPLEMENTED_ACTIONS`.
+
 Estado: pendiente · Issue: [#30](https://github.com/Johguxo/modern-erp/issues/30)

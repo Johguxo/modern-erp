@@ -6,6 +6,8 @@
 - [ ] Se genera en el worker al quedar `approved` (y se regenera si hay correcciones), se guarda con `FileStorage` y se registra en `files`.
 - [ ] "Descargar PDF" en la pantalla 3 entrega una URL firmada de corta duración; para borradores genera una vista previa al vuelo con marca "BORRADOR".
 
+> Nota (E3-H4): el detalle ya muestra la tarjeta «Documento» con «Descargar PDF» (acción `download_pdf`, deshabilitada). Aquí: conectarla en `IMPLEMENTED_ACTIONS`; es una lectura (`READ_ACTIONS`), así que también funciona en solo lectura.
+
 Estado: pendiente · Issue: [#25](https://github.com/Johguxo/modern-erp/issues/25)
 
 ### E5-H2 · Correos de aprobación

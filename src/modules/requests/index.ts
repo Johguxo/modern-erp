@@ -2,6 +2,7 @@
 // Otros módulos y src/app solo importan desde aquí (ADR-001, regla 10).
 export {
   createGetRequestDeps,
+  createGetRequestDetailDeps,
   createListRequestsDeps,
   createPlatformSequenceDeps,
   createRequestsDeps,
@@ -18,17 +19,26 @@ export type {
   ApprovalAssignments,
   ApprovalStarter,
   GetRequestDeps,
+  GetRequestDetailDeps,
   ListRequestsDeps,
   RequestLabels,
   PlatformSequenceDeps,
   RequestsDeps,
   SequenceDeps,
 } from './application/ports';
-export type { RequestLineView, RequestView, SequenceView } from './application/views';
+export type {
+  RequestDetail,
+  RequestDetailLine,
+  RequestLineView,
+  RequestView,
+  SequenceView,
+  TimelineItemView,
+} from './application/views';
 export { createDraft, type CreateDraftInput } from './application/create-draft';
 export { updateDraft, type UpdateDraftInput } from './application/update-draft';
 export { submitRequest, type SubmitRequestInput } from './application/submit-request';
 export { getRequest } from './application/get-request';
+export { getRequestDetail } from './application/get-request-detail';
 export {
   listRequests,
   type InboxItem,
@@ -41,6 +51,14 @@ export { updateDocumentSequence } from './application/update-document-sequence';
 export { platformGetDocumentSequence } from './application/platform-get-document-sequence';
 export { platformUpdateDocumentSequence } from './application/platform-update-document-sequence';
 export { INBOX_TABS, type DisplayStatus, type InboxTab } from './domain/inbox';
+export { REQUEST_ACTIONS, availableActions, type RequestAction } from './domain/request-actions';
+export {
+  TIMELINE_KINDS,
+  TIMELINE_STATES,
+  deriveTimeline,
+  type TimelineKind,
+  type TimelineState,
+} from './domain/request-timeline';
 export {
   REQUEST_EVENTS,
   REQUEST_STATUSES,

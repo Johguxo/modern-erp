@@ -11,6 +11,7 @@ import type {
   ApprovalAssignments,
   ApprovalStarter,
   GetRequestDeps,
+  GetRequestDetailDeps,
   ListRequestsDeps,
   PlatformSequenceDeps,
   RequestsDeps,
@@ -72,6 +73,17 @@ export function createGetRequestDeps(
   return {
     requests: createDrizzleRequestRepository(tx),
     assignments: extras.assignments ?? noopApprovalAssignments,
+  };
+}
+
+/** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
+export function createGetRequestDetailDeps(
+  tx: DbExecutor,
+  extras: Pick<RequestsExtras, 'client' | 'assignments'>,
+): GetRequestDetailDeps {
+  return {
+    ...createGetRequestDeps(tx, extras),
+    labels: createRequestLabels(tx, { client: extras.client }),
   };
 }
 

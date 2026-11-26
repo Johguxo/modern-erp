@@ -1,97 +1,78 @@
-import type { Route } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { z } from 'zod';
 
 import { withTenant } from '@/db';
-import { createGetRequestDeps, getRequest } from '@/modules/requests';
-import { hasPermission } from '@/shared/authorization';
+import { createGetRequestDetailDeps, getRequestDetail } from '@/modules/requests';
+import { getRequestDetailContract } from '@/modules/requests/contracts';
 import { isDomainError } from '@/shared/errors';
-import { MoneyText } from '@/ui/base/money-text';
-import { PageHeader } from '@/ui/base/page-header';
-import { StatusBadge } from '@/ui/base/status-badge';
-import { Button } from '@/ui/components/button';
-import { trimDecimal } from '@/ui/format/money';
+import { NoticeBanner } from '@/ui/base/notice-banner';
 import { messages } from '@/ui/messages/es-PE';
 
+import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
+
+import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
+import { DetailHeader } from './_detail/detail-header';
+import { DetailItems } from './_detail/detail-items';
+import { DocumentCard } from './_detail/document-card';
+import { TimelinePanel } from './_detail/timeline-panel';
 
 const t = messages.requests.detail;
 
-// Detalle provisional (E3-H2): destino del envío. E3-H4 lo reemplaza por el detalle completo con la
-// línea de tiempo. Quien no puede ver la solicitud (otro tenant, borrador ajeno) recibe 404.
-export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
+// Detalle del SOF (E3-H4, pantalla 3): ítems, documento, línea de tiempo y acciones. Quien no puede
+// ver la solicitud (otro tenant, borrador ajeno, id inválido o sin permisos) recibe 404 y no se
+// entera de que existe.
+export default async function RequestPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const { enviado } = await searchParams;
   const { ctx } = await requireCtx();
-  if (!z.uuid().safeParse(id).success) notFound();
-  const request = await withTenant(ctx, (tx) =>
-    getRequest(ctx, { id }, createGetRequestDeps(tx)),
+  if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
+
+  const detail = await withTenant(ctx, (tx) =>
+    getRequestDetail(ctx, { id }, createGetRequestDetailDeps(tx, readOnlyRequestsExtras())),
   ).catch((error: unknown) => {
-    if (isDomainError(error) && error.code === 'NOT_FOUND') notFound();
+    if (isDomainError(error) && (error.code === 'NOT_FOUND' || error.code === 'FORBIDDEN')) {
+      notFound();
+    }
     throw error;
   });
-  const canEdit =
-    request.status === 'draft' &&
-    !ctx.readOnly &&
-    hasPermission(ctx, 'requests.create') &&
-    request.requesterId === ctx.userId;
-  const lines = request.lines.filter((line) => line.status === 'active');
+
+  const noteId = soonNoteId(detail.actions);
+  // Tras enviar, el editor llega con ?enviado=1.
+  const notice =
+    enviado === '1' &&
+    detail.number !== null &&
+    detail.requesterId === ctx.userId &&
+    detail.status === 'in_approval'
+      ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
+      : undefined;
 
   return (
-    <>
-      <PageHeader
-        title={request.number ? t.title(request.number) : t.titleDraft}
-        description={t.description}
-        actions={
-          <>
-            <StatusBadge status={request.status} className="self-center" />
-            {canEdit ? (
-              <Button asChild variant="outline">
-                <Link href={`/solicitudes/${request.id}/editar` as Route}>{t.editDraft}</Link>
-              </Button>
-            ) : null}
-          </>
-        }
-      />
-      <div className="flex max-w-3xl flex-col gap-5 rounded-xl border border-border bg-surface p-5">
-        {request.reason ? (
-          <p>
-            <span className="font-semibold">{t.reason}: </span>
-            {request.reason}
-          </p>
-        ) : null}
-        <section aria-label={t.items}>
-          <h2 className="mb-2 text-base font-semibold">{t.items}</h2>
-          {lines.length === 0 ? (
-            <p className="text-muted-foreground">{t.empty}</p>
-          ) : (
-            <ul>
-              {lines.map((line) => (
-                <li
-                  key={line.id}
-                  className="flex flex-wrap justify-between gap-2 border-t border-row-divider py-2"
-                >
-                  <span>
-                    {t.itemLine(line.productCode, line.description, trimDecimal(line.quantity, 0))}
-                  </span>
-                  <MoneyText amount={line.subtotal} currency={request.currency} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <p className="flex justify-between border-t border-border pt-3 text-[15px]">
-          <span className="text-muted-foreground">{t.total}</span>
-          <strong>
-            <MoneyText amount={request.totalAmount} currency={request.currency} />
-          </strong>
+    <div className="flex flex-col gap-5">
+      <NoticeBanner notice={notice} className="mb-0" />
+      <DetailHeader detail={detail} />
+      {noteId ? (
+        <p id={SOON_NOTE_ID} className="-mt-2 text-[13px] text-muted-foreground">
+          {t.actions.soon}
         </p>
+      ) : null}
+      <div className="flex flex-wrap items-start gap-5">
+        <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
+          <DetailItems
+            detail={detail}
+            actions={detail.actions}
+            readOnly={ctx.readOnly}
+            noteId={noteId}
+          />
+          <DocumentCard detail={detail} readOnly={ctx.readOnly} noteId={noteId} />
+        </div>
+        <TimelinePanel detail={detail} timeZone={ctx.timezone} readOnly={ctx.readOnly} />
       </div>
-      <p className="mt-4">
-        <Link href="/bandeja" className="text-primary hover:text-primary-hover">
-          {t.backToInbox}
-        </Link>
-      </p>
-    </>
+    </div>
   );
 }

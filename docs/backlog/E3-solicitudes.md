@@ -42,15 +42,17 @@ Estado: en revisión · Issue: [#18](https://github.com/Johguxo/modern-erp/issue
 
 ### E3-H4 · Detalle del SOF (pantalla 3, lectura)
 **Criterios de aceptación**
-- [ ] `/solicitudes/[id]` fiel al prototipo `DetalleSOF.dc.html`: cabecera, estado, ítems, documento y panel de línea de tiempo.
-- [ ] 404 si no existe o es de otro tenant o el usuario no tiene visibilidad.
-- [ ] Los botones de acción se muestran según estado y permisos (la lógica de acciones llega en E4 y E6).
+- [x] `/solicitudes/[id]` fiel al prototipo `DetalleSOF.dc.html`: cabecera, estado, ítems, documento y panel de línea de tiempo.
+- [x] 404 si no existe o es de otro tenant o el usuario no tiene visibilidad.
+- [x] Los botones de acción se muestran según estado y permisos (la lógica de acciones llega en E4 y E6).
 
-Estado: pendiente · Issue: [#19](https://github.com/Johguxo/modern-erp/issues/19)
+Estado: en revisión · Issue: [#19](https://github.com/Johguxo/modern-erp/issues/19)
 
 ### E3-H5 · Anular
 **Criterios de aceptación**
 - [ ] El solicitante anula sus borradores o documentos `in_approval`/`changes_requested`; el admin también los `approved` no entregados.
 - [ ] Comentario obligatorio; evento `cancelled`; los pasos pendientes se cierran.
+
+> Nota (E3-H4): la acción `cancel` ya se muestra (deshabilitada) al dueño en `draft`, `in_approval` y `changes_requested` (`availableActions` en `requests/domain/request-actions.ts`). Aquí: conectarla (agregar a `IMPLEMENTED_ACTIONS` en `solicitudes/[id]/_detail/detail-actions.ts`) y decidir la rama admin (propuesta: permiso `requests.cancel_any`, nota en ADR-002).
 
 Estado: pendiente · Issue: [#20](https://github.com/Johguxo/modern-erp/issues/20)

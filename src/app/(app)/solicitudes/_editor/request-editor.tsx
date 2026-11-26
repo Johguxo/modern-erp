@@ -163,7 +163,7 @@ export function RequestEditor({
         return;
       }
       navigating = true;
-      router.push(`/solicitudes/${saved.id}` as Route);
+      router.push(`/solicitudes/${saved.id}?enviado=1` as Route);
     } catch {
       dispatch({
         type: 'setErrors',

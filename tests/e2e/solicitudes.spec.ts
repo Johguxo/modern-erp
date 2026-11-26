@@ -11,7 +11,7 @@ import { expect, signIn, test, type Account, type Accounts } from './fixtures/au
 
 const t = messages.requests;
 const EDIT_URL = /\/solicitudes\/[0-9a-f-]{36}\/editar$/;
-const DETAIL_URL = /\/solicitudes\/[0-9a-f-]{36}$/;
+const DETAIL_URL = /\/solicitudes\/[0-9a-f-]{36}(\?enviado=1)?$/;
 
 /** El menú visible según el ancho: lateral en escritorio, panel en el celular. */
 async function openMenu(page: Page) {
@@ -154,12 +154,16 @@ test('el solicitante arma, guarda, edita y envía un SOF', async ({ page, accoun
   await expect(page.getByRole('status').filter({ hasText: t.notices.saved })).toBeVisible();
   const draftUrl = page.url();
 
-  // Enviar: guarda, numera y lleva al detalle provisional.
+  // Enviar: guarda, numera y lleva al detalle con el aviso de envío.
   await page.getByRole('button', { name: t.actions.submit }).click();
   await expect(page).toHaveURL(DETAIL_URL);
   await expect(
-    page.getByRole('heading', { level: 1, name: t.detail.title('SOF-0001') }),
+    page.getByRole('heading', {
+      level: 1,
+      name: t.detail.title('SOF-0001', 'Mantenimiento de 500 horas'),
+    }),
   ).toBeVisible();
+  await expect(page.getByText(t.detail.submittedNotice('SOF-0001'))).toBeVisible();
   await expect(page.getByText(messages.status.in_approval)).toBeVisible();
   await expect(page.getByText('47.50').first()).toBeVisible();
 
@@ -195,7 +199,7 @@ test('enviar sin completar muestra los errores y no sale del editor', async ({
   await page.getByRole('button', { name: t.actions.submit }).click();
   await expect(page).toHaveURL(DETAIL_URL);
   await expect(
-    page.getByRole('heading', { level: 1, name: t.detail.title('SOF-0001') }),
+    page.getByRole('heading', { level: 1, name: t.detail.title('SOF-0001', 'Reposición') }),
   ).toBeVisible();
   await expectNoPageOverflow(page);
 });

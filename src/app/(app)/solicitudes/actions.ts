@@ -7,8 +7,15 @@ import { createPreviewRouteDeps, previewRoute } from '@/modules/approvals';
 import { previewRouteContract } from '@/modules/approvals/contracts';
 import { createCatalogDeps, searchProducts } from '@/modules/catalog';
 import { searchProductsContract } from '@/modules/catalog/contracts';
-import { createDraft, createRequestsDeps, submitRequest, updateDraft } from '@/modules/requests';
 import {
+  cancelRequest,
+  createDraft,
+  createRequestsDeps,
+  submitRequest,
+  updateDraft,
+} from '@/modules/requests';
+import {
+  cancelRequestContract,
   createDraftContract,
   submitRequestContract,
   updateDraftContract,
@@ -40,6 +47,16 @@ export const submitRequestAction = action(
   ({ ctx, input, tx, shared }) =>
     submitRequest(ctx, input, createRequestsDeps(tx, requestsExtras(shared))),
   { name: 'requests.submitRequest' },
+);
+
+// Anular: el caso de uso revisa `requests.create` o `requests.cancel_any` (la acción no exige uno
+// solo) y que el usuario pueda ver y anular ese documento.
+export const cancelRequestAction = action(
+  cancelRequestContract,
+  null,
+  ({ ctx, input, tx, shared }) =>
+    cancelRequest(ctx, input, createRequestsDeps(tx, requestsExtras(shared))),
+  { name: 'requests.cancelRequest' },
 );
 
 // El buscador solo lee: sigue disponible en solo lectura (ADR-006).

@@ -21,7 +21,9 @@ export interface PolicyStepView {
 
 export type ViewWarning =
   | { readonly type: 'role_without_members' }
-  | { readonly type: 'inactive_users'; readonly userIds: string[] };
+  | { readonly type: 'role_cannot_decide' }
+  | { readonly type: 'inactive_users'; readonly userIds: string[] }
+  | { readonly type: 'users_cannot_decide'; readonly userIds: string[] };
 
 export interface PolicyView {
   readonly docType: DocType;
@@ -30,7 +32,9 @@ export interface PolicyView {
   /** La política tiene pasos que esta pantalla no puede editar: se muestra un aviso y no se guarda. */
   readonly hasReservedSteps: boolean;
   readonly steps: PolicyStepView[];
-  readonly members: { userId: string; name: string; roles: Role[] }[];
+  readonly members: { userId: string; name: string; roles: Role[]; canDecide: boolean }[];
+  /** Roles con `approvals.decide`, para avisar en vivo mientras se edita. */
+  readonly decidingRoles: Role[];
   /** Usuarios de los pasos que ya no son miembros activos. */
   readonly inactiveUsers: { readonly userId: string; readonly name: string }[];
 }
@@ -39,7 +43,7 @@ export async function toPolicyView(
   tenantId: string,
   policy: Policy,
   members: readonly DirectoryMember[],
-  directory: Pick<ApproverDirectory, 'namesOf'>,
+  directory: Pick<ApproverDirectory, 'namesOf' | 'decidingRoles'>,
 ): Promise<PolicyView> {
   const active = new Set(members.map((member) => member.userId));
   const inactiveIds = [
@@ -63,13 +67,19 @@ export async function toPolicyView(
         userIds: [...step.userIds],
         rule: step.rule,
         condition: { ...step.condition },
-        warnings: stepWarnings(step, members).map((warning) =>
-          warning.type === 'inactive_users'
+        warnings: stepWarnings(step, members, directory.decidingRoles).map((warning) =>
+          warning.type === 'inactive_users' || warning.type === 'users_cannot_decide'
             ? { type: warning.type, userIds: [...warning.userIds] }
             : warning,
         ),
       })),
-    members: members.map(({ userId, name, roles }) => ({ userId, name, roles: [...roles] })),
+    members: members.map(({ userId, name, roles, canDecide }) => ({
+      userId,
+      name,
+      roles: [...roles],
+      canDecide,
+    })),
+    decidingRoles: [...directory.decidingRoles],
     inactiveUsers: inactiveIds.map((userId) => ({ userId, name: names.get(userId) ?? '' })),
   };
 }

@@ -21,10 +21,10 @@ const LUIS = '55555555-5555-4555-8555-555555555555';
 const REQUEST = '66666666-6666-4666-8666-666666666666';
 
 const members: DirectoryMember[] = [
-  { userId: REQUESTER, name: 'Solicitante', roles: ['requester'] },
-  { userId: ANA, name: 'Ana', roles: ['warehouse'] },
-  { userId: ROSA, name: 'Rosa', roles: ['warehouse'] },
-  { userId: LUIS, name: 'Luis', roles: ['approver'] },
+  { userId: REQUESTER, name: 'Solicitante', roles: ['requester'], canDecide: false },
+  { userId: ANA, name: 'Ana', roles: ['warehouse'], canDecide: true },
+  { userId: ROSA, name: 'Rosa', roles: ['warehouse'], canDecide: true },
+  { userId: LUIS, name: 'Luis', roles: ['approver'], canDecide: true },
 ];
 
 function step(order: number, overrides: Partial<PolicyStep> = {}): PolicyStep {

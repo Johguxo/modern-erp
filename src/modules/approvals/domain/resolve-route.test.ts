@@ -6,10 +6,12 @@ import { resolveRoute, stepWarnings, type ActiveApprover } from './resolve-route
 const ANA = '11111111-1111-4111-8111-111111111111';
 const LUIS = '22222222-2222-4222-8222-222222222222';
 const GONE = '33333333-3333-4333-8333-333333333333';
+const OLGA = '44444444-4444-4444-8444-444444444444';
+const DECIDING = ['admin', 'warehouse', 'approver'] as const;
 
 const members: ActiveApprover[] = [
-  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'] },
-  { userId: LUIS, name: 'Luis Rojas', roles: ['approver', 'requester'] },
+  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'], canDecide: true },
+  { userId: LUIS, name: 'Luis Rojas', roles: ['approver', 'requester'], canDecide: true },
 ];
 
 function step(order: number, overrides: Partial<PolicyStep> = {}): PolicyStep {
@@ -89,15 +91,48 @@ describe('resolveRoute', () => {
 
 describe('stepWarnings', () => {
   it('avisa si el rol no tiene miembros activos', () => {
-    expect(stepWarnings(step(1, { role: 'purchasing' }), members)).toEqual([
+    expect(stepWarnings(step(1, { role: 'purchasing' }), members, ['purchasing'])).toEqual([
       { type: 'role_without_members' },
     ]);
-    expect(stepWarnings(step(1), members)).toEqual([]);
+    expect(stepWarnings(step(1), members, DECIDING)).toEqual([]);
   });
 
   it('avisa de los usuarios desactivados de un paso de usuarios', () => {
     expect(
-      stepWarnings(step(1, { approverType: 'users', role: null, userIds: [ANA, GONE] }), members),
+      stepWarnings(
+        step(1, { approverType: 'users', role: null, userIds: [ANA, GONE] }),
+        members,
+        DECIDING,
+      ),
     ).toEqual([{ type: 'inactive_users', userIds: [GONE] }]);
+  });
+
+  it('avisa si el rol del paso no puede aprobar solicitudes', () => {
+    expect(stepWarnings(step(1, { role: 'requester' }), members, DECIDING)).toEqual([
+      { type: 'role_cannot_decide' },
+    ]);
+  });
+
+  it('avisa de los usuarios del paso que no pueden aprobar', () => {
+    const withOlga = [
+      ...members,
+      { userId: OLGA, name: 'Olga', roles: ['requester' as const], canDecide: false },
+    ];
+    expect(
+      stepWarnings(
+        step(1, { approverType: 'users', role: null, userIds: [ANA, OLGA] }),
+        withOlga,
+        DECIDING,
+      ),
+    ).toEqual([{ type: 'users_cannot_decide', userIds: [OLGA] }]);
+  });
+
+  it('la vista previa no muestra como aprobadores a quienes no pueden decidir', () => {
+    const withOlga = [
+      ...members,
+      { userId: OLGA, name: 'Olga', roles: ['warehouse' as const], canDecide: false },
+    ];
+    const route = resolveRoute('SOF', policy([step(1)]), null, withOlga);
+    expect(route.steps[0]?.approvers.map((a) => a.userId)).toEqual([ANA]);
   });
 });

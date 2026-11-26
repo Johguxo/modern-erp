@@ -47,9 +47,13 @@ export interface DirectoryMember {
   readonly userId: string;
   readonly name: string;
   readonly roles: readonly Role[];
+  /** Sus roles incluyen `approvals.decide`. */
+  readonly canDecide: boolean;
 }
 
 export interface ApproverDirectory {
+  /** Roles que incluyen `approvals.decide`: los únicos que pueden aprobar un paso. */
+  readonly decidingRoles: readonly Role[];
   /** Miembros activos del tenant (membresía y usuario activos), ordenados por nombre. */
   activeMembers(tenantId: string): Promise<readonly DirectoryMember[]>;
   /** Nombres de usuarios del tenant por id (activos o no); ignora los que no son del tenant. */

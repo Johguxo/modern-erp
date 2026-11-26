@@ -26,7 +26,9 @@ export const stepsSchema = z.array(stepSchema).max(MAX_POLICY_STEPS);
 
 const warningSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('role_without_members') }),
+  z.object({ type: z.literal('role_cannot_decide') }),
   z.object({ type: z.literal('inactive_users'), userIds: z.array(z.string()) }),
+  z.object({ type: z.literal('users_cannot_decide'), userIds: z.array(z.string()) }),
 ]);
 
 export const policyViewSchema = z.object({
@@ -38,8 +40,15 @@ export const policyViewSchema = z.object({
   steps: z.array(stepSchema.extend({ warnings: z.array(warningSchema) })),
   /** Miembros activos que se pueden elegir como aprobadores. */
   members: z.array(
-    z.object({ userId: z.string(), name: z.string(), roles: z.array(z.enum(TENANT_ROLES)) }),
+    z.object({
+      userId: z.string(),
+      name: z.string(),
+      roles: z.array(z.enum(TENANT_ROLES)),
+      canDecide: z.boolean(),
+    }),
   ),
+  /** Roles con `approvals.decide` (los únicos que pueden aprobar un paso). */
+  decidingRoles: z.array(z.enum(TENANT_ROLES)),
   /** Usuarios de los pasos que ya no son miembros activos (se muestran como «desactivado»). */
   inactiveUsers: z.array(z.object({ userId: z.string(), name: z.string() })),
 });

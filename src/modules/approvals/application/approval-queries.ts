@@ -1,5 +1,6 @@
 // Asignaciones del motor para la bandeja y la visibilidad (E4-H2): a quién espera cada solicitud.
-// Son lecturas del usuario del ctx; la solicitud y los permisos los revisa quien llama.
+// Son lecturas del usuario del ctx; la solicitud la revisa quien llama. Sin `approvals.decide` el
+// usuario no cuenta como aprobador aunque conserve una asignación vieja (p. ej. le quitaron el rol).
 import type { Ctx } from '@/shared/context';
 
 import type { ApprovalQueries } from './ports';
@@ -14,11 +15,21 @@ export interface ApprovalAssignmentsView {
   pendingStepId(ctx: Ctx, requestId: string): Promise<string | null>;
 }
 
+const canDecide = (ctx: Ctx): boolean => ctx.permissions.has('approvals.decide');
+
 export function createApprovalAssignments(queries: ApprovalQueries): ApprovalAssignmentsView {
   return {
-    assignedRequestIds: (ctx) => queries.assignedRequestIds(ctx.tenantId, ctx.userId),
-    isAssigned: (ctx, requestId) => queries.isAssigned(ctx.tenantId, ctx.userId, requestId),
-    pendingRequestIds: (ctx) => queries.pendingRequestIds(ctx.tenantId, ctx.userId),
-    pendingStepId: (ctx, requestId) => queries.pendingStepId(ctx.tenantId, ctx.userId, requestId),
+    assignedRequestIds: (ctx) =>
+      canDecide(ctx) ? queries.assignedRequestIds(ctx.tenantId, ctx.userId) : Promise.resolve([]),
+    isAssigned: (ctx, requestId) =>
+      canDecide(ctx)
+        ? queries.isAssigned(ctx.tenantId, ctx.userId, requestId)
+        : Promise.resolve(false),
+    pendingRequestIds: (ctx) =>
+      canDecide(ctx) ? queries.pendingRequestIds(ctx.tenantId, ctx.userId) : Promise.resolve([]),
+    pendingStepId: (ctx, requestId) =>
+      canDecide(ctx)
+        ? queries.pendingStepId(ctx.tenantId, ctx.userId, requestId)
+        : Promise.resolve(null),
   };
 }

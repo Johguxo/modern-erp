@@ -8,12 +8,14 @@ const REQUESTER = '11111111-1111-4111-8111-111111111111';
 const ANA = '22222222-2222-4222-8222-222222222222';
 const LUIS = '33333333-3333-4333-8333-333333333333';
 const ROSA = '44444444-4444-4444-8444-444444444444';
+const OLGA = '66666666-6666-4666-8666-666666666666';
 
 const members: ActiveApprover[] = [
-  { userId: ANA, name: 'Ana', roles: ['warehouse'] },
-  { userId: LUIS, name: 'Luis', roles: ['approver'] },
-  { userId: ROSA, name: 'Rosa', roles: ['approver', 'warehouse'] },
-  { userId: REQUESTER, name: 'Solicitante', roles: ['approver'] },
+  { userId: ANA, name: 'Ana', roles: ['warehouse'], canDecide: true },
+  { userId: LUIS, name: 'Luis', roles: ['approver'], canDecide: true },
+  { userId: ROSA, name: 'Rosa', roles: ['approver', 'warehouse'], canDecide: true },
+  { userId: REQUESTER, name: 'Solicitante', roles: ['approver'], canDecide: true },
+  { userId: OLGA, name: 'Olga', roles: ['requester'], canDecide: false },
 ];
 
 function step(order: number, overrides: Partial<PolicyStep> = {}): PolicyStep {
@@ -94,6 +96,18 @@ describe('planInstance', () => {
       input([step(1, { approverType: 'users', role: null, userIds: [REQUESTER] })]),
     );
     expect(plan.steps[0]).toMatchObject({ status: 'pending', assigneeIds: [] });
+  });
+
+  it('un rol sin approvals.decide deja el paso pendiente sin asignados', () => {
+    const plan = planInstance(input([step(1, { role: 'requester' })]));
+    expect(plan.steps[0]).toMatchObject({ status: 'pending', assigneeIds: [] });
+  });
+
+  it('con usuarios elegidos excluye a quien no puede decidir', () => {
+    const plan = planInstance(
+      input([step(1, { approverType: 'users', role: null, userIds: [OLGA, ANA] })]),
+    );
+    expect(plan.steps[0]?.assigneeIds).toEqual([ANA]);
   });
 
   it('guarda una copia de la política con el total usado', () => {

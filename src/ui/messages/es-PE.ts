@@ -164,6 +164,10 @@ export const messages = {
     warnings: {
       roleWithoutMembers: (role: string) =>
         `Ningún usuario activo tiene el rol ${role}: nadie podría aprobar este paso hasta que asignes ese rol a alguien.`,
+      roleCannotDecide: (role: string) =>
+        `El rol ${role} no puede aprobar solicitudes: nadie con ese rol podrá decidir este paso.`,
+      usersCannotDecide: (names: string) =>
+        `Estos usuarios no pueden aprobar solicitudes (${names}): no recibirán este paso. Cambia su rol o quítalos.`,
       inactiveUsers: (names: string) =>
         `Hay usuarios desactivados en este paso (${names}). No recibirán la solicitud; quítalos o reactívalos.`,
     },
@@ -839,7 +843,7 @@ export const messages = {
       approval_not_started: () =>
         'Esta solicitud no tiene una ruta de aprobación iniciada. Pide al administrador que la anule y créala de nuevo.',
       step_already_decided: () =>
-        'Este paso ya fue decidido por otra persona. Recarga la página para ver el estado actual.',
+        'Este paso ya no está pendiente. Recarga la página para ver el estado actual.',
       not_an_approver: () => 'No eres aprobador de este paso.',
       own_request: () => 'No puedes decidir tu propia solicitud.',
       decision_comment_required: () => 'Escribe un comentario para rechazar o pedir cambios.',

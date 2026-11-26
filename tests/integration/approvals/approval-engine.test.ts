@@ -185,6 +185,46 @@ describe('enviar', () => {
     expect(pending?.data).toMatchObject({ noAssignees: true, assigneeIds: [] });
   });
 
+  it('un paso con un rol que no puede aprobar queda pendiente sin asignados', async () => {
+    await addMember(fx, W.world, { fullName: 'Solo Solicitante', roles: ['requester'] });
+    await setPolicySteps(W.world.tenantId, [{ name: 'Solicitantes', role: 'requester' }]);
+    const sent = await sendRequest(W.world);
+    const steps = await storedSteps(sent.id);
+    expect(steps[0]?.status).toBe('pending');
+    expect(await storedAssignees(steps[0]?.id ?? '')).toEqual([]);
+    const pending = (await storedEvents(sent.id)).find((e) => e.type === 'step_pending');
+    expect(pending?.data).toMatchObject({ noAssignees: true, assigneeIds: [] });
+  });
+
+  it('un usuario elegido que solo es solicitante se excluye de los asignados', async () => {
+    const olga = await addMember(fx, W.world, {
+      fullName: 'Olga Solicitante',
+      roles: ['requester'],
+    });
+    await setPolicySteps(W.world.tenantId, [
+      { name: 'Mixto', userIds: [olga.userId, W.luis.userId] },
+    ]);
+    const sent = await sendRequest(W.world);
+    const steps = await storedSteps(sent.id);
+    expect((await storedAssignees(steps[0]?.id ?? '')).map((a) => a.userId)).toEqual([
+      W.luis.userId,
+    ]);
+  });
+
+  it('sin approvals.decide no hay contador fantasma aunque conserve una asignación', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    expect((await summaryOf(W.ana.ctx)).summary.awaitingMe).toBeGreaterThan(0);
+    // Mismo usuario, pero su sesión ya no tiene el permiso (le quitaron el rol).
+    const demoted = makeCtx({
+      tenantId: W.world.tenantId,
+      userId: W.ana.userId,
+      permissions: ['requests.read_own'],
+    });
+    expect((await summaryOf(demoted)).summary.awaitingMe).toBe(0);
+    expect((await summaryOf(demoted, 'awaiting_me')).items.map((i) => i.id)).not.toContain(sent.id);
+  });
+
   it('sin política activa: approval_policy_missing, nada se guarda y no se consume número', async () => {
     const before = await sequenceOf(W.world.tenantId);
     await getDbAdmin()

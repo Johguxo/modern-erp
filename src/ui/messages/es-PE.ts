@@ -598,6 +598,7 @@ export const messages = {
         steps: {
           created: 'Solicitud creada',
           submitted: 'Enviada a aprobación',
+          changes_requested: 'Se pidieron cambios',
           approval: 'Aprobación',
           approved: 'Aprobada',
           delivery: 'Entrega en almacén',
@@ -620,6 +621,7 @@ export const messages = {
       actions: {
         label: 'Acciones',
         edit_draft: 'Editar borrador',
+        resubmit: 'Reenviar a aprobación',
         cancel: 'Anular',
         approve: 'Aprobar',
         request_changes: 'Pedir cambio',

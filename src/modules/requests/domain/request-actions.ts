@@ -9,6 +9,7 @@ import { canTransition } from './request-state-machine';
 
 export const REQUEST_ACTIONS = [
   'edit_draft',
+  'resubmit',
   'cancel',
   'approve',
   'request_changes',
@@ -37,6 +38,10 @@ export function availableActions(
 
   if (isOwner && EDITABLE_STATUSES.includes(status) && hasPermission(ctx, 'requests.create')) {
     actions.push('edit_draft');
+  }
+  // Tras pedir cambios, el dueño puede reenviar a aprobación (la edición llega con E4).
+  if (isOwner && hasPermission(ctx, 'requests.create') && canTransition(status, 'resubmit')) {
+    actions.push('resubmit');
   }
   // Una vez aprobado, anular ya no es del solicitante: lo decide E3-H5.
   if (isOwner && status !== 'approved' && canTransition(status, 'cancel')) {

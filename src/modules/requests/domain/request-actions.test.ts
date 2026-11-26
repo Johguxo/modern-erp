@@ -31,7 +31,7 @@ describe('availableActions · solicitante dueño', () => {
   const table: [RequestStatus, RequestAction[]][] = [
     ['draft', ['edit_draft', 'cancel', 'download_pdf']],
     ['in_approval', ['cancel', 'download_pdf']],
-    ['changes_requested', ['cancel', 'download_pdf']],
+    ['changes_requested', ['resubmit', 'cancel', 'download_pdf']],
     ['approved', ['download_pdf']],
     ['delivered', ['download_pdf']],
     ['rejected', ['download_pdf']],

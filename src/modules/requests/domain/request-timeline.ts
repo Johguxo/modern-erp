@@ -6,6 +6,7 @@ import type { Request } from './request';
 export const TIMELINE_KINDS = [
   'created',
   'submitted',
+  'changes_requested',
   'approval',
   'approved',
   'delivery',
@@ -18,7 +19,7 @@ export type TimelineKind = (typeof TIMELINE_KINDS)[number];
  * - `done`: ya ocurrió.
  * - `pending`: ocurre ahora (esperando aprobación).
  * - `upcoming`: todavía no toca.
- * - `stopped`: el documento terminó aquí (rechazada o anulada).
+ * - `stopped`: el documento se detuvo aquí (rechazada, anulada o con cambios pedidos).
  */
 export const TIMELINE_STATES = ['done', 'pending', 'upcoming', 'stopped'] as const;
 export type TimelineState = (typeof TIMELINE_STATES)[number];
@@ -62,8 +63,15 @@ export function deriveTimeline(request: TimelineSource): TimelineItem[] {
 
   switch (request.status) {
     case 'draft':
-    case 'changes_requested':
       items.push(item('approval', 'upcoming', null), item('delivery', 'upcoming', null));
+      break;
+    case 'changes_requested':
+      // El aprobador pidió cambios: se detiene aquí hasta que el solicitante reenvíe (flujo §1).
+      items.push(
+        item('changes_requested', 'stopped', request.updatedAt),
+        item('approval', 'upcoming', null),
+        item('delivery', 'upcoming', null),
+      );
       break;
     case 'in_approval':
       items.push(item('approval', 'pending', null), item('delivery', 'upcoming', null));

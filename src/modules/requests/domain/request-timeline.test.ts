@@ -54,11 +54,18 @@ describe('deriveTimeline', () => {
     ]);
   });
 
-  it('cambios solicitados: la aprobación vuelve a ser próxima', () => {
+  it('cambios solicitados: se detiene ahí y la aprobación vuelve a ser próxima', () => {
     const items = deriveTimeline(source('changes_requested', { submittedAt: SUBMITTED }));
+    expect(items.at(2)).toEqual({
+      kind: 'changes_requested',
+      state: 'stopped',
+      at: UPDATED,
+      actorId: null,
+    });
     expect(shape(items)).toEqual([
       'created:done',
       'submitted:done',
+      'changes_requested:stopped',
       'approval:upcoming',
       'delivery:upcoming',
     ]);

@@ -1,5 +1,5 @@
 // Acceso a una solicitud ajena a la vista del que pregunta: 404 (no 403) para no revelar que existe.
-import { hasPermission } from '@/shared/authorization';
+import { hasPermission, requireAnyPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 import { ConflictError, NotFoundError } from '@/shared/errors';
 
@@ -40,6 +40,7 @@ export async function findVisibleRequest(
   id: string,
   deps: GetRequestDeps,
 ): Promise<RequestWithLines> {
+  requireAnyPermission(ctx, ['requests.create', 'requests.read_own', 'requests.read_all']);
   const found = await deps.requests.find(ctx.tenantId, id);
   if (!found) throw new NotFoundError({ message: 'Request not found' });
   // Solo se consultan las asignaciones cuando pueden cambiar la respuesta.

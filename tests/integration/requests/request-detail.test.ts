@@ -236,4 +236,11 @@ describe('rótulos', () => {
     const detail = await detailOf(A.ctx, other);
     expect(detail.equipmentLabel).toBeNull();
   });
+
+  it('el centro de costo y los usuarios de B tampoco se nombran en un SOF de A', async () => {
+    const other = await insertRequest(A, { costCenterId: B.costCenterId, requesterId: B.userId });
+    const detail = await detailOf(reader.ctx, other);
+    expect(detail.costCenterLabel).toBeNull();
+    expect(detail.requesterName).toBeNull();
+  });
 });

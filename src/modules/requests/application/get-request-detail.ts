@@ -1,6 +1,6 @@
 // Detalle del SOF (E3-H4): la solicitud visible con nombres, línea de tiempo y acciones. Comparte la
 // visibilidad de getRequest (404 si no existe, es de otro tenant o no la puede ver).
-import { hasPermission, requireAnyPermission } from '@/shared/authorization';
+import { hasPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
 
 import { displayStatus } from '../domain/inbox';
@@ -20,7 +20,6 @@ export async function getRequestDetail(
   input: { readonly id: string },
   deps: GetRequestDetailDeps,
 ): Promise<RequestDetail> {
-  requireAnyPermission(ctx, ['requests.create', 'requests.read_own', 'requests.read_all']);
   const { request, lines } = await findVisibleRequest(ctx, input.id, deps);
   const activeLines = lines.filter((line) => line.status === 'active');
 

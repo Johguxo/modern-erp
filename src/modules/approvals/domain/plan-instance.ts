@@ -17,6 +17,10 @@ export interface PlannedStep {
   readonly status: 'pending' | 'waiting' | 'skipped';
   /** Usuarios que pueden decidir, sin el solicitante y sin repetidos; vacío si el paso se omite. */
   readonly assigneeIds: readonly string[];
+  /** `normal` si se omite (la copia de la política); `reconfirmation` lo agrega una corrección. */
+  readonly kind?: 'normal' | 'reconfirmation';
+  /** Solo en `reconfirmation`: las líneas que se reconfirman (E4-H4). */
+  readonly lineIds?: readonly string[];
 }
 
 export interface PlannedInstance {

@@ -4,7 +4,12 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { DbExecutor } from '@/db';
-import { approvalInstances, approvalStepAssignees, approvalSteps } from '@/db/schema';
+import {
+  approvalInstances,
+  approvalPolicies,
+  approvalStepAssignees,
+  approvalSteps,
+} from '@/db/schema';
 
 import type { ApprovalInstanceRepository, StepWithRequest } from '../application/ports';
 import type {
@@ -102,6 +107,8 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
             requestId: instance.requestId,
             stepOrder: step.order,
             name: step.name,
+            kind: step.kind ?? 'normal',
+            lineIds: step.lineIds ? [...step.lineIds] : null,
             rule: step.rule,
             status: step.status,
             pendingSince: step.status === 'pending' ? now : null,
@@ -210,6 +217,37 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
         )
         .returning({ id: approvalSteps.id });
       return rows.length;
+    },
+
+    async reopenInstance(tenantId, instanceId, now) {
+      const rows = await db
+        .update(approvalInstances)
+        .set({ status: 'in_progress', updatedAt: now })
+        .where(
+          and(
+            eq(approvalInstances.tenantId, tenantId),
+            eq(approvalInstances.id, instanceId),
+            eq(approvalInstances.status, 'approved'),
+          ),
+        )
+        .returning({ id: approvalInstances.id });
+      return rows.length === 1;
+    },
+
+    async settingsOf(tenantId, instanceId) {
+      const [row] = await db
+        .select({ settings: approvalPolicies.settings })
+        .from(approvalInstances)
+        .innerJoin(
+          approvalPolicies,
+          and(
+            eq(approvalPolicies.id, approvalInstances.policyId),
+            eq(approvalPolicies.tenantId, approvalInstances.tenantId),
+          ),
+        )
+        .where(and(eq(approvalInstances.tenantId, tenantId), eq(approvalInstances.id, instanceId)))
+        .limit(1);
+      return row?.settings ?? null;
     },
 
     async closeInstance(tenantId, instanceId, status, now) {

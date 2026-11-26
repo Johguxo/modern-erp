@@ -24,10 +24,11 @@ const viewer = (
 });
 
 describe('assertEditable', () => {
-  it('solo el borrador se edita', () => {
-    expect(EDITABLE_STATUSES).toEqual(['draft']);
+  it('solo se edita en borrador o con cambios solicitados', () => {
+    expect(EDITABLE_STATUSES).toEqual(['draft', 'changes_requested']);
     expect(() => assertEditable('draft')).not.toThrow();
-    for (const status of REQUEST_STATUSES.filter((s) => s !== 'draft')) {
+    expect(() => assertEditable('changes_requested')).not.toThrow();
+    for (const status of REQUEST_STATUSES.filter((s) => !EDITABLE_STATUSES.includes(s))) {
       expect(() => assertEditable(status)).toThrow(InvalidTransitionError);
     }
   });

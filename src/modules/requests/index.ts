@@ -15,11 +15,13 @@ export {
 } from './infrastructure/document-sequence-step';
 export { noopApprovalAssignments } from './infrastructure/noop-approval-assignments';
 export { noopApprovalCanceller } from './infrastructure/noop-approval-canceller';
+export { noopApprovalHistory } from './infrastructure/noop-approval-history';
 export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
   ApprovalAssignments,
   ApprovalCanceller,
   ApprovalDecider,
+  ApprovalHistory,
   DecideDeps,
   ApprovalStarter,
   CancelDeps,
@@ -67,6 +69,7 @@ export {
   TIMELINE_KINDS,
   TIMELINE_STATES,
   deriveTimeline,
+  type StoppingDecision,
   type TimelineKind,
   type TimelineState,
 } from './domain/request-timeline';

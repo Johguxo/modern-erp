@@ -40,7 +40,7 @@ export function availableActions(
   if (isOwner && EDITABLE_STATUSES.includes(status) && hasPermission(ctx, 'requests.create')) {
     actions.push('edit_draft');
   }
-  // Tras pedir cambios, el dueño puede reenviar a aprobación (la edición llega con E4).
+  // Tras pedir cambios, el dueño edita («edit_draft» abre el editor) y reenvía a aprobación.
   if (isOwner && hasPermission(ctx, 'requests.create') && canTransition(status, 'resubmit')) {
     actions.push('resubmit');
   }

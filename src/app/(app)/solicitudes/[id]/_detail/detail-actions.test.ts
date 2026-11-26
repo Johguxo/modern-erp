@@ -13,10 +13,17 @@ import {
 } from './detail-actions';
 
 describe('isActionEnabled', () => {
-  it('editar borrador y anular funcionan hoy', () => {
-    expect(IMPLEMENTED_ACTIONS).toEqual(['edit_draft', 'cancel']);
+  it('editar, anular y las decisiones funcionan hoy', () => {
+    expect(IMPLEMENTED_ACTIONS).toEqual([
+      'edit_draft',
+      'cancel',
+      'approve',
+      'request_changes',
+      'reject',
+      'resubmit',
+    ]);
     for (const action of REQUEST_ACTIONS) {
-      expect(isActionEnabled(action, false)).toBe(action === 'edit_draft' || action === 'cancel');
+      expect(isActionEnabled(action, false)).toBe(IMPLEMENTED_ACTIONS.includes(action));
     }
   });
 
@@ -49,6 +56,7 @@ describe('panelActions y showsSoonNote', () => {
     expect(showsSoonNote(['edit_draft', 'download_pdf'])).toBe(true);
     expect(showsSoonNote(['correct_line', 'download_pdf'])).toBe(true);
     expect(showsSoonNote(['correct_line'])).toBe(true);
+    expect(showsSoonNote(['approve', 'request_changes', 'reject'])).toBe(false);
     expect(showsSoonNote(['approve', 'request_changes', 'reject', 'download_pdf'])).toBe(true);
     expect(soonNoteId(['edit_draft'])).toBeUndefined();
     expect(soonNoteId(['cancel', 'download_pdf'])).toBe(SOON_NOTE_ID);

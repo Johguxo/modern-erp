@@ -5,7 +5,7 @@ export interface ActionError {
   readonly code: ErrorCode;
   /** Texto en es-PE para el usuario; nunca un detalle técnico. */
   readonly message: string;
-  /** Motivo de dominio permitido (hoy `cancel_not_allowed`) para que la UI decida qué ofrecer. */
+  /** Motivo de dominio permitido (`cancel_not_allowed`, `stale_version` y los de la decisión de un paso) para que la UI decida qué ofrecer. */
   readonly reason?: string;
   /** Errores por campo con rutas con punto (`lines.0.quantity`), como React Hook Form. */
   readonly fieldErrors?: FieldErrors;

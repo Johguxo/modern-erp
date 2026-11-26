@@ -57,7 +57,21 @@ const item = (
   comment: string | null = null,
 ): TimelineItem => ({ kind, state, at, actorId, comment });
 
-export function deriveTimeline(request: TimelineSource): TimelineItem[] {
+/**
+ * La última decisión que detuvo la ronda (rechazo o pedido de cambios), con su autor y comentario.
+ * La entrega la lee del puerto ApprovalHistory; E4-H3 la reemplaza leyendo todos los eventos.
+ */
+export interface StoppingDecision {
+  readonly kind: 'reject' | 'request_changes';
+  readonly actorId: string;
+  readonly comment: string | null;
+  readonly at: Date;
+}
+
+export function deriveTimeline(
+  request: TimelineSource,
+  decision: StoppingDecision | null = null,
+): TimelineItem[] {
   const items: TimelineItem[] = [item('created', 'done', request.createdAt, request.requesterId)];
   if (request.submittedAt) {
     items.push(item('submitted', 'done', request.submittedAt, request.requesterId));
@@ -73,7 +87,9 @@ export function deriveTimeline(request: TimelineSource): TimelineItem[] {
     case 'changes_requested':
       // El aprobador pidió cambios: se detiene aquí hasta que el solicitante reenvíe (flujo §1).
       items.push(
-        item('changes_requested', 'stopped', request.updatedAt),
+        decision?.kind === 'request_changes'
+          ? item('changes_requested', 'stopped', decision.at, decision.actorId, decision.comment)
+          : item('changes_requested', 'stopped', request.updatedAt),
         item('approval', 'upcoming', null),
         item('delivery', 'upcoming', null),
       );
@@ -91,7 +107,11 @@ export function deriveTimeline(request: TimelineSource): TimelineItem[] {
       );
       break;
     case 'rejected':
-      items.push(item('rejected', 'stopped', endedAt));
+      items.push(
+        decision?.kind === 'reject'
+          ? item('rejected', 'stopped', decision.at, decision.actorId, decision.comment)
+          : item('rejected', 'stopped', endedAt),
+      );
       break;
     case 'cancelled':
       // Quien anuló y su comentario están en la cabecera (E3-H5); antes de eso, solo la fecha.

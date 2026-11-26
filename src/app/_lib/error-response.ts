@@ -10,7 +10,14 @@ import { messages } from '@/ui/messages/es-PE';
 type Reasons = typeof messages.errors.reasons;
 
 /** Motivos que la UI necesita para decidir qué ofrecer (p. ej. «Recargar»); el resto no sale. */
-const CLIENT_REASONS: ReadonlySet<string> = new Set(['cancel_not_allowed', 'stale_version']);
+const CLIENT_REASONS: ReadonlySet<string> = new Set([
+  'cancel_not_allowed',
+  'stale_version',
+  // Decidir un paso que ya cambió (E4-H2): la UI ofrece «Recargar».
+  'step_already_decided',
+  'not_an_approver',
+  'approval_not_started',
+]);
 
 function messageFor(
   code: ErrorCode,

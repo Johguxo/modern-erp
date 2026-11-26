@@ -12,6 +12,7 @@ import {
   createDraft,
   createGetRequestDetailDeps,
   getRequestDetail,
+  noopApprovalHistory,
   submitRequest,
   type ApprovalCanceller,
 } from '@/modules/requests';
@@ -302,7 +303,11 @@ describe('visibilidad tras anular', () => {
         getRequestDetail(
           ctx,
           { id: draft.id },
-          createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT, assignments: NO_ASSIGNMENTS }),
+          createGetRequestDetailDeps(tx, {
+            client: UNKNOWN_CLIENT,
+            assignments: NO_ASSIGNMENTS,
+            history: noopApprovalHistory,
+          }),
         ),
       );
 
@@ -325,7 +330,11 @@ describe('visibilidad tras anular', () => {
       getRequestDetail(
         reader.ctx,
         { id: sent.id },
-        createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT, assignments: NO_ASSIGNMENTS }),
+        createGetRequestDetailDeps(tx, {
+          client: UNKNOWN_CLIENT,
+          assignments: NO_ASSIGNMENTS,
+          history: noopApprovalHistory,
+        }),
       ),
     );
 

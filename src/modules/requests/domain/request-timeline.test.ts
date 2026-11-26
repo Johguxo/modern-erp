@@ -75,6 +75,47 @@ describe('deriveTimeline', () => {
     ]);
   });
 
+  it('cambios solicitados con la decisión: lleva autor, comentario y fecha del aprobador', () => {
+    const at = new Date('2026-11-24T09:00:00.000Z');
+    const items = deriveTimeline(source('changes_requested', { submittedAt: SUBMITTED }), {
+      kind: 'request_changes',
+      actorId: ADMIN,
+      comment: 'Falta el equipo',
+      at,
+    });
+    expect(items.at(2)).toEqual({
+      kind: 'changes_requested',
+      state: 'stopped',
+      at,
+      actorId: ADMIN,
+      comment: 'Falta el equipo',
+    });
+  });
+
+  it('rechazada con la decisión: lleva autor y comentario; una decisión de otro tipo no se usa', () => {
+    const at = new Date('2026-11-24T09:00:00.000Z');
+    const rejected = deriveTimeline(source('rejected', { submittedAt: SUBMITTED }), {
+      kind: 'reject',
+      actorId: ADMIN,
+      comment: 'No corresponde',
+      at,
+    });
+    expect(rejected.at(-1)).toEqual({
+      kind: 'rejected',
+      state: 'stopped',
+      at,
+      actorId: ADMIN,
+      comment: 'No corresponde',
+    });
+    const mismatched = deriveTimeline(source('rejected', { submittedAt: SUBMITTED }), {
+      kind: 'request_changes',
+      actorId: ADMIN,
+      comment: 'x',
+      at,
+    });
+    expect(mismatched.at(-1)).toMatchObject({ actorId: null, comment: null });
+  });
+
   it('aprobada: solo la fecha, sin autor', () => {
     const items = deriveTimeline(
       source('approved', { submittedAt: SUBMITTED, approvedAt: APPROVED }),

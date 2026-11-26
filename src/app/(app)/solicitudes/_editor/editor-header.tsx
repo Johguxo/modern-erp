@@ -5,7 +5,8 @@ import { messages } from '@/ui/messages/es-PE';
 
 const t = messages.requests;
 
-export function EditorHeader({ mode }: { mode: 'new' | 'edit' }) {
+/** `edit`: borrador; `changes`: solicitud con «Cambios solicitados» (E4-H2). */
+export function EditorHeader({ mode }: { mode: 'new' | 'edit' | 'changes' }) {
   return (
     <header className="mb-6">
       <nav aria-label={t.breadcrumbLabel} className="mb-1 text-[13px] text-muted-foreground">
@@ -13,7 +14,13 @@ export function EditorHeader({ mode }: { mode: 'new' | 'edit' }) {
           {t.breadcrumbInbox}
         </Link>
         <span aria-hidden="true"> / </span>
-        <span aria-current="page">{mode === 'new' ? t.breadcrumbNew : t.breadcrumbEdit}</span>
+        <span aria-current="page">
+          {mode === 'new'
+            ? t.breadcrumbNew
+            : mode === 'changes'
+              ? t.breadcrumbEditRequest
+              : t.breadcrumbEdit}
+        </span>
       </nav>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
         {t.title}

@@ -70,6 +70,7 @@ export function RequestEditor({
     view ? fromRequestView(view) : emptyState(),
   );
   const [busy, setBusy] = useState<Busy>(null);
+  const resubmitting = initial?.status === 'changes_requested';
   const totals = useMemo(() => computeTotals(state.lines), [state.lines]);
   const [route, setRoute] = useState<RoutePreview>(initialRoute);
   const [routeStatus, setRouteStatus] = useState<RouteStatus>('idle');
@@ -135,7 +136,14 @@ export function RequestEditor({
     }
     setBusy('save');
     try {
-      if (await persist()) dispatch({ type: 'setNotice', notice: messages.requests.notices.saved });
+      if (await persist()) {
+        dispatch({
+          type: 'setNotice',
+          notice: resubmitting
+            ? messages.requests.notices.changesSaved
+            : messages.requests.notices.saved,
+        });
+      }
     } catch {
       dispatch({
         type: 'setErrors',
@@ -163,7 +171,7 @@ export function RequestEditor({
         return;
       }
       navigating = true;
-      router.push(`/solicitudes/${saved.id}?enviado=1` as Route);
+      router.push(`/solicitudes/${saved.id}?${resubmitting ? 'reenviado' : 'enviado'}=1` as Route);
     } catch {
       dispatch({
         type: 'setErrors',
@@ -221,7 +229,13 @@ export function RequestEditor({
           </Button>
         ) : null}
         <Button type="button" size="lg" disabled={disabled} onClick={() => void submit()}>
-          {busy === 'submit' ? t.submitting : t.submit}
+          {busy === 'submit'
+            ? resubmitting
+              ? t.resubmitting
+              : t.submitting
+            : resubmitting
+              ? t.resubmit
+              : t.submit}
         </Button>
         <Button
           type="button"
@@ -229,7 +243,7 @@ export function RequestEditor({
           disabled={disabled}
           onClick={() => void saveDraft()}
         >
-          {busy === 'save' ? t.saving : t.saveDraft}
+          {busy === 'save' ? t.saving : resubmitting ? t.saveChanges : t.saveDraft}
         </Button>
       </ApprovalRoutePanel>
     </div>

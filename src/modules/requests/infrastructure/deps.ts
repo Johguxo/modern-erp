@@ -10,6 +10,7 @@ import type { Clock } from '@/shared/ports/clock';
 import type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalHistory,
   ApprovalDecider,
   ApprovalStarter,
   GetRequestDeps,
@@ -43,6 +44,7 @@ export interface RequestsExtras {
   readonly canceller?: ApprovalCanceller;
   readonly assignments?: ApprovalAssignments;
   readonly decider?: ApprovalDecider;
+  readonly history?: ApprovalHistory;
 }
 
 export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
@@ -89,11 +91,15 @@ export function createGetRequestDeps(
 /** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
 export function createGetRequestDetailDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client'> & { readonly assignments: ApprovalAssignments },
+  extras: Pick<RequestsExtras, 'client'> & {
+    readonly assignments: ApprovalAssignments;
+    readonly history: ApprovalHistory;
+  },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
     labels: createRequestLabels(tx, { client: extras.client }),
+    history: extras.history,
   };
 }
 

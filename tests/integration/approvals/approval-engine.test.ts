@@ -22,6 +22,7 @@ import {
   noopApprovalCanceller,
   noopApprovalStarter,
   submitRequest,
+  updateDraft,
 } from '@/modules/requests';
 import type { Ctx } from '@/shared/context';
 import { makeCtx } from '@tests/support/ctx';
@@ -458,6 +459,13 @@ describe('decidir', () => {
     expect(rejected).toMatchObject({ status: 'rejected', outcome: 'rejected', version: 3 });
     expect(rejected.closedAt).not.toBeNull();
     expect(rejected.closedBy).toBeNull();
+    // La línea de tiempo muestra quién rechazó y con qué comentario (ApprovalHistory).
+    const rejectedDetail = await detailOf(W.world.ctx, sent.id);
+    expect(rejectedDetail.timeline.at(-1)).toMatchObject({
+      kind: 'rejected',
+      comment: 'No corresponde',
+    });
+    expect(rejectedDetail.timeline.at(-1)?.actorName).toBeTruthy();
     expect((await storedSteps(sent.id)).map((s) => s.status)).toEqual(['rejected', 'cancelled']);
     expect((await storedInstances(sent.id))[0]?.status).toBe('rejected');
     const last = (await storedEvents(sent.id)).at(-1);
@@ -481,16 +489,43 @@ describe('decidir', () => {
       comment: 'Falta el equipo',
     });
     expect(asked).toMatchObject({ status: 'changes_requested', outcome: 'changes_requested' });
+    const askedDetail = await detailOf(W.world.ctx, sent.id);
+    const stoppedItem = askedDetail.timeline.find((i) => i.kind === 'changes_requested');
+    expect(stoppedItem).toMatchObject({ comment: 'Falta el equipo' });
+    expect(stoppedItem?.actorName).toBeTruthy();
     expect((await storedSteps(sent.id)).map((s) => s.status)).toEqual([
       'changes_requested',
       'cancelled',
     ]);
     const eventsRound1 = await storedEvents(sent.id);
 
-    // El solicitante reenvía: conserva el número y la secuencia no avanza.
+    // El solicitante edita (borra y reinserta las líneas: la política 0019 lo permite) y reenvía:
+    // conserva el número y la secuencia no avanza.
+    const edited = await runRequests(W.world.ctx, (deps) =>
+      updateDraft(
+        W.world.ctx,
+        {
+          id: sent.id,
+          version: asked.version,
+          ...draftInput(W.world, {
+            lines: [
+              {
+                productId: W.world.productIds.filter,
+                quantity: '3.000',
+                equipmentId: W.world.equipmentId,
+                notes: null,
+              },
+            ],
+          }),
+        },
+        deps,
+      ),
+    );
+    expect(edited.status).toBe('changes_requested');
+    expect(edited.lines).toHaveLength(1);
     const seqBefore = await sequenceOf(W.world.tenantId);
     const resent = await runRequests(W.world.ctx, (deps) =>
-      submitRequest(W.world.ctx, { id: sent.id, version: asked.version }, deps),
+      submitRequest(W.world.ctx, { id: sent.id, version: edited.version }, deps),
     );
     expect(resent).toMatchObject({ status: 'in_approval', number: sent.number });
     expect((await sequenceOf(W.world.tenantId))?.nextNumber).toBe(seqBefore?.nextNumber);
@@ -537,6 +572,62 @@ describe('decidir', () => {
       comment: null,
     });
     expect(approved).toMatchObject({ outcome: 'advanced' });
+  });
+
+  it('latestDecision devuelve la decisión de la última ronda aunque el reloj sea el mismo', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    const asked = await decideAs(W.ana, {
+      id: sent.id,
+      version: sent.version,
+      stepId: await stepIdOf(sent.id, 1),
+      decision: 'request_changes',
+      comment: 'Ronda 1: falta el equipo',
+    });
+    const resent = await runRequests(W.world.ctx, (deps) =>
+      submitRequest(W.world.ctx, { id: sent.id, version: asked.version }, deps),
+    );
+    await decideAs(W.ana, {
+      id: sent.id,
+      version: resent.version,
+      stepId: await stepIdOf(sent.id, 1, 2),
+      decision: 'reject',
+      comment: 'Ronda 2: no corresponde',
+    });
+
+    // Las dos rondas se decidieron con el mismo instante fijo: solo la ronda las distingue.
+    const steps = (await storedSteps(sent.id)).filter((s) => s.decidedAt !== null);
+    expect(new Set(steps.map((s) => s.decidedAt?.getTime())).size).toBe(1);
+    const decision = await withTenant(W.world.ctx, (tx) =>
+      createApprovalEngine(tx, {
+        clock: testShared().clock,
+        logger: testShared().logger,
+      }).history.latestDecision(W.world.ctx, sent.id),
+    );
+
+    expect(decision).toMatchObject({ kind: 'reject', comment: 'Ronda 2: no corresponde' });
+  });
+
+  it('latestDecision con el contexto de otro tenant devuelve null', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    await decideAs(W.ana, {
+      id: sent.id,
+      version: sent.version,
+      stepId: await stepIdOf(sent.id, 1),
+      decision: 'reject',
+      comment: 'No corresponde',
+    });
+    const latest = (ctx: Ctx) =>
+      withTenant(ctx, (tx) =>
+        createApprovalEngine(tx, {
+          clock: testShared().clock,
+          logger: testShared().logger,
+        }).history.latestDecision(ctx, sent.id),
+      );
+
+    expect(await latest(W.world.ctx)).toMatchObject({ kind: 'reject' });
+    expect(await latest(B.world.ctx)).toBeNull();
   });
 
   it('un SOF «En aprobación» sin instancia (anterior al motor): approval_not_started y se puede anular', async () => {

@@ -217,7 +217,7 @@ describe('grants de app_user', () => {
   });
 });
 
-describe('DELETE de líneas solo con la solicitud en borrador (política restrictiva)', () => {
+describe('DELETE de líneas solo con la solicitud editable (política restrictiva)', () => {
   it('con la solicitud en borrador se borran', async () => {
     const requestId = await insertRequest(A);
     await insertLine(A, requestId);
@@ -230,7 +230,42 @@ describe('DELETE de líneas solo con la solicitud en borrador (política restric
     expect(deleted).toHaveLength(2);
   });
 
-  it.each(['in_approval', 'changes_requested', 'approved', 'delivered', 'rejected', 'cancelled'])(
+  it('con la solicitud en changes_requested también se borran (E4-H2: edición antes de reenviar)', async () => {
+    const requestId = await insertRequest(A, {
+      status: 'changes_requested',
+      number: `T-CR-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
+      submittedAt: new Date('2026-11-25T15:00:00.000Z'),
+    });
+    await insertLine(A, requestId);
+
+    const deleted = await withTenant(scope(), (tx) =>
+      tx.execute(sql`delete from request_lines where request_id = ${requestId} returning id`),
+    );
+
+    expect(deleted).toHaveLength(1);
+  });
+
+  it('otro tenant no borra las líneas de una solicitud en changes_requested (borra 0)', async () => {
+    const requestId = await insertRequest(A, {
+      status: 'changes_requested',
+      number: `T-CRB-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
+      submittedAt: new Date('2026-11-25T15:00:00.000Z'),
+    });
+    const keptLine = await insertLine(A, requestId);
+
+    const deleted = await withTenant({ tenantId: B.tenantId, userId: B.userId }, (tx) =>
+      tx.execute(sql`delete from request_lines where request_id = ${requestId} returning id`),
+    );
+
+    expect(deleted).toHaveLength(0);
+    const rows = await admin()
+      .select({ id: requestLines.id })
+      .from(requestLines)
+      .where(eq(requestLines.id, keptLine));
+    expect(rows).toHaveLength(1);
+  });
+
+  it.each(['in_approval', 'approved', 'delivered', 'rejected', 'cancelled'])(
     'con la solicitud en %s no se borra ninguna línea',
     async (status) => {
       const requestId = await insertRequest(A, {

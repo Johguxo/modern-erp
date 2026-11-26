@@ -89,6 +89,7 @@ function setup(
         return Promise.resolve(pending.includes(id) ? STEP_ID : null);
       },
     },
+    history: { latestDecision: () => Promise.resolve(null) },
     labels: {
       userNames: (_ctx, ids) => {
         calls.userNames.push([...ids]);

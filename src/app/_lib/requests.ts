@@ -15,7 +15,10 @@ import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 import type { SharedDeps } from './pipeline';
 
 /** Extras de requests con el motor de aprobaciones conectado a la transacción `tx`. */
-export function requestsExtras(shared: SharedDeps, tx: DbExecutor): RequestsExtras {
+export function requestsExtras(
+  shared: SharedDeps,
+  tx: DbExecutor,
+): RequestsExtras & Required<Pick<RequestsExtras, 'assignments'>> {
   const engine = createApprovalEngine(tx, { clock: shared.clock, logger: shared.logger });
   return {
     client: shared.client,
@@ -28,7 +31,9 @@ export function requestsExtras(shared: SharedDeps, tx: DbExecutor): RequestsExtr
 }
 
 /** Para lecturas desde Server Components (sin cliente HTTP real que auditar). */
-export function readOnlyRequestsExtras(tx: DbExecutor): RequestsExtras {
+export function readOnlyRequestsExtras(
+  tx: DbExecutor,
+): RequestsExtras & Required<Pick<RequestsExtras, 'assignments'>> {
   const engine = createApprovalEngine(tx, { clock: systemClock, logger: getLogger() });
   return {
     client: UNKNOWN_CLIENT,

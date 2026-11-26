@@ -78,18 +78,18 @@ export function createSequenceDeps(
 /** Lectura de una solicitud (sin auditoría ni reloj). */
 export function createGetRequestDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'assignments'> = {},
+  extras: { readonly assignments: ApprovalAssignments },
 ): GetRequestDeps {
   return {
     requests: createDrizzleRequestRepository(tx),
-    assignments: extras.assignments ?? noopApprovalAssignments,
+    assignments: extras.assignments,
   };
 }
 
 /** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
 export function createGetRequestDetailDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client' | 'assignments'>,
+  extras: Pick<RequestsExtras, 'client'> & { readonly assignments: ApprovalAssignments },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
@@ -100,11 +100,13 @@ export function createGetRequestDetailDeps(
 /** Bandeja (E3-H3): consulta sobre `requests` y nombres resueltos en lote desde identity/catalog. */
 export function createListRequestsDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client' | 'clock' | 'assignments'>,
+  extras: Pick<RequestsExtras, 'client' | 'clock'> & {
+    readonly assignments: ApprovalAssignments;
+  },
 ): ListRequestsDeps {
   return {
     queries: createDrizzleRequestQueryRepository(tx),
-    assignments: extras.assignments ?? noopApprovalAssignments,
+    assignments: extras.assignments,
     labels: createRequestLabels(tx, { client: extras.client }),
     clock: extras.clock,
   };

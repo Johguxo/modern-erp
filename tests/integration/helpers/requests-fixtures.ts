@@ -305,7 +305,7 @@ export function runInbox(
       createListRequestsDeps(tx, {
         client: UNKNOWN_CLIENT,
         clock: extras.clock ?? new FixedClock(new Date('2026-11-25T15:00:00.000Z')),
-        ...(extras.assignments ? { assignments: extras.assignments } : {}),
+        assignments: extras.assignments ?? NO_ASSIGNMENTS,
       }),
     ),
   );

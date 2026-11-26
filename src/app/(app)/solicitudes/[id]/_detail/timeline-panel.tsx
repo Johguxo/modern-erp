@@ -148,7 +148,13 @@ export function TimelinePanel({
                   requestId={detail.id}
                   readOnly={readOnly}
                   noteId={noteId}
-                  className={mobileBar && action === 'reject' ? 'max-md:hidden' : undefined}
+                  className={
+                    mobileBar
+                      ? action === 'reject'
+                        ? 'max-md:hidden'
+                        : 'max-md:col-span-2'
+                      : undefined
+                  }
                   version={detail.version}
                   number={detail.number}
                   stepId={detail.pendingStepId}

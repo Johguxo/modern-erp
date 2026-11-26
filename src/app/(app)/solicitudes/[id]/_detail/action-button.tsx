@@ -60,8 +60,10 @@ export function ActionButton({
   const classes = cn(style.className, className);
 
   if (isActionEnabled(action, readOnly) && action === 'edit_draft') {
+    // Tras pedir cambios, lo principal es reenviar: «Editar solicitud» pasa a secundario.
+    const variant = status === 'changes_requested' ? 'outline' : style.variant;
     return (
-      <Button asChild variant={style.variant} size={size} className={classes}>
+      <Button asChild variant={variant} size={size} className={classes}>
         <Link href={`/solicitudes/${requestId}/editar` as Route}>
           {status === 'changes_requested' ? t.edit_request : t[action]}
         </Link>

@@ -1,25 +1,30 @@
-// Política "SOF estándar" (flujo-sof-aprobaciones.md §2): Almacén y luego Gerencia local. Hasta que
-// E4-H1 guarde las políticas en la base, la vista previa usa esta, igual a la del seed.
-import type { ApprovalPolicy } from './route-preview';
+// Política "SOF estándar" (flujo-sof-aprobaciones.md §2): Almacén y luego Gerencia local. Es la
+// semilla del alta de cada cliente y de las pruebas; en la base vive en approval_policies.
+import type { PolicyStepSpec } from './policy';
 
-export const STANDARD_SOF_POLICY: ApprovalPolicy = {
+export const STANDARD_SOF_POLICY: {
+  readonly docType: 'SOF';
+  readonly name: string;
+  readonly steps: readonly PolicyStepSpec[];
+} = {
+  docType: 'SOF',
   name: 'SOF estándar',
   steps: [
     {
-      order: 1,
       name: 'Almacén',
       approverType: 'role',
       role: 'warehouse',
-      approvers: [],
+      userIds: [],
       rule: 'any',
+      condition: {},
     },
     {
-      order: 2,
       name: 'Gerencia local',
       approverType: 'role',
       role: 'approver',
-      approvers: [],
+      userIds: [],
       rule: 'any',
+      condition: {},
     },
   ],
 };

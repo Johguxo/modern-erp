@@ -34,6 +34,11 @@ export const APP_NAV: readonly NavItem[] = [
     activePrefixes: ['/configuracion/equipos', '/configuracion/centros-de-costo'],
   },
   { href: '/configuracion/usuarios', label: messages.nav.users, permission: 'users.manage' },
+  {
+    href: '/configuracion/aprobaciones',
+    label: messages.nav.approvals,
+    permission: 'approval_policies.manage',
+  },
   { href: '/configuracion/empresa', label: messages.nav.company, permission: 'settings.manage' },
 ];
 

@@ -22,6 +22,7 @@ export const messages = {
     users: 'Usuarios',
     company: 'Empresa',
     catalog: 'Catálogo',
+    approvals: 'Aprobaciones',
   },
   /** Etiquetas de los roles del cliente (ADR-002). */
   roles: {
@@ -121,6 +122,50 @@ export const messages = {
     notices: {
       saved: 'Numeración actualizada.',
       unchanged: 'No había cambios que guardar.',
+    },
+  },
+  approvals: {
+    title: 'Aprobaciones',
+    description:
+      'Define quién aprueba las solicitudes de almacén y en qué orden. Los cambios aplican a las solicitudes que se envíen desde ahora; las que ya están en aprobación conservan su ruta.',
+    policyLabel: (name: string) => `Política · ${name}`,
+    stepsLabel: 'Pasos de aprobación',
+    stepTitle: (n: number) => `Paso ${n}`,
+    empty:
+      'Aún no hay pasos. Agrega al menos uno para que las solicitudes tengan quién las apruebe.',
+    name: 'Nombre del paso',
+    namePlaceholder: 'Por ejemplo, Almacén',
+    approverType: 'Quién aprueba',
+    approverTypes: { role: 'Cualquier usuario con un rol', users: 'Personas concretas' },
+    role: 'Rol',
+    rolePlaceholder: 'Elige un rol',
+    rule: 'Cuántos deben aprobar',
+    rules: { any: 'Basta con uno', all: 'Deben aprobar todos' },
+    users: 'Aprobadores',
+    usersSearch: 'Buscar usuario',
+    usersEmpty: 'Nadie coincide con la búsqueda.',
+    usersNone: 'Aún no elegiste a nadie.',
+    inactiveTag: 'desactivado',
+    removeUser: (name: string) => `Quitar a ${name}`,
+    moveUp: 'Subir',
+    moveDown: 'Bajar',
+    remove: 'Quitar',
+    moveUpStep: (n: number) => `Subir paso ${n}`,
+    moveDownStep: (n: number) => `Bajar paso ${n}`,
+    removeStep: (n: number) => `Quitar paso ${n}`,
+    reservedSteps:
+      'Esta política tiene pasos que esta pantalla no puede editar. Contacta al soporte de LinkUs.',
+    stale: 'Alguien cambió la política mientras la editabas. Recarga la página.',
+    addStep: 'Agregar paso',
+    maxSteps: (max: number) => `Una política admite hasta ${max} pasos.`,
+    save: 'Guardar cambios',
+    saving: 'Guardando…',
+    saved: 'Aprobaciones actualizadas.',
+    warnings: {
+      roleWithoutMembers: (role: string) =>
+        `Ningún usuario activo tiene el rol ${role}: nadie podría aprobar este paso hasta que asignes ese rol a alguien.`,
+      inactiveUsers: (names: string) =>
+        `Hay usuarios desactivados en este paso (${names}). No recibirán la solicitud; quítalos o reactívalos.`,
     },
   },
   catalog: {
@@ -548,6 +593,8 @@ export const messages = {
       updating: 'Actualizando la ruta…',
       updateError: 'No pudimos actualizar la ruta de aprobación.',
       notice: 'Cada aprobador recibe un aviso por correo.',
+      noPolicy:
+        'Tu empresa aún no tiene una ruta de aprobación. Pide al administrador que la configure.',
     },
     actions: {
       submit: 'Enviar a aprobación',
@@ -717,7 +764,14 @@ export const messages = {
       currency_required: () => 'Elige la moneda del precio de referencia.',
       code_taken: (p: Params) =>
         `Ya existe un registro con el código ${p.code ?? ''}. Usa otro código o busca el existente.`,
+      policy_without_steps: () => 'Agrega al menos un paso de aprobación.',
+      step_without_approvers: () => 'Elige quién aprueba este paso.',
+      approver_not_member: () =>
+        'Hay personas que ya no son usuarios activos de tu empresa. Quítalas del paso.',
       stale_version: () => 'Alguien modificó este documento. Recarga la página.',
+      duplicated_approver: () => 'Un aprobador está repetido en este paso.',
+      policy_has_reserved_steps: () =>
+        'Esta política tiene pasos que esta pantalla no puede editar. Contacta al soporte de LinkUs.',
       tenant_read_only: () =>
         'Tu empresa está en modo solo lectura. Contacta al administrador de LinkUs.',
       invalid_credentials: () => 'Correo o contraseña incorrectos.',

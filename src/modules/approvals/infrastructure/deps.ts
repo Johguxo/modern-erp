@@ -1,13 +1,37 @@
-// Fábrica de dependencias de approvals (ADR-005): la entrega la arma con la transacción de
-// withTenant. Hoy la política es fija y no usa la base; recibe `tx` para que E4-H1 solo cambie el
-// adaptador, sin tocar a quien la llama.
+// Fábricas de dependencias de approvals (ADR-005): la entrega las arma con la transacción de
+// withTenant y se las pasa a los casos de uso.
 import type { DbExecutor } from '@/db';
+import { createAuditLogFor } from '@/modules/identity';
+import type { ClientInfo } from '@/shared/ports/client-info';
+import type { Logger } from '@/shared/ports/logger';
 
-import type { PreviewRouteDeps } from '../application/ports';
+import type { GetPolicyDeps, PolicyAdminDeps, PreviewRouteDeps } from '../application/ports';
 
-import { standardPolicySource } from './standard-policy-source';
+import { createApproverDirectory } from './approver-directory';
+import { createDrizzlePolicyRepository } from './drizzle-policy-repository';
 
-export function createPreviewRouteDeps(tx: DbExecutor): PreviewRouteDeps {
-  void tx;
-  return { policies: standardPolicySource };
+export function createPreviewRouteDeps(tx: DbExecutor, logger?: Logger): PreviewRouteDeps {
+  return {
+    policies: createDrizzlePolicyRepository(tx),
+    directory: createApproverDirectory(tx),
+    ...(logger ? { logger } : {}),
+  };
+}
+
+export function createGetPolicyDeps(tx: DbExecutor): GetPolicyDeps {
+  return { policies: createDrizzlePolicyRepository(tx), directory: createApproverDirectory(tx) };
+}
+
+/** Lo que la entrega aporta a la administración de políticas (además de la transacción). */
+export interface PolicyAdminExtras {
+  readonly client: ClientInfo;
+}
+
+export function createPolicyAdminDeps(tx: DbExecutor, extras: PolicyAdminExtras): PolicyAdminDeps {
+  return {
+    policies: createDrizzlePolicyRepository(tx),
+    directory: createApproverDirectory(tx),
+    audit: createAuditLogFor(tx),
+    client: extras.client,
+  };
 }

@@ -5,6 +5,7 @@ export { PLAN_FEATURES, type PlanFeature } from './domain/plan-features';
 export type { UserCapacity } from './domain/entitlements';
 export type { Entitlements } from './application/entitlements';
 export {
+  createActiveMembersFor,
   createAuditLogFor,
   createEntitlementsFor,
   createInvitationServices,
@@ -20,6 +21,7 @@ export {
   type PlatformExtras,
   type UserAdminExtras,
 } from './infrastructure/deps';
+export type { ActiveMember } from './infrastructure/drizzle-active-members';
 export type { TenantSetupStepFactory } from './infrastructure/drizzle-platform-store';
 export type {
   PlatformDeps,

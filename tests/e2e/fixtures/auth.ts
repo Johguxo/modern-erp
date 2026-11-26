@@ -8,6 +8,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import postgres from 'postgres';
 
+import { STANDARD_SOF_POLICY } from '../../../src/modules/approvals/domain/standard-policy';
 import { messages } from '../../../src/ui/messages/es-PE';
 
 function requiredEnv(name: string): string {
@@ -150,6 +151,22 @@ export function createAccounts(): Accounts {
     tenantIds.push(row.id);
     await sql`insert into tenant_settings (tenant_id) values (${row.id})`;
     await sql`insert into document_sequences (tenant_id, doc_type, prefix, next_number) values (${row.id}, 'SOF', 'SOF-', 1)`;
+    // Política estándar (E4-H1), con los mismos valores que el alta real (STANDARD_SOF_POLICY):
+    // sin ella la ruta del editor queda vacía.
+    const [policy] = await sql<{ id: string }[]>`
+      insert into approval_policies (tenant_id, doc_type, name)
+      values (${row.id}, ${STANDARD_SOF_POLICY.docType}, ${STANDARD_SOF_POLICY.name})
+      returning id`;
+    if (!policy) throw new Error('política no creada');
+    for (const [index, step] of STANDARD_SOF_POLICY.steps.entries()) {
+      const approverRef = step.approverType === 'role' ? step.role : [...step.userIds];
+      await sql`
+        insert into approval_policy_steps
+          (tenant_id, policy_id, step_order, name, approver_type, approver_ref, rule, condition)
+        values
+          (${row.id}, ${policy.id}, ${index + 1}, ${step.name}, ${step.approverType},
+           ${sql.json(approverRef)}, ${step.rule}, ${sql.json({ ...step.condition })})`;
+    }
     await sql`
       insert into subscriptions (tenant_id, plan_id, status)
       select ${row.id}, id, 'active' from plans where code = 'starter'`;
@@ -306,6 +323,8 @@ export function createAccounts(): Accounts {
           await sql`delete from request_line_revisions where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from request_lines where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from requests where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_policy_steps where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_policies where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from document_sequences where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from products where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from equipment where tenant_id in ${sql(tenantIds)}`;

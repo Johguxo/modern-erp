@@ -1,6 +1,7 @@
 // Composición de la consola de plataforma (E1-H4, ADR-007): extras de la entrega (Mailer, APP_URL,
 // reloj, logger, cliente, afterCommit) y los pasos de alta de un cliente.
 import { getEnv } from '@/env';
+import { standardPolicySetupStep } from '@/modules/approvals';
 import { defaultWarehouseSetupStep } from '@/modules/catalog';
 import {
   createPlatformDeps,
@@ -23,7 +24,11 @@ export interface TenantSetupOptions {
  * política "SOF estándar" (E4-H1).
  */
 export function tenantSetupSteps(options: TenantSetupOptions = {}): TenantSetupStepFactory[] {
-  return [defaultWarehouseSetupStep, documentSequenceSetupStep(options.sequence)];
+  return [
+    defaultWarehouseSetupStep,
+    documentSequenceSetupStep(options.sequence),
+    standardPolicySetupStep,
+  ];
 }
 
 export function platformDeps(shared: SharedDeps, options: TenantSetupOptions = {}): PlatformDeps {

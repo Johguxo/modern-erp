@@ -78,3 +78,20 @@ describe('cobertura de RLS en catalog (E2-H1)', () => {
     }
   });
 });
+
+describe('cobertura de RLS en approvals (E4-H1)', () => {
+  it('las tablas de políticas tienen RLS y una política tenant_isolation para app_user', async () => {
+    const tables = ['approval_policies', 'approval_policy_steps'];
+    const rows = await getDbAdmin().execute<{ tablename: string; policyname: string }>(sql`
+      select tablename, policyname from pg_policies
+      where schemaname = 'public' and policyname = 'tenant_isolation'`);
+    const rls = await getDbAdmin().execute<{ relname: string; relrowsecurity: boolean }>(sql`
+      select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relkind = 'r'`);
+
+    for (const table of tables) {
+      expect(rows.map((r) => r.tablename)).toContain(table);
+      expect(rls.find((r) => r.relname === table)?.relrowsecurity).toBe(true);
+    }
+  });
+});

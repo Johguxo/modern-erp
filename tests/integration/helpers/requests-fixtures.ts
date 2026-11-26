@@ -5,6 +5,7 @@ import { makeCtx } from '@tests/support/ctx';
 import { FixedClock } from '@tests/support/fakes/fixed-clock';
 
 import { getDbAdmin } from '@/db/admin';
+import { standardPolicySetupStep } from '@/modules/approvals';
 import { withTenant } from '@/db/with-tenant';
 import { costCenters, equipment, products, requests, users, warehouses } from '@/db/schema';
 import {
@@ -107,6 +108,7 @@ export async function seedRequestsWorld(
     prefix: opts.prefix ?? 'SOF-',
     nextNumber: opts.nextNumber ?? 1,
   })(admin).run({ tenantId });
+  await standardPolicySetupStep(admin).run({ tenantId });
 
   if (!warehouse || !equipmentRow || !costCenter) throw new Error('seed de requests incompleto');
   return {

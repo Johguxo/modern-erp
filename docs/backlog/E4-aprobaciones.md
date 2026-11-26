@@ -4,15 +4,15 @@ Referencia: `docs/dominio/flujo-sof-aprobaciones.md` §2–§4 y §8.
 
 ### E4-H1 · Políticas y su pantalla
 **Criterios de aceptación**
-- [ ] Tablas `approval_policies`, `approval_policy_steps` con RLS.
-- [ ] `/configuracion/aprobaciones`: ver y editar los pasos de la política del SOF (nombre, tipo de aprobador `users` o `role`, aprobadores, regla `any`/`all`, orden). Los campos de condiciones quedan ocultos pero el modelo los guarda.
-- [ ] Validación: al menos un paso; cada paso con al menos un aprobador; un rol sin usuarios muestra advertencia.
-- [ ] `previewRoute(docType, total)` devuelve los pasos y aprobadores que aplicarían.
-- [ ] `platform.createTenant` (E1-H4) crea la política "SOF estándar": paso 1 "Almacén" (rol `warehouse`) y paso 2 "Gerencia local" (rol `approver`); el admin del cliente la ajusta después.
+- [x] Tablas `approval_policies`, `approval_policy_steps` con RLS.
+- [x] `/configuracion/aprobaciones`: ver y editar los pasos de la política del SOF (nombre, tipo de aprobador `users` o `role`, aprobadores, regla `any`/`all`, orden). Los campos de condiciones quedan ocultos pero el modelo los guarda.
+- [x] Validación: al menos un paso; cada paso con al menos un aprobador; un rol sin usuarios muestra advertencia.
+- [x] `previewRoute(docType, total)` devuelve los pasos y aprobadores que aplicarían.
+- [x] `platform.createTenant` (E1-H4) crea la política "SOF estándar": paso 1 "Almacén" (rol `warehouse`) y paso 2 "Gerencia local" (rol `approver`); el admin del cliente la ajusta después.
 
 > Nota (E3-H2): `approvals.previewRoute` ya existe con el puerto `PolicySource.activeFor(ctx, {docType, total})` y un adaptador provisional (`standardPolicySource`, `STANDARD_SOF_POLICY`). Aquí se reemplaza ese adaptador por el repositorio de políticas (aplicando `min_amount` y resolviendo aprobadores) y se reutiliza `STANDARD_SOF_POLICY` como semilla en `createTenant`; la UI del panel no cambia.
 
-Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/21)
+Estado: en revisión · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/21)
 
 ### E4-H2 · Instancia y decisión
 **Como** aprobador **quiero** aprobar, rechazar o pedir cambios **para** que la solicitud avance sin correos sueltos.
@@ -25,6 +25,8 @@ Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Reenvío tras `changes_requested` crea pasos nuevos desde el primero; los eventos anteriores se conservan.
 - [ ] Botones en la pantalla 3 y contador en la bandeja.
 - [ ] Eventos en `approval_events` y registro en `audit_events`.
+
+> Nota (E4-H1): al enviar, leer la política activa y sus pasos en una sola consulta dentro de la transacción (`PolicyRepository.findActive`) y copiarlos a la instancia; si no hay política, el envío falla (la vista previa sí degrada a ruta vacía). Si la política tiene pasos que el MVP no soporta (`hasReservedSteps`), decidir si se bloquea el envío. Aplicar aquí la regla «nadie aprueba su propia solicitud» y `stepApplies` para marcar `skipped`.
 
 > Nota (E3-H5): implementar el puerto `ApprovalCanceller.cancel(ctx, {requestId, comment})` de requests (hoy `noopApprovalCanceller`): instancia `cancelled`, pasos `pending`/`waiting` cerrados (decidir `skipped` o agregar `cancelled` al check) y evento `cancelled` con el comentario. Bloquear primero la solicitud, como `cancelRequest`.
 

@@ -26,6 +26,8 @@ Estado: pendiente · Issue: [#21](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Botones en la pantalla 3 y contador en la bandeja.
 - [ ] Eventos en `approval_events` y registro en `audit_events`.
 
+> Nota (E3-H3): implementar el puerto `ApprovalAssignments` de requests (`assignedRequestIds`, `pendingRequestIds`, `isAssigned`) sobre `approval_steps`/`approval_step_assignees` y pasarlo en `createRequestsDeps`/`createGetRequestDeps`/`createListRequestsDeps` (hoy `noopApprovalAssignments`). Si las listas de ids crecen, cambiar a `= any($1::uuid[])` o a subconsulta.
+
 > Nota (E3-H1/H2): `submitRequest` llama al puerto `ApprovalStarter` (hoy `noopApprovalStarter`). Aquí se reemplaza por el real. Los SOF enviados antes de esta historia quedaron en `in_approval` sin instancia: crearles su instancia (o confirmar que no hay ninguno en producción).
 
 Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)

@@ -2,6 +2,7 @@
 // Otros módulos y src/app solo importan desde aquí (ADR-001, regla 10).
 export {
   createGetRequestDeps,
+  createListRequestsDeps,
   createPlatformSequenceDeps,
   createRequestsDeps,
   createSequenceDeps,
@@ -11,10 +12,14 @@ export {
   documentSequenceSetupStep,
   type DocumentSequenceConfig,
 } from './infrastructure/document-sequence-step';
+export { noopApprovalAssignments } from './infrastructure/noop-approval-assignments';
 export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
+  ApprovalAssignments,
   ApprovalStarter,
   GetRequestDeps,
+  ListRequestsDeps,
+  RequestLabels,
   PlatformSequenceDeps,
   RequestsDeps,
   SequenceDeps,
@@ -24,11 +29,18 @@ export { createDraft, type CreateDraftInput } from './application/create-draft';
 export { updateDraft, type UpdateDraftInput } from './application/update-draft';
 export { submitRequest, type SubmitRequestInput } from './application/submit-request';
 export { getRequest } from './application/get-request';
+export {
+  listRequests,
+  type InboxItem,
+  type ListRequestsInput,
+  type ListRequestsOutput,
+} from './application/list-requests';
 export { getEditableDraft } from './application/get-editable-draft';
 export { getDocumentSequence } from './application/get-document-sequence';
 export { updateDocumentSequence } from './application/update-document-sequence';
 export { platformGetDocumentSequence } from './application/platform-get-document-sequence';
 export { platformUpdateDocumentSequence } from './application/platform-update-document-sequence';
+export { INBOX_TABS, type DisplayStatus, type InboxTab } from './domain/inbox';
 export {
   REQUEST_EVENTS,
   REQUEST_STATUSES,

@@ -40,6 +40,18 @@ export interface Account {
   readonly tenants: readonly { readonly id: string; readonly name: string }[];
 }
 
+export interface SeedRequest {
+  readonly requesterId: string;
+  readonly status: 'draft' | 'in_approval' | 'approved' | 'rejected';
+  /** Obligatorio salvo en borradores. */
+  readonly number?: string;
+  readonly reason?: string;
+  /** Código del equipo (EQ-1, EQ-2) o null. Por defecto, sin equipo. */
+  readonly equipmentCode?: string | null;
+  readonly totalAmount?: string;
+  readonly updatedAt?: Date;
+}
+
 export interface Accounts {
   create(variant: AccountVariant): Promise<Account>;
   /** E1-H3: usuario con cuenta de Auth y membresía activa en un tenant ya creado. */
@@ -59,6 +71,11 @@ export interface Accounts {
    * centro de costo CC-1.
    */
   addRequestCatalog(tenantId: string): Promise<void>;
+  /**
+   * E3-H3: solicitudes sembradas con SQL en un tenant con `addRequestCatalog` (sin pasar por la
+   * app). Un borrador no lleva número; lo demás sí. `updatedAt` por defecto es ahora.
+   */
+  addRequests(tenantId: string, rows: readonly SeedRequest[]): Promise<void>;
   /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
   setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
@@ -195,6 +212,33 @@ export function createAccounts(): Accounts {
       await sql`
         insert into cost_centers (tenant_id, code, name)
         values (${tenantId}, 'CC-1', 'Obra norte')`;
+    },
+
+    async addRequests(tenantId, rows) {
+      const [warehouse] = await sql<{ id: string }[]>`
+        select id from warehouses where tenant_id = ${tenantId} and is_default`;
+      const [costCenter] = await sql<{ id: string }[]>`
+        select id from cost_centers where tenant_id = ${tenantId} and code = 'CC-1'`;
+      if (!warehouse || !costCenter) throw new Error('falta addRequestCatalog');
+      for (const row of rows) {
+        const draft = row.status === 'draft';
+        const updatedAt = row.updatedAt ?? new Date();
+        const [equipment] = row.equipmentCode
+          ? await sql<{ id: string }[]>`
+              select id from equipment where tenant_id = ${tenantId} and code = ${row.equipmentCode}`
+          : [];
+        await sql`
+          insert into requests (
+            tenant_id, number, status, requester_id, cost_center_id, warehouse_id, equipment_id,
+            reason, currency, total_amount, submitted_at, approved_at, created_at, updated_at
+          ) values (
+            ${tenantId}, ${draft ? null : (row.number ?? null)}, ${row.status}, ${row.requesterId},
+            ${costCenter.id}, ${warehouse.id}, ${equipment?.id ?? null},
+            ${row.reason ?? 'Mantenimiento'}, 'PEN', ${row.totalAmount ?? '100.00'},
+            ${draft ? null : updatedAt}, ${row.status === 'approved' ? updatedAt : null},
+            ${updatedAt}, ${updatedAt}
+          )`;
+      }
     },
 
     async cleanup() {

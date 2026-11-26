@@ -35,6 +35,12 @@ export { upsertCostCenter } from './application/upsert-cost-center';
 export { setCostCenterActive } from './application/set-cost-center-active';
 export { getDefaultWarehouse } from './application/get-default-warehouse';
 export {
+  getCatalogLabels,
+  type CatalogLabel,
+  type CatalogLabels,
+  type CatalogLabelsInput,
+} from './application/get-catalog-labels';
+export {
   getCatalogRefs,
   type CatalogRefs,
   type CatalogRefsInput,

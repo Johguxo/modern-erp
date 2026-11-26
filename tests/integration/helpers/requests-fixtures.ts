@@ -6,9 +6,18 @@ import { FixedClock } from '@tests/support/fakes/fixed-clock';
 
 import { getDbAdmin } from '@/db/admin';
 import { withTenant } from '@/db/with-tenant';
-import { costCenters, equipment, products, warehouses } from '@/db/schema';
-import { createRequestsDeps, documentSequenceSetupStep } from '@/modules/requests';
+import { costCenters, equipment, products, requests, users, warehouses } from '@/db/schema';
+import {
+  createListRequestsDeps,
+  createRequestsDeps,
+  documentSequenceSetupStep,
+  listRequests,
+  type ApprovalAssignments,
+  type ListRequestsInput,
+} from '@/modules/requests';
 import type { RequestsDeps } from '@/modules/requests';
+import type { RequestStatus } from '@/modules/requests';
+import { eq } from 'drizzle-orm';
 import type { Ctx } from '@/shared/context';
 import type { Permission } from '@/shared/permissions';
 import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
@@ -154,4 +163,113 @@ export function draftInput(world: RequestsWorld, overrides: Record<string, unkno
     ],
     ...overrides,
   };
+}
+
+// ── Bandeja (E3-H3) ──────────────────────────────────────────────────────────────────────────
+
+export interface Member {
+  readonly userId: string;
+  readonly ctx: Ctx;
+}
+
+/** Otro usuario del mismo tenant, con un nombre completo reconocible y sus permisos. */
+export async function addMember(
+  fx: IdentityFixtures,
+  world: RequestsWorld,
+  opts: { fullName: string; permissions?: Permission[]; roles?: string[] },
+): Promise<Member> {
+  const user = await fx.user();
+  await getDbAdmin().update(users).set({ fullName: opts.fullName }).where(eq(users.id, user.id));
+  await fx.membership(world.tenantId, user.id, { roles: opts.roles ?? ['requester'] });
+  return {
+    userId: user.id,
+    ctx: makeCtx({
+      tenantId: world.tenantId,
+      userId: user.id,
+      permissions: opts.permissions ?? REQUESTER_PERMISSIONS,
+    }),
+  };
+}
+
+let requestCounter = 0;
+
+/**
+ * Inserta una solicitud con SQL (sin pasar por los casos de uso), respetando los checks de la base:
+ * un borrador no tiene número ni envío; lo demás sí.
+ */
+export async function insertRequest(
+  world: RequestsWorld,
+  opts: {
+    requesterId?: string;
+    status?: RequestStatus;
+    number?: string;
+    reason?: string | null;
+    equipmentId?: string | null;
+    costCenterId?: string | null;
+    totalAmount?: string;
+    updatedAt?: Date;
+    approvedAt?: Date | null;
+  } = {},
+): Promise<string> {
+  requestCounter += 1;
+  const status = opts.status ?? 'in_approval';
+  const draft = status === 'draft';
+  const updatedAt = opts.updatedAt ?? new Date('2026-11-20T12:00:00.000Z');
+  const [row] = await getDbAdmin()
+    .insert(requests)
+    .values({
+      tenantId: world.tenantId,
+      number: draft ? null : (opts.number ?? `T-${String(requestCounter).padStart(6, '0')}`),
+      status,
+      requesterId: opts.requesterId ?? world.userId,
+      costCenterId: opts.costCenterId === undefined ? world.costCenterId : opts.costCenterId,
+      warehouseId: world.warehouseId,
+      equipmentId: opts.equipmentId ?? null,
+      reason: opts.reason === undefined ? 'Mantenimiento' : opts.reason,
+      currency: 'PEN',
+      totalAmount: opts.totalAmount ?? '100.00',
+      submittedAt: draft ? null : updatedAt,
+      approvedAt: opts.approvedAt ?? null,
+      createdAt: updatedAt,
+      updatedAt,
+    })
+    .returning({ id: requests.id });
+  if (!row) throw new Error('solicitud no creada');
+  return row.id;
+}
+
+export const NO_ASSIGNMENTS: ApprovalAssignments = {
+  assignedRequestIds: () => Promise.resolve([]),
+  isAssigned: () => Promise.resolve(false),
+  pendingRequestIds: () => Promise.resolve([]),
+};
+
+/** ApprovalAssignments falso: lo que E4-H2 aportará, con listas fijas. */
+export function fakeAssignments(assigned: string[], pending: string[] = assigned) {
+  return {
+    assignedRequestIds: () => Promise.resolve(assigned),
+    isAssigned: (_ctx: Ctx, requestId: string) => Promise.resolve(assigned.includes(requestId)),
+    pendingRequestIds: () => Promise.resolve(pending),
+  } satisfies ApprovalAssignments;
+}
+
+export const INBOX_DEFAULTS: ListRequestsInput = { tab: 'all', q: null, page: 1, pageSize: 25 };
+
+/** Corre `listRequests` dentro de withTenant con las dependencias reales. */
+export function runInbox(
+  ctx: Ctx,
+  input: Partial<ListRequestsInput> = {},
+  extras: { assignments?: ApprovalAssignments; clock?: FixedClock } = {},
+) {
+  return withTenant(ctx, (tx) =>
+    listRequests(
+      ctx,
+      { ...INBOX_DEFAULTS, ...input },
+      createListRequestsDeps(tx, {
+        client: UNKNOWN_CLIENT,
+        clock: extras.clock ?? new FixedClock(new Date('2026-11-25T15:00:00.000Z')),
+        ...(extras.assignments ? { assignments: extras.assignments } : {}),
+      }),
+    ),
+  );
 }

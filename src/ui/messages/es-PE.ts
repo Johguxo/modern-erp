@@ -443,11 +443,46 @@ export const messages = {
     banner:
       'Tu empresa está en modo solo lectura: puedes consultar, pero no crear ni modificar. Contacta al administrador de LinkUs.',
   },
+  /** Bandeja de solicitudes (E3-H3). */
   inbox: {
     title: 'Bandeja de solicitudes',
+    greeting: (name: string | null) => (name ? `Hola, ${name}` : 'Hola'),
     emptyTitle: 'Aún no hay solicitudes',
     emptyDescription: 'Cuando crees o recibas solicitudes, aparecerán aquí.',
+    emptyAction: 'Crear la primera',
     newRequest: '+ Nueva solicitud',
+    summaryLabel: 'Resumen',
+    cards: {
+      awaitingMe: 'Esperan mi aprobación',
+      inApproval: 'En aprobación',
+      approvedThisWeek: 'Aprobadas esta semana',
+    },
+    tabsLabel: 'Filtrar por estado',
+    tabs: {
+      all: 'Todas',
+      awaiting_me: 'Esperan mi aprobación',
+      in_approval: 'En aprobación',
+      approved: 'Aprobadas',
+      draft: 'Borradores',
+      rejected: 'Rechazadas',
+    },
+    more: 'Más',
+    search: 'Buscar por número o motivo',
+    searchPlaceholder: 'Número o motivo de la solicitud',
+    listLabel: 'Solicitudes',
+    columns: {
+      number: 'N°',
+      type: 'Tipo',
+      requester: 'Solicitante',
+      area: 'Equipo / área',
+      amount: 'Monto est.',
+      status: 'Estado',
+      updated: 'Actualizado',
+    },
+    draftNumber: 'Borrador',
+    noValue: '—',
+    noResultsTitle: 'No hay solicitudes con este filtro',
+    noResultsDescription: 'Prueba con otra búsqueda o cambia de pestaña.',
   },
   /** Solicitudes (SOF): editor de borradores y detalle provisional (E3-H2). */
   requests: {

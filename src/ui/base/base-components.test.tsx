@@ -36,6 +36,11 @@ describe('PageHeader', () => {
     expect(html).toContain('<button type="button">Nueva</button>');
   });
 
+  it('el saludo (eyebrow) va sobre el título', () => {
+    const html = renderToStaticMarkup(<PageHeader eyebrow="Hola, Ruby" title="Bandeja" />);
+    expect(html.indexOf('Hola, Ruby')).toBeLessThan(html.indexOf('<h1'));
+  });
+
   it('sin descripción ni acciones no deja contenedores vacíos', () => {
     const html = renderToStaticMarkup(<PageHeader title="Clientes" />);
     expect(html).not.toContain('<p');
@@ -175,6 +180,14 @@ describe('DataTable (TanStack)', () => {
   it('sin datos ni estado vacío muestra el texto de sin resultados', () => {
     const html = renderToStaticMarkup(<DataTable columns={columns} data={[]} />);
     expect(html).toContain(messages.dataTable.noResults);
+  });
+
+  it('suma className al contenedor sin perder el borde por defecto', () => {
+    const html = renderToStaticMarkup(
+      <DataTable columns={columns} data={rows} className="rounded-none border-0" />,
+    );
+    expect(html).toMatch(/^<div class="[^"]*rounded-none[^"]*"/);
+    expect(html).not.toContain('rounded-xl');
   });
 
   it('con una sola página no muestra la paginación', () => {

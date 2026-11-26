@@ -28,6 +28,8 @@ export interface DataTableProps<T> {
   data: T[];
   /** Destino al hacer clic en una fila (atajo de mouse; ver la nota de accesibilidad). */
   getRowHref?: (row: T) => Route;
+  /** Clases del contenedor (por ejemplo, para quitar el borde dentro de otra tarjeta). */
+  className?: string;
   /** Lo que se muestra cuando no hay filas. */
   emptyState?: ReactNode;
   /** Página actual (1 = primera) y total de páginas, calculados en el servidor. */
@@ -49,6 +51,7 @@ export function DataTable<T>({
   emptyState,
   page = 1,
   pageCount = 1,
+  className,
 }: DataTableProps<T>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -66,7 +69,7 @@ export function DataTable<T>({
   const rows = table.getRowModel().rows;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+    <div className={cn('overflow-hidden rounded-xl border border-border bg-surface', className)}>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((group) => (

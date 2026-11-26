@@ -41,6 +41,8 @@ export interface MasterRepository<V extends MasterView, F extends object> {
   setActive(tenantId: string, id: string, active: boolean): Promise<void>;
   /** Solo los activos del tenant entre `ids` (los demás no aparecen). Sin bloqueo. */
   findActiveByIds(tenantId: string, ids: readonly string[]): Promise<V[]>;
+  /** Los del tenant entre `ids`, activos o no (rótulos de documentos ya creados). Sin bloqueo. */
+  findByIds(tenantId: string, ids: readonly string[]): Promise<V[]>;
 }
 
 export interface ProductFields {

@@ -4,3 +4,4 @@
 export type { AppDatabase, DbExecutor, DbTransaction } from './client';
 export { withTenant, withUser, type TenantScope, type UserScope } from './with-tenant';
 export { isUniqueViolation, pgErrorCode, PG_UNIQUE_VIOLATION } from './errors';
+export { escapeLike, searchWords } from './like';

@@ -5,7 +5,7 @@
 // para no perder lo que se escribe mientras la URL se actualiza.
 import type { Route } from 'next';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useId, useRef, useState } from 'react';
+import { startTransition, useEffect, useId, useRef, useState } from 'react';
 
 import { STATUS_FILTERS } from '@/modules/catalog/contracts';
 import { Input } from '@/ui/components/input';
@@ -31,6 +31,14 @@ export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'sta
   const statusId = useId();
   const [text, setText] = useState(params.q ?? '');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // El servidor es la fuente de verdad de ?q=, pero lo escrito manda mientras el input tiene el
+  // foco: solo se sincroniza (atrás/adelante, cambio de pestaña) cuando el input no lo tiene.
+  const [focused, setFocused] = useState(false);
+  const [prevQ, setPrevQ] = useState(params.q);
+  if (params.q !== prevQ) {
+    setPrevQ(params.q);
+    if (!focused) setText(params.q ?? '');
+  }
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -43,7 +51,9 @@ export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'sta
     }
     next.delete('page');
     const query = next.toString();
-    router.replace((query ? `${pathname}?${query}` : pathname) as Route);
+    startTransition(() => {
+      router.replace((query ? `${pathname}?${query}` : pathname) as Route);
+    });
   };
 
   return (
@@ -56,6 +66,8 @@ export function CatalogFilters({ params }: { params: Pick<ListParams, 'q' | 'sta
           autoComplete="off"
           placeholder={t.searchPlaceholder}
           value={text}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onChange={(event) => {
             const value = event.target.value;
             setText(value);

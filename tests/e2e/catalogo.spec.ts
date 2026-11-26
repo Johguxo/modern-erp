@@ -376,3 +376,30 @@ test('un usuario sin catalog.manage no ve el ítem y recibe "no encontrada"', as
   expect(result?.status()).toBe(200);
   await expect(page.getByText(messages.states.notFoundTitle)).toBeVisible();
 });
+
+test('la búsqueda del catálogo conserva el foco y lo escrito aunque se pause entre teclas', async ({
+  page,
+  accounts,
+}) => {
+  const admin = await accounts.create('single');
+  const tenantId = admin.tenants[0]?.id ?? '';
+  await accounts.addProduct(tenantId, 'P-100', 'Tornillos');
+  await accounts.addProduct(tenantId, 'P-200', 'Cinta');
+  await signIn(page, admin, /\/bandeja$/);
+  await page.goto('/configuracion/productos');
+  await expect(rowOf(page, 'P-100')).toBeVisible();
+  await expect(rowOf(page, 'P-200')).toBeVisible();
+
+  const search = page.getByLabel(t.search, { exact: true });
+  await search.click();
+  await search.pressSequentially('Torni');
+  await page.waitForTimeout(600); // > debounce: el servidor responde mientras se sigue escribiendo
+  await expect(page).toHaveURL(/q=Torni/);
+  await expect(search).toBeFocused();
+  await search.pressSequentially('llos');
+  await expect(page).toHaveURL(/q=Tornillos/);
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('Tornillos');
+  await expect(rowOf(page, 'P-100')).toBeVisible();
+  await expect(rowOf(page, 'P-200')).toHaveCount(0);
+});

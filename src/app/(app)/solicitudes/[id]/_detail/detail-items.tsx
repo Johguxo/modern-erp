@@ -95,7 +95,7 @@ export function DetailItems({
                     <MobileLabel>{columns.quantity}</MobileLabel>
                     {t.items.quantityWithUnit(trimDecimal(line.quantity, 0), line.unit)}
                   </td>
-                  <td className="py-3 pr-5 pl-2 text-right max-md:flex max-md:flex-col max-md:items-end max-md:gap-1 max-md:p-0">
+                  <td className="py-3 pr-5 pl-2 text-right max-md:col-span-2 max-md:flex max-md:items-center max-md:justify-between max-md:p-0">
                     <MobileLabel>{columns.subtotal}</MobileLabel>
                     <MoneyText amount={line.subtotal} currency={detail.currency} />
                   </td>

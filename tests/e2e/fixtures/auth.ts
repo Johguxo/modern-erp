@@ -40,6 +40,14 @@ export interface Account {
   readonly tenants: readonly { readonly id: string; readonly name: string }[];
 }
 
+export interface SeedLine {
+  /** FIL-1, PER-2 o SIN-3 (el precio sale del catálogo; SIN-3 cuesta 0). */
+  readonly productCode: string;
+  readonly quantity: string;
+  /** Código del equipo (EQ-1, EQ-2) o null. */
+  readonly equipmentCode?: string | null;
+}
+
 export interface SeedRequest {
   readonly requesterId: string;
   readonly status: 'draft' | 'in_approval' | 'approved' | 'rejected';
@@ -50,6 +58,8 @@ export interface SeedRequest {
   readonly equipmentCode?: string | null;
   readonly totalAmount?: string;
   readonly updatedAt?: Date;
+  /** Líneas activas (numeradas desde 1) con precios y subtotales del catálogo. */
+  readonly lines?: readonly SeedLine[];
 }
 
 export interface Accounts {
@@ -73,9 +83,10 @@ export interface Accounts {
   addRequestCatalog(tenantId: string): Promise<void>;
   /**
    * E3-H3: solicitudes sembradas con SQL en un tenant con `addRequestCatalog` (sin pasar por la
-   * app). Un borrador no lleva número; lo demás sí. `updatedAt` por defecto es ahora.
+   * app). Un borrador no lleva número; lo demás sí. `updatedAt` por defecto es ahora. Devuelve los
+   * ids en el mismo orden que `rows`.
    */
-  addRequests(tenantId: string, rows: readonly SeedRequest[]): Promise<void>;
+  addRequests(tenantId: string, rows: readonly SeedRequest[]): Promise<string[]>;
   /** E1-H3: fija `max_users` en los overrides de la suscripción del tenant (null = el del plan). */
   setMaxUsers(tenantId: string, max: number | null): Promise<void>;
   cleanup(): Promise<void>;
@@ -220,6 +231,7 @@ export function createAccounts(): Accounts {
       const [costCenter] = await sql<{ id: string }[]>`
         select id from cost_centers where tenant_id = ${tenantId} and code = 'CC-1'`;
       if (!warehouse || !costCenter) throw new Error('falta addRequestCatalog');
+      const ids: string[] = [];
       for (const row of rows) {
         const draft = row.status === 'draft';
         const updatedAt = row.updatedAt ?? new Date();
@@ -227,7 +239,7 @@ export function createAccounts(): Accounts {
           ? await sql<{ id: string }[]>`
               select id from equipment where tenant_id = ${tenantId} and code = ${row.equipmentCode}`
           : [];
-        await sql`
+        const [inserted] = await sql<{ id: string }[]>`
           insert into requests (
             tenant_id, number, status, requester_id, cost_center_id, warehouse_id, equipment_id,
             reason, currency, total_amount, submitted_at, approved_at, created_at, updated_at
@@ -237,8 +249,30 @@ export function createAccounts(): Accounts {
             ${row.reason ?? 'Mantenimiento'}, 'PEN', ${row.totalAmount ?? '100.00'},
             ${draft ? null : updatedAt}, ${row.status === 'approved' ? updatedAt : null},
             ${updatedAt}, ${updatedAt}
-          )`;
+          ) returning id`;
+        if (!inserted) throw new Error('solicitud no creada');
+        ids.push(inserted.id);
+        let lineNo = 0;
+        for (const line of row.lines ?? []) {
+          lineNo += 1;
+          const [lineEquipment] = line.equipmentCode
+            ? await sql<{ id: string }[]>`
+                select id from equipment
+                where tenant_id = ${tenantId} and code = ${line.equipmentCode}`
+            : [];
+          await sql`
+            insert into request_lines (
+              tenant_id, request_id, line_no, product_id, product_code_snapshot,
+              description_snapshot, unit_snapshot, equipment_id, quantity, unit_price, subtotal
+            )
+            select ${tenantId}, ${inserted.id}, ${lineNo}, p.id, p.code, p.name, p.unit,
+              ${lineEquipment?.id ?? null}, ${line.quantity}::numeric,
+              coalesce(p.reference_price, 0), round(${line.quantity}::numeric * coalesce(p.reference_price, 0), 2)
+            from products p
+            where p.tenant_id = ${tenantId} and p.code = ${line.productCode}`;
+        }
       }
+      return ids;
     },
 
     async cleanup() {

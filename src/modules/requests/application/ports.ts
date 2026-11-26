@@ -10,6 +10,7 @@ import type { InboxScope, InboxTab } from '../domain/inbox';
 import type { Currency } from '../domain/money';
 import type { SequenceState } from '../domain/numbering';
 import type { Request, RequestLine } from '../domain/request';
+import type { StoppingDecision } from '../domain/request-timeline';
 import type { RequestStatus } from '../domain/request-state-machine';
 
 export type DocType = 'SOF';
@@ -110,6 +111,18 @@ export interface ApprovalAssignments {
   pendingRequestIds(ctx: Ctx): Promise<readonly string[]>;
   /** El paso pendiente del usuario del ctx en esa solicitud (para decidirlo); null si no tiene. */
   pendingStepId(ctx: Ctx, requestId: string): Promise<string | null>;
+}
+
+/**
+ * Historial de la aprobación para la línea de tiempo (E4-H2). Lo implementa el motor de `approvals`.
+ * E4-H3 lo reemplaza leyendo todos los eventos.
+ */
+export interface ApprovalHistory {
+  /**
+   * La última decisión que detuvo la ronda (rechazo o pedido de cambios) de la solicitud; null si
+   * no hay ninguna.
+   */
+  latestDecision(ctx: Ctx, requestId: string): Promise<StoppingDecision | null>;
 }
 
 /** Nombres de otros módulos para mostrar en la bandeja (se resuelven en lote, solo las filas). */
@@ -304,6 +317,7 @@ export interface GetRequestDeps {
 /** Detalle del SOF (E3-H4): lo de getRequest más los nombres a mostrar. */
 export interface GetRequestDetailDeps extends GetRequestDeps {
   readonly labels: RequestLabels;
+  readonly history: ApprovalHistory;
 }
 
 export interface ListRequestsDeps {

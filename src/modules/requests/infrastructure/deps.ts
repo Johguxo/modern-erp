@@ -10,6 +10,7 @@ import type { Clock } from '@/shared/ports/clock';
 import type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalHistory,
   ApprovalDecider,
   ApprovalStarter,
   GetRequestDeps,
@@ -27,6 +28,7 @@ import { createDrizzleRequestRepository } from './drizzle-request-repository';
 import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-store';
 import { noopApprovalAssignments } from './noop-approval-assignments';
 import { noopApprovalCanceller } from './noop-approval-canceller';
+import { noopApprovalHistory } from './noop-approval-history';
 import { noopApprovalStarter } from './noop-approval-starter';
 import { unavailableApprovalDecider } from './unavailable-approval-decider';
 import { createRequestLabels } from './request-labels';
@@ -43,6 +45,7 @@ export interface RequestsExtras {
   readonly canceller?: ApprovalCanceller;
   readonly assignments?: ApprovalAssignments;
   readonly decider?: ApprovalDecider;
+  readonly history?: ApprovalHistory;
 }
 
 export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
@@ -89,11 +92,14 @@ export function createGetRequestDeps(
 /** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
 export function createGetRequestDetailDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client'> & { readonly assignments: ApprovalAssignments },
+  extras: Pick<RequestsExtras, 'client' | 'history'> & {
+    readonly assignments: ApprovalAssignments;
+  },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
     labels: createRequestLabels(tx, { client: extras.client }),
+    history: extras.history ?? noopApprovalHistory,
   };
 }
 

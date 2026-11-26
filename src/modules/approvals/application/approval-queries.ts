@@ -5,6 +5,30 @@ import type { Ctx } from '@/shared/context';
 
 import type { ApprovalQueries } from './ports';
 
+/** La decisión que detuvo la ronda, con la forma del puerto ApprovalHistory de requests. */
+export interface ApprovalHistoryView {
+  latestDecision(
+    ctx: Ctx,
+    requestId: string,
+  ): Promise<{
+    readonly kind: 'reject' | 'request_changes';
+    readonly actorId: string;
+    readonly comment: string | null;
+    readonly at: Date;
+  } | null>;
+}
+
+export function createApprovalHistory(queries: ApprovalQueries): ApprovalHistoryView {
+  return {
+    async latestDecision(ctx, requestId) {
+      const step = await queries.latestStoppingStep(ctx.tenantId, requestId);
+      return step
+        ? { kind: step.kind, actorId: step.decidedBy, comment: step.comment, at: step.decidedAt }
+        : null;
+    },
+  };
+}
+
 export interface ApprovalAssignmentsView {
   /** Solicitudes donde el usuario del ctx es aprobador asignado (cualquier paso). */
   assignedRequestIds(ctx: Ctx): Promise<readonly string[]>;

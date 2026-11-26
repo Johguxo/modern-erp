@@ -31,7 +31,10 @@ export async function getRequestDetail(
   const pendingStepId = mayDecide ? await deps.assignments.pendingStepId(ctx, request.id) : null;
   const pendingForMe = pendingStepId !== null;
 
-  const timeline = deriveTimeline(request);
+  // Quién detuvo la ronda y con qué comentario solo importa si el documento quedó detenido.
+  const stopped = request.status === 'rejected' || request.status === 'changes_requested';
+  const decision = stopped ? await deps.history.latestDecision(ctx, request.id) : null;
+  const timeline = deriveTimeline(request, decision);
   const [names, areas] = await Promise.all([
     deps.labels.userNames(ctx, nonNull([request.requesterId, ...timeline.map((i) => i.actorId)])),
     deps.labels.areaLabels(ctx, {

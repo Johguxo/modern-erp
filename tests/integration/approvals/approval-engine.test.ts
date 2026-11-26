@@ -459,6 +459,13 @@ describe('decidir', () => {
     expect(rejected).toMatchObject({ status: 'rejected', outcome: 'rejected', version: 3 });
     expect(rejected.closedAt).not.toBeNull();
     expect(rejected.closedBy).toBeNull();
+    // La línea de tiempo muestra quién rechazó y con qué comentario (ApprovalHistory).
+    const rejectedDetail = await detailOf(W.world.ctx, sent.id);
+    expect(rejectedDetail.timeline.at(-1)).toMatchObject({
+      kind: 'rejected',
+      comment: 'No corresponde',
+    });
+    expect(rejectedDetail.timeline.at(-1)?.actorName).toBeTruthy();
     expect((await storedSteps(sent.id)).map((s) => s.status)).toEqual(['rejected', 'cancelled']);
     expect((await storedInstances(sent.id))[0]?.status).toBe('rejected');
     const last = (await storedEvents(sent.id)).at(-1);
@@ -482,6 +489,10 @@ describe('decidir', () => {
       comment: 'Falta el equipo',
     });
     expect(asked).toMatchObject({ status: 'changes_requested', outcome: 'changes_requested' });
+    const askedDetail = await detailOf(W.world.ctx, sent.id);
+    const stoppedItem = askedDetail.timeline.find((i) => i.kind === 'changes_requested');
+    expect(stoppedItem).toMatchObject({ comment: 'Falta el equipo' });
+    expect(stoppedItem?.actorName).toBeTruthy();
     expect((await storedSteps(sent.id)).map((s) => s.status)).toEqual([
       'changes_requested',
       'cancelled',

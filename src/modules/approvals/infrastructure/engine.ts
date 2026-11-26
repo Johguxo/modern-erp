@@ -10,7 +10,9 @@ import type { Logger } from '@/shared/ports/logger';
 import { cancelApproval, type CancelApprovalInput } from '../application/cancel-approval';
 import {
   createApprovalAssignments,
+  createApprovalHistory,
   type ApprovalAssignmentsView,
+  type ApprovalHistoryView,
 } from '../application/approval-queries';
 import {
   decideApproval,
@@ -35,6 +37,7 @@ export interface ApprovalEngine {
     decide(ctx: Ctx, input: DecideApprovalInput): Promise<DecideApprovalOutput>;
   };
   readonly assignments: ApprovalAssignmentsView;
+  readonly history: ApprovalHistoryView;
 }
 
 export interface ApprovalEngineExtras {
@@ -51,10 +54,12 @@ export function createApprovalEngine(db: DbExecutor, extras: ApprovalEngineExtra
     clock: extras.clock,
     logger: extras.logger,
   };
+  const queries = createDrizzleApprovalQueries(db);
   return {
     starter: { start: (ctx, input) => startApproval(ctx, input, deps) },
     canceller: { cancel: (ctx, input) => cancelApproval(ctx, input, deps) },
     decider: { decide: (ctx, input) => decideApproval(ctx, input, deps) },
-    assignments: createApprovalAssignments(createDrizzleApprovalQueries(db)),
+    assignments: createApprovalAssignments(queries),
+    history: createApprovalHistory(queries),
   };
 }

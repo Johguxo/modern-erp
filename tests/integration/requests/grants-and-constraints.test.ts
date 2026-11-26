@@ -146,6 +146,22 @@ describe('grants de app_user', () => {
     expect(row).toMatchObject({ reason: 'ok', totalAmount: '5.00', version: 2 });
   });
 
+  it('requests: closed_by y close_comment sí se actualizan (migración 0014); closed_by no apunta a otro tenant', async () => {
+    const id = await insertRequest(A, {
+      status: 'cancelled',
+      number: 'SOF-8801',
+      submittedAt: new Date('2026-11-25T15:00:00.000Z'),
+    });
+    await withTenant(scope(), (tx) =>
+      tx
+        .update(requests)
+        .set({ closedAt: new Date(), closedBy: A.userId, closeComment: 'Duplicada' })
+        .where(eq(requests.id, id)),
+    );
+    const [row] = await admin().select().from(requests).where(eq(requests.id, id));
+    expect(row).toMatchObject({ closedBy: A.userId, closeComment: 'Duplicada' });
+  });
+
   it('request_lines: UPDATE solo de campos de línea', async () => {
     for (const statement of [
       sql`update request_lines set tenant_id = ${B.tenantId} where id = ${lineId}`,
@@ -318,6 +334,18 @@ describe('checks y unicidad', () => {
     await failsWith(insert({ reason: 'x'.repeat(501) }));
     await failsWith(insert({ docType: 'PR' }));
     await insert({ reason: 'x'.repeat(500) })();
+  });
+
+  it('requests: el comentario de cierre es nulo, o no vacío y de 500 caracteres como máximo', async () => {
+    const id = await insertRequest(A);
+    const setComment = (value: string | null) => () =>
+      admin().update(requests).set({ closeComment: value }).where(eq(requests.id, id));
+
+    await failsWith(setComment(''));
+    await failsWith(setComment('   '));
+    await failsWith(setComment('x'.repeat(501)));
+    await setComment('x'.repeat(500))();
+    await setComment(null)();
   });
 
   it('requests: el número y el envío van juntos y un borrador no tiene número', async () => {

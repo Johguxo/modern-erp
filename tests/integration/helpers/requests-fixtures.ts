@@ -133,7 +133,12 @@ export async function seedRequestsWorld(
 export function runRequests<T>(
   ctx: Ctx,
   fn: (deps: RequestsDeps) => Promise<T>,
-  extras: Partial<{ clock: FixedClock; approvals: RequestsDeps['approvals'] }> = {},
+  extras: Partial<{
+    clock: FixedClock;
+    approvals: RequestsDeps['approvals'];
+    canceller: RequestsDeps['canceller'];
+    assignments: RequestsDeps['assignments'];
+  }> = {},
 ): Promise<T> {
   return withTenant(ctx, (tx) =>
     fn(
@@ -141,6 +146,8 @@ export function runRequests<T>(
         client: UNKNOWN_CLIENT,
         clock: extras.clock ?? new FixedClock(new Date('2026-11-25T15:00:00.000Z')),
         ...(extras.approvals ? { approvals: extras.approvals } : {}),
+        ...(extras.canceller ? { canceller: extras.canceller } : {}),
+        ...(extras.assignments ? { assignments: extras.assignments } : {}),
       }),
     ),
   );

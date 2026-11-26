@@ -9,6 +9,10 @@ import type { Logger } from '@/shared/ports/logger';
 
 import { cancelApproval, type CancelApprovalInput } from '../application/cancel-approval';
 import {
+  createApprovalTimeline,
+  type ApprovalTimelineView,
+} from '../application/approval-timeline';
+import {
   createApprovalAssignments,
   createApprovalHistory,
   type ApprovalAssignmentsView,
@@ -38,6 +42,7 @@ export interface ApprovalEngine {
   };
   readonly assignments: ApprovalAssignmentsView;
   readonly history: ApprovalHistoryView;
+  readonly timeline: ApprovalTimelineView;
 }
 
 export interface ApprovalEngineExtras {
@@ -61,5 +66,6 @@ export function createApprovalEngine(db: DbExecutor, extras: ApprovalEngineExtra
     decider: { decide: (ctx, input) => decideApproval(ctx, input, deps) },
     assignments: createApprovalAssignments(queries),
     history: createApprovalHistory(queries),
+    timeline: createApprovalTimeline(queries),
   };
 }

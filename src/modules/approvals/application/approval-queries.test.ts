@@ -19,6 +19,7 @@ function queries(): ApprovalQueries {
     pendingRequestIds: pending,
     pendingStepId: () => Promise.resolve('s1'),
     latestStoppingStep: () => Promise.resolve(null),
+    timelineSource: () => Promise.resolve(null),
   };
 }
 

@@ -12,6 +12,8 @@ export {
   type ApprovalEngineExtras,
 } from './infrastructure/engine';
 export type { ApprovalAssignmentsView, ApprovalHistoryView } from './application/approval-queries';
+export type { ApprovalTimelineView } from './application/approval-timeline';
+export type { ApprovalTimelineEntry, TimelineEntryKind } from './domain/timeline';
 export type { DecideApprovalInput, DecideApprovalOutput } from './application/decide-approval-step';
 export type { StartApprovalInput } from './application/start-approval';
 export type { CancelApprovalInput } from './application/cancel-approval';

@@ -73,6 +73,10 @@ test('el solicitante anula un borrador y uno en aprobación, con comentario obli
   await expectNoPageOverflow(page);
 
   // En el celular los botones se apilan y el diálogo cabe en la pantalla.
+  // El diálogo abre con un zoom (95% → 100%): se mide recién cuando terminó la animación.
+  await dialog.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+  );
   const back = dialog.getByRole('button', { name: dialogText.back });
   const confirm = dialog.getByRole('button', { name: dialogText.submit });
   const backBox = await back.boundingBox();

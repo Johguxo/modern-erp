@@ -45,6 +45,8 @@ export const outputSchema = z.object({
   /** Texto con 2 decimales; nunca number. */
   totalAmount: z.string(),
   version: z.number().int(),
+  /** El paso pendiente del usuario; null si no le toca decidir. */
+  pendingStepId: z.uuid().nullable(),
   lines: z.array(detailLineSchema),
   timeline: z.array(timelineItemSchema),
   actions: z.array(z.enum(REQUEST_ACTIONS)),

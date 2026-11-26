@@ -5,6 +5,7 @@ import type { Ctx } from '@/shared/context';
 import type { ClientInfo } from '@/shared/ports/client-info';
 import type { Clock } from '@/shared/ports/clock';
 
+import type { DecisionKind, DecisionOutcome } from '../domain/decision';
 import type { InboxScope, InboxTab } from '../domain/inbox';
 import type { Currency } from '../domain/money';
 import type { SequenceState } from '../domain/numbering';
@@ -50,30 +51,55 @@ export interface TenantCurrency {
 }
 
 /**
- * Arranca la aprobación del documento enviado, dentro de la misma transacción del envío: si lanza,
- * el envío completo se revierte (no queda número consumido). En E3-H1 la implementación está
- * vacía; E4-H2 la reemplaza por la del motor de aprobaciones.
+ * Arranca la aprobación del documento enviado o reenviado, dentro de la misma transacción del
+ * envío: si lanza, el envío completo se revierte (no queda número consumido). Lo implementa el motor
+ * de `approvals` (E4-H2); `round` es 1 al enviar y sube con cada reenvío.
  */
 export interface ApprovalStarter {
   start(
     ctx: Ctx,
-    input: { readonly requestId: string; readonly docType: DocType; readonly totalAmount: string },
-  ): Promise<void>;
+    input: {
+      readonly requestId: string;
+      readonly docType: DocType;
+      readonly totalAmount: string;
+      /** Quien envía: nunca queda como aprobador de su propia solicitud. */
+      readonly requesterId: string;
+    },
+  ): Promise<{ readonly round: number }>;
 }
 
 /**
  * Cierra la aprobación del documento anulado, dentro de la misma transacción de la anulación: si
- * lanza, la anulación completa se revierte. En E3-H5 la implementación está vacía; E4-H2 la
- * reemplaza por la del motor (cierra los pasos pendientes y escribe el evento `cancelled`).
+ * lanza, la anulación completa se revierte. El motor de `approvals` (E4-H2) cierra los pasos
+ * abiertos y escribe el evento `cancelled`.
  */
 export interface ApprovalCanceller {
   cancel(ctx: Ctx, input: { readonly requestId: string; readonly comment: string }): Promise<void>;
 }
 
 /**
- * Aprobador asignado (bandeja y visibilidad, E3-H3). En E3-H3 la implementación devuelve listas
- * vacías; E4-H2 la reemplaza por el motor de aprobaciones. Si las listas crecen mucho, el adaptador
- * pasa a una subconsulta (ver el plan de E3-H3, riesgos).
+ * Decide un paso de aprobación dentro de la transacción de la decisión, con la solicitud ya
+ * bloqueada. Lo implementa el motor de `approvals` (E4-H2): aplica `any`/`all`, avanza o cierra la
+ * ronda y escribe los eventos. Lanza `step_already_decided`, `not_an_approver` o
+ * `approval_not_started` según el caso.
+ */
+export interface ApprovalDecider {
+  decide(
+    ctx: Ctx,
+    input: {
+      readonly requestId: string;
+      /** El paso que el usuario vio pendiente. */
+      readonly stepId: string;
+      readonly kind: DecisionKind;
+      readonly comment: string | null;
+    },
+  ): Promise<{ readonly outcome: DecisionOutcome }>;
+}
+
+/**
+ * Aprobador asignado (bandeja y visibilidad, E3-H3). Lo implementa el motor de `approvals`
+ * (E4-H2). Si las listas crecen mucho, el adaptador pasa a una subconsulta (ver el plan de E3-H3,
+ * riesgos).
  */
 export interface ApprovalAssignments {
   /** Solicitudes donde el usuario del ctx es aprobador asignado (cualquier paso). */
@@ -82,6 +108,8 @@ export interface ApprovalAssignments {
   isAssigned(ctx: Ctx, requestId: string): Promise<boolean>;
   /** Solicitudes cuyo paso pendiente actual es del usuario del ctx. */
   pendingRequestIds(ctx: Ctx): Promise<readonly string[]>;
+  /** El paso pendiente del usuario del ctx en esa solicitud (para decidirlo); null si no tiene. */
+  pendingStepId(ctx: Ctx, requestId: string): Promise<string | null>;
 }
 
 /** Nombres de otros módulos para mostrar en la bandeja (se resuelven en lote, solo las filas). */
@@ -137,7 +165,9 @@ export interface HeaderPatch {
   readonly status?: RequestStatus;
   readonly number?: string;
   readonly submittedAt?: Date;
-  /** Cierre por anulación (E3-H5): fecha, autor y comentario. */
+  /** Aprobación del último paso (E4-H2). */
+  readonly approvedAt?: Date;
+  /** Cierre por anulación (fecha, autor y comentario, E3-H5) o por rechazo (solo la fecha). */
   readonly closedAt?: Date;
   readonly closedBy?: string;
   readonly closeComment?: string;
@@ -248,6 +278,14 @@ export interface SubmitDeps extends DraftDeps {
   readonly clock: Clock;
 }
 
+/** Decidir un SOF (E4-H2): bloquea la solicitud, el motor decide el paso, actualiza y audita. */
+export interface DecideDeps extends AuditDeps {
+  readonly requests: RequestRepository;
+  readonly assignments: ApprovalAssignments;
+  readonly decider: ApprovalDecider;
+  readonly clock: Clock;
+}
+
 /** Anular un SOF (E3-H5): bloquea, cambia el estado, cierra la aprobación y audita. */
 export interface CancelDeps extends AuditDeps {
   readonly requests: RequestRepository;
@@ -259,7 +297,7 @@ export interface CancelDeps extends AuditDeps {
 
 export interface GetRequestDeps {
   readonly requests: RequestRepository;
-  /** Aprobador asignado (E4-H2); hoy vacío. */
+  /** Aprobador asignado (E4-H2). */
   readonly assignments: ApprovalAssignments;
 }
 
@@ -283,7 +321,8 @@ export interface SequenceDeps extends AuditDeps {
 export type RequestsDeps = SubmitDeps &
   SequenceDeps &
   Pick<GetRequestDeps, 'assignments'> &
-  Pick<CancelDeps, 'canceller'>;
+  Pick<CancelDeps, 'canceller'> &
+  Pick<DecideDeps, 'decider'>;
 
 // ── Consola de plataforma (conexión dueño, ADR-007) ──────────────────────────────────────────
 

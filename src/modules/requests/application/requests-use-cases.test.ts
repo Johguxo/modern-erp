@@ -164,6 +164,7 @@ function memoryRequests(): RequestRepository & { store: Map<string, RequestWithL
         ...(patch.status !== undefined ? { status: patch.status } : {}),
         ...(patch.number !== undefined ? { number: patch.number } : {}),
         ...(patch.submittedAt !== undefined ? { submittedAt: patch.submittedAt } : {}),
+        ...(patch.approvedAt !== undefined ? { approvedAt: patch.approvedAt } : {}),
         ...(patch.closedAt !== undefined ? { closedAt: patch.closedAt } : {}),
         ...(patch.closedBy !== undefined ? { closedBy: patch.closedBy } : {}),
         ...(patch.closeComment !== undefined ? { closeComment: patch.closeComment } : {}),
@@ -220,6 +221,7 @@ function setup(
     assignedRequestIds: () => Promise.resolve(options.assigned ?? []),
     isAssigned: (_ctx, requestId) => Promise.resolve((options.assigned ?? []).includes(requestId)),
     pendingRequestIds: () => Promise.resolve(options.assigned ?? []),
+    pendingStepId: () => Promise.resolve(null),
   };
   const deps: SubmitDeps & { sequences: typeof sequences; assignments: ApprovalAssignments } = {
     assignments,
@@ -230,7 +232,7 @@ function setup(
     approvals: options.approvals ?? {
       start: (_ctx, input) => {
         started.push(input.requestId);
-        return Promise.resolve();
+        return Promise.resolve({ round: 1 });
       },
     },
     audit: {
@@ -519,6 +521,41 @@ describe('submitRequest', () => {
     await expect(submitRequest(OTHER, { id: draft.id, version: 1 }, s.deps)).rejects.toThrow(
       NotFoundError,
     );
+  });
+
+  it('tras «Cambios solicitados» reenvía: conserva el número, no toca la secuencia y arranca otra ronda', async () => {
+    const starts: { requestId: string; requesterId: string }[] = [];
+    const s = setup({
+      approvals: {
+        start: (_ctx, input) => {
+          starts.push({ requestId: input.requestId, requesterId: input.requesterId });
+          return Promise.resolve({ round: starts.length });
+        },
+      },
+    });
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    const sent = await submitRequest(ME, { id: draft.id, version: draft.version }, s.deps);
+    const stored = s.requests.store.get(sent.id);
+    if (!stored) throw new Error('missing request');
+    s.requests.store.set(sent.id, {
+      ...stored,
+      request: { ...stored.request, status: 'changes_requested' },
+    });
+
+    const again = await submitRequest(ME, { id: sent.id, version: sent.version }, s.deps);
+
+    expect(again).toMatchObject({ status: 'in_approval', number: 'SOF-0143', version: 3 });
+    expect(s.sequences.state).toMatchObject({ nextNumber: 144, lastIssuedNumber: 143 });
+    expect(starts).toEqual([
+      { requestId: draft.id, requesterId: ME.userId },
+      { requestId: draft.id, requesterId: ME.userId },
+    ]);
+    expect(s.audit.map((a) => a.action)).toEqual([
+      'request.created',
+      'request.submitted',
+      'request.resubmitted',
+    ]);
+    expect(s.audit.at(-1)?.data).toMatchObject({ number: 'SOF-0143', round: 2 });
   });
 
   it('si el arranque de la aprobación falla, el error sale (la transacción real revierte todo)', async () => {

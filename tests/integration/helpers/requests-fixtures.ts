@@ -251,14 +251,19 @@ export const NO_ASSIGNMENTS: ApprovalAssignments = {
   assignedRequestIds: () => Promise.resolve([]),
   isAssigned: () => Promise.resolve(false),
   pendingRequestIds: () => Promise.resolve([]),
+  pendingStepId: () => Promise.resolve(null),
 };
 
-/** ApprovalAssignments falso: lo que E4-H2 aportará, con listas fijas. */
+export const FAKE_STEP_ID = '99999999-9999-4999-8999-999999999999';
+
+/** ApprovalAssignments falso con listas fijas (para probar la bandeja sin motor). */
 export function fakeAssignments(assigned: string[], pending: string[] = assigned) {
   return {
     assignedRequestIds: () => Promise.resolve(assigned),
     isAssigned: (_ctx: Ctx, requestId: string) => Promise.resolve(assigned.includes(requestId)),
     pendingRequestIds: () => Promise.resolve(pending),
+    pendingStepId: (_ctx: Ctx, requestId: string) =>
+      Promise.resolve(pending.includes(requestId) ? FAKE_STEP_ID : null),
   } satisfies ApprovalAssignments;
 }
 

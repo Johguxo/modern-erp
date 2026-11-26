@@ -128,6 +128,8 @@ export interface RequestDetail {
   readonly currency: Request['currency'];
   readonly totalAmount: string;
   readonly version: number;
+  /** El paso pendiente del usuario (es lo que decide); null si no le toca decidir. */
+  readonly pendingStepId: string | null;
   /** Solo líneas activas, por número de línea. Mutable para encajar con los contratos Zod. */
   readonly lines: RequestDetailLine[];
   readonly timeline: TimelineItemView[];

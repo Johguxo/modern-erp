@@ -80,6 +80,7 @@ function setup(initial: Request, options: { assigned?: boolean; failCanceller?: 
       assignedRequestIds: () => Promise.resolve([]),
       isAssigned: () => Promise.resolve(options.assigned ?? false),
       pendingRequestIds: () => Promise.resolve([]),
+      pendingStepId: () => Promise.resolve(null),
     },
     canceller: {
       cancel: (_ctx, input) => {

@@ -19,6 +19,8 @@ export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalDecider,
+  DecideDeps,
   ApprovalStarter,
   CancelDeps,
   GetRequestDeps,
@@ -41,6 +43,11 @@ export { createDraft, type CreateDraftInput } from './application/create-draft';
 export { updateDraft, type UpdateDraftInput } from './application/update-draft';
 export { submitRequest, type SubmitRequestInput } from './application/submit-request';
 export { cancelRequest, type CancelRequestInput } from './application/cancel-request';
+export {
+  decideRequest,
+  type DecideRequestInput,
+  type DecideRequestOutput,
+} from './application/decide-request';
 export { getRequest } from './application/get-request';
 export { getRequestDetail } from './application/get-request-detail';
 export {

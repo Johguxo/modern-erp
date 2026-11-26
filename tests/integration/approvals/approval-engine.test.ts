@@ -22,6 +22,7 @@ import {
   noopApprovalCanceller,
   noopApprovalStarter,
   submitRequest,
+  updateDraft,
 } from '@/modules/requests';
 import type { Ctx } from '@/shared/context';
 import { makeCtx } from '@tests/support/ctx';
@@ -487,10 +488,33 @@ describe('decidir', () => {
     ]);
     const eventsRound1 = await storedEvents(sent.id);
 
-    // El solicitante reenvía: conserva el número y la secuencia no avanza.
+    // El solicitante edita (borra y reinserta las líneas: la política 0019 lo permite) y reenvía:
+    // conserva el número y la secuencia no avanza.
+    const edited = await runRequests(W.world.ctx, (deps) =>
+      updateDraft(
+        W.world.ctx,
+        {
+          id: sent.id,
+          version: asked.version,
+          ...draftInput(W.world, {
+            lines: [
+              {
+                productId: W.world.productIds.filter,
+                quantity: '3.000',
+                equipmentId: W.world.equipmentId,
+                notes: null,
+              },
+            ],
+          }),
+        },
+        deps,
+      ),
+    );
+    expect(edited.status).toBe('changes_requested');
+    expect(edited.lines).toHaveLength(1);
     const seqBefore = await sequenceOf(W.world.tenantId);
     const resent = await runRequests(W.world.ctx, (deps) =>
-      submitRequest(W.world.ctx, { id: sent.id, version: asked.version }, deps),
+      submitRequest(W.world.ctx, { id: sent.id, version: edited.version }, deps),
     );
     expect(resent).toMatchObject({ status: 'in_approval', number: sent.number });
     expect((await sequenceOf(W.world.tenantId))?.nextNumber).toBe(seqBefore?.nextNumber);

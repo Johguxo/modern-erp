@@ -12,8 +12,8 @@ export const NOTES_MAX = 500;
 /** Comentario obligatorio al anular (también es el check de la base). */
 export const CANCEL_COMMENT_MAX = 500;
 
-/** En E3-H1 solo se edita en borrador; «Cambios solicitados» se decide en E4-H2. */
-export const EDITABLE_STATUSES: readonly RequestStatus[] = ['draft'];
+/** Se edita en borrador y, tras pedir cambios, en «Cambios solicitados» (E4-H2). */
+export const EDITABLE_STATUSES: readonly RequestStatus[] = ['draft', 'changes_requested'];
 
 export type LineStatus = 'active' | 'removed';
 

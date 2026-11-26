@@ -155,6 +155,7 @@ export function TimelinePanel({
               noteId={noteId}
               version={detail.version}
               number={detail.number}
+              status={detail.status}
             />
           ))}
         </div>

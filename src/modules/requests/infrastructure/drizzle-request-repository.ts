@@ -153,6 +153,8 @@ export function createDrizzleRequestRepository(db: DbExecutor): RequestRepositor
     },
 
     async replaceLines(tenantId, requestId, lines) {
+      // Borra y reinserta: en «Cambios solicitados» también (política 0019). E4-H4 lo cambiará por
+      // actualizar en sitio y marcar `removed` cuando existan revisiones con FK a la línea.
       await db
         .delete(requestLines)
         .where(and(eq(requestLines.tenantId, tenantId), eq(requestLines.requestId, requestId)));

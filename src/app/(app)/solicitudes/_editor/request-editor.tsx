@@ -135,7 +135,14 @@ export function RequestEditor({
     }
     setBusy('save');
     try {
-      if (await persist()) dispatch({ type: 'setNotice', notice: messages.requests.notices.saved });
+      if (await persist()) {
+        dispatch({
+          type: 'setNotice',
+          notice: resubmitting
+            ? messages.requests.notices.changesSaved
+            : messages.requests.notices.saved,
+        });
+      }
     } catch {
       dispatch({
         type: 'setErrors',
@@ -175,6 +182,7 @@ export function RequestEditor({
     }
   }
 
+  const resubmitting = initial?.status === 'changes_requested';
   const disabled = readOnly || busy !== null;
 
   return (
@@ -221,7 +229,13 @@ export function RequestEditor({
           </Button>
         ) : null}
         <Button type="button" size="lg" disabled={disabled} onClick={() => void submit()}>
-          {busy === 'submit' ? t.submitting : t.submit}
+          {busy === 'submit'
+            ? resubmitting
+              ? t.resubmitting
+              : t.submitting
+            : resubmitting
+              ? t.resubmit
+              : t.submit}
         </Button>
         <Button
           type="button"
@@ -229,7 +243,7 @@ export function RequestEditor({
           disabled={disabled}
           onClick={() => void saveDraft()}
         >
-          {busy === 'save' ? t.saving : t.saveDraft}
+          {busy === 'save' ? t.saving : resubmitting ? t.saveChanges : t.saveDraft}
         </Button>
       </ApprovalRoutePanel>
     </div>

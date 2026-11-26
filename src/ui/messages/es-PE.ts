@@ -539,6 +539,7 @@ export const messages = {
     breadcrumbInbox: 'Bandeja',
     breadcrumbNew: 'Nueva solicitud',
     breadcrumbEdit: 'Editar borrador',
+    breadcrumbEditRequest: 'Editar solicitud',
     title: 'Solicitud de almacén (SOF)',
     description: 'Un solo formulario: reemplaza el pre-SOF en Excel y la conversión manual.',
     general: {
@@ -604,11 +605,15 @@ export const messages = {
       submit: 'Enviar a aprobación',
       submitting: 'Enviando…',
       saveDraft: 'Guardar borrador',
+      saveChanges: 'Guardar cambios',
+      resubmit: 'Reenviar a aprobación',
+      resubmitting: 'Reenviando…',
       saving: 'Guardando…',
       reload: 'Recargar',
     },
     notices: {
       saved: 'Borrador guardado.',
+      changesSaved: 'Cambios guardados.',
     },
     validation: {
       costCenterRequired: 'Elige un centro de costo.',
@@ -676,6 +681,7 @@ export const messages = {
       actions: {
         label: 'Acciones',
         edit_draft: 'Editar borrador',
+        edit_request: 'Editar solicitud',
         resubmit: 'Reenviar a aprobación',
         cancel: 'Anular',
         approve: 'Aprobar',

@@ -3,7 +3,7 @@
 import type { Route } from 'next';
 import Link from 'next/link';
 
-import type { RequestAction } from '@/modules/requests';
+import type { RequestAction, RequestStatus } from '@/modules/requests';
 import { Button } from '@/ui/components/button';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
@@ -34,6 +34,7 @@ export function ActionButton({
   className,
   version,
   number = null,
+  status,
 }: {
   action: RequestAction;
   requestId: string;
@@ -46,6 +47,8 @@ export function ActionButton({
   /** Versión y número del documento: «Anular» los necesita. */
   version?: number;
   number?: string | null;
+  /** Estado del documento: «Editar» se llama «Editar solicitud» tras pedir cambios. */
+  status?: RequestStatus;
 }) {
   const style = STYLE[action];
   const size = large ? 'lg' : 'default';
@@ -54,7 +57,9 @@ export function ActionButton({
   if (isActionEnabled(action, readOnly) && action === 'edit_draft') {
     return (
       <Button asChild variant={style.variant} size={size} className={classes}>
-        <Link href={`/solicitudes/${requestId}/editar` as Route}>{t[action]}</Link>
+        <Link href={`/solicitudes/${requestId}/editar` as Route}>
+          {status === 'changes_requested' ? t.edit_request : t[action]}
+        </Link>
       </Button>
     );
   }

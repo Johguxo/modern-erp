@@ -9,8 +9,9 @@ import { EditorHeader } from '../../_editor/editor-header';
 import { loadEditorData, type EditorData } from '../../_editor/load-editor-data';
 import { RequestEditor } from '../../_editor/request-editor';
 
-// Editar un borrador (E3-H2). Solo el solicitante y solo en borrador: cualquier otro caso (otro
-// usuario, otro tenant, ya enviado, id inválido, sin permiso) es 404 y no revela que existe.
+// Editar un borrador (E3-H2) o una solicitud con «Cambios solicitados» (E4-H2). Solo el
+// solicitante y solo en esos estados: cualquier otro caso (otro usuario, otro tenant, ya enviado,
+// id inválido, sin permiso) es 404 y no revela que existe.
 export default async function EditRequestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { ctx, email } = await requireCtx();
@@ -26,7 +27,7 @@ export default async function EditRequestPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <EditorHeader mode="edit" />
+      <EditorHeader mode={draft.status === 'changes_requested' ? 'changes' : 'edit'} />
       <RequestEditor
         initial={draft}
         costCenters={data.costCenters}

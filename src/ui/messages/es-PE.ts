@@ -678,10 +678,16 @@ export const messages = {
           rejected: 'Rechazada',
           cancelled: 'Anulada',
         },
+        /** «Aprobado por Almacén»: el nombre del paso es el que escribió el administrador. */
+        approvedBy: (stepName: string) => `Aprobado por ${stepName}`,
         hints: {
           approvalPending: 'Esperando la decisión de los aprobadores.',
           approvalUpcoming: 'Empieza cuando se envía a aprobación.',
           deliveryUpcoming: 'Descuenta stock automáticamente.',
+          stepWaiting: 'Sigue cuando se apruebe el paso anterior.',
+          noApprovers: 'Sin aprobadores asignados',
+          /** Tras «Ruby o Sergio ·»; la fecha va después. */
+          pendingSince: 'pendiente desde',
         },
         /** Comentario de la anulación, en el paso «Anulada». */
         commentLabel: 'Comentario',

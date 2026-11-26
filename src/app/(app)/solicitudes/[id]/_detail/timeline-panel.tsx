@@ -10,6 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
 import { panelActions, soonNoteId } from './detail-actions';
+import { assigneeList, stepTitle } from './timeline-text';
 
 const t = messages.requests.detail;
 
@@ -52,11 +53,27 @@ function Marker({ item }: { item: TimelineItemView }) {
 }
 
 function stepHint(item: TimelineItemView, timeZone: string): ReactNode {
-  if (item.state === 'pending') return t.timeline.hints.approvalPending;
+  const hints = t.timeline.hints;
+  if (item.state === 'pending') {
+    // Sin nombre de paso, la línea viene de las fechas del documento (sin motor).
+    if (item.stepName === null) return hints.approvalPending;
+    const who = assigneeList(item.assigneeNames, item.rule);
+    if (!who) return hints.noApprovers;
+    return (
+      <>
+        {who}
+        {item.at ? (
+          <>
+            {' · '}
+            {hints.pendingSince} <DateText value={item.at} timeZone={timeZone} />
+          </>
+        ) : null}
+      </>
+    );
+  }
   if (item.state === 'upcoming') {
-    return item.kind === 'delivery'
-      ? t.timeline.hints.deliveryUpcoming
-      : t.timeline.hints.approvalUpcoming;
+    if (item.kind === 'delivery') return hints.deliveryUpcoming;
+    return item.stepName === null ? hints.approvalUpcoming : hints.stepWaiting;
   }
   const date = item.at ? <DateText value={item.at} timeZone={timeZone} /> : null;
   if (item.actorName && date) {
@@ -110,7 +127,7 @@ export function TimelinePanel({
               <Marker item={item} />
               <p className="text-sm font-semibold">
                 <span className="sr-only">{t.timeline.states[item.state]}: </span>
-                {t.timeline.steps[item.kind]}
+                {stepTitle(item)}
               </p>
               {hint ? <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p> : null}
               {item.comment ? (

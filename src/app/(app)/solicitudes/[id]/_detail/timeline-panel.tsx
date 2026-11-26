@@ -73,10 +73,13 @@ export function TimelinePanel({
   detail,
   timeZone,
   readOnly,
+  mobileBar = false,
 }: {
   detail: RequestDetail;
   timeZone: string;
   readOnly: boolean;
+  /** La barra del celular ya ofrece Aprobar y Rechazar: el panel las oculta bajo `md`. */
+  mobileBar?: boolean;
 }) {
   const panel = panelActions(detail.actions);
   const noteId = soonNoteId(detail.actions);
@@ -129,6 +132,7 @@ export function TimelinePanel({
               requestId={detail.id}
               readOnly={readOnly}
               large
+              className={mobileBar ? 'max-md:hidden' : undefined}
               noteId={noteId}
               version={detail.version}
               number={detail.number}
@@ -144,6 +148,7 @@ export function TimelinePanel({
                   requestId={detail.id}
                   readOnly={readOnly}
                   noteId={noteId}
+                  className={mobileBar && action === 'reject' ? 'max-md:hidden' : undefined}
                   version={detail.version}
                   number={detail.number}
                   stepId={detail.pendingStepId}

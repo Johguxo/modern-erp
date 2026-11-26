@@ -5,6 +5,7 @@ import { createGetRequestDetailDeps, getRequestDetail } from '@/modules/requests
 import { getRequestDetailContract } from '@/modules/requests/contracts';
 import { isDomainError } from '@/shared/errors';
 import { NoticeBanner } from '@/ui/base/notice-banner';
+import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
 import { readOnlyRequestsExtras } from '../../../_lib/requests';
@@ -14,6 +15,7 @@ import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
 import { DetailHeader } from './_detail/detail-header';
 import { DetailItems } from './_detail/detail-items';
 import { DocumentCard } from './_detail/document-card';
+import { MOBILE_BAR_SPACE, MobileDecisionBar, showsMobileBar } from './_detail/mobile-decision-bar';
 import { TimelinePanel } from './_detail/timeline-panel';
 
 const t = messages.requests.detail;
@@ -71,8 +73,10 @@ export default async function RequestPage({
           ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
           : decidedNotice(decision, detail.requesterId !== ctx.userId, detail.number);
 
+  const mobileBar = showsMobileBar(detail, ctx.readOnly);
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className={cn('flex flex-col gap-5', mobileBar && MOBILE_BAR_SPACE)}>
       <NoticeBanner notice={notice} className="mb-0" />
       <DetailHeader detail={detail} />
       {noteId ? (
@@ -90,8 +94,14 @@ export default async function RequestPage({
           />
           <DocumentCard detail={detail} readOnly={ctx.readOnly} noteId={noteId} />
         </div>
-        <TimelinePanel detail={detail} timeZone={ctx.timezone} readOnly={ctx.readOnly} />
+        <TimelinePanel
+          detail={detail}
+          timeZone={ctx.timezone}
+          readOnly={ctx.readOnly}
+          mobileBar={mobileBar}
+        />
       </div>
+      {mobileBar ? <MobileDecisionBar detail={detail} /> : null}
     </div>
   );
 }

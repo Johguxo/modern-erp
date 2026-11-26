@@ -66,13 +66,13 @@ test('el admin edita los pasos, ve la advertencia, guarda y el editor del SOF mu
   await second.getByLabel(t.rule).selectOption('all');
   await expect(second.getByRole('button', { name: t.removeUser(managerName) })).toBeVisible();
 
-  // Un paso nuevo con un rol que nadie tiene: advertencia en vivo, y se sube al lugar 2.
+  // Un paso nuevo con un rol que nadie tiene: advertencia en vivo (ese rol no puede aprobar), y se sube al lugar 2.
   await page.getByRole('button', { name: t.addStep }).click();
   const third = stepGroup(page, 3);
   await third.getByLabel(t.name).fill('Compras');
   await third.getByLabel(t.role, { exact: true }).selectOption('purchasing');
   await expect(
-    third.getByText(t.warnings.roleWithoutMembers(messages.roles.purchasing)),
+    third.getByText(t.warnings.roleCannotDecide(messages.roles.purchasing)),
   ).toBeVisible();
   await third.getByRole('button', { name: t.moveUp }).click();
   await expect(stepGroup(page, 2).getByLabel(t.name)).toHaveValue('Compras');
@@ -86,7 +86,7 @@ test('el admin edita los pasos, ve la advertencia, guarda y el editor del SOF mu
   await expect(stepGroup(page, 2).getByLabel(t.name)).toHaveValue('Compras');
   await expect(stepGroup(page, 2).getByLabel(t.role, { exact: true })).toHaveValue('purchasing');
   await expect(
-    stepGroup(page, 2).getByText(t.warnings.roleWithoutMembers(messages.roles.purchasing)),
+    stepGroup(page, 2).getByText(t.warnings.roleCannotDecide(messages.roles.purchasing)),
   ).toBeVisible();
   await expect(stepGroup(page, 3).getByLabel(t.name)).toHaveValue('Gerencia local');
   await expect(stepGroup(page, 3).getByLabel(t.approverType)).toHaveValue('users');

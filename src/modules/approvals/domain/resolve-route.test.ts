@@ -26,7 +26,14 @@ function step(order: number, overrides: Partial<PolicyStep> = {}): PolicyStep {
 }
 
 function policy(steps: PolicyStep[]): Policy {
-  return { id: 'p1', docType: 'SOF', name: 'SOF estándar', version: 1, steps };
+  return {
+    id: 'p1',
+    docType: 'SOF',
+    name: 'SOF estándar',
+    version: 1,
+    hasReservedSteps: false,
+    steps,
+  };
 }
 
 describe('resolveRoute', () => {

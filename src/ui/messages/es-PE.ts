@@ -150,6 +150,12 @@ export const messages = {
     moveUp: 'Subir',
     moveDown: 'Bajar',
     remove: 'Quitar',
+    moveUpStep: (n: number) => `Subir paso ${n}`,
+    moveDownStep: (n: number) => `Bajar paso ${n}`,
+    removeStep: (n: number) => `Quitar paso ${n}`,
+    reservedSteps:
+      'Esta política tiene pasos que esta pantalla no puede editar. Contacta al soporte de LinkUs.',
+    stale: 'Alguien cambió la política mientras la editabas. Recarga la página.',
     addStep: 'Agregar paso',
     maxSteps: (max: number) => `Una política admite hasta ${max} pasos.`,
     save: 'Guardar cambios',
@@ -587,6 +593,8 @@ export const messages = {
       updating: 'Actualizando la ruta…',
       updateError: 'No pudimos actualizar la ruta de aprobación.',
       notice: 'Cada aprobador recibe un aviso por correo.',
+      noPolicy:
+        'Tu empresa aún no tiene una ruta de aprobación. Pide al administrador que la configure.',
     },
     actions: {
       submit: 'Enviar a aprobación',
@@ -761,6 +769,9 @@ export const messages = {
       approver_not_member: () =>
         'Hay personas que ya no son usuarios activos de tu empresa. Quítalas del paso.',
       stale_version: () => 'Alguien modificó este documento. Recarga la página.',
+      duplicated_approver: () => 'Un aprobador está repetido en este paso.',
+      policy_has_reserved_steps: () =>
+        'Esta política tiene pasos que esta pantalla no puede editar. Contacta al soporte de LinkUs.',
       tenant_read_only: () =>
         'Tu empresa está en modo solo lectura. Contacta al administrador de LinkUs.',
       invalid_credentials: () => 'Correo o contraseña incorrectos.',

@@ -12,7 +12,11 @@ export const stepSchema = z.object({
   name: z.string().trim().min(1).max(MAX_STEP_NAME_LENGTH),
   approverType: z.enum(['role', 'users']),
   role: z.enum(TENANT_ROLES).nullable(),
-  userIds: z.array(z.uuid()).max(MAX_USERS_PER_STEP),
+  userIds: z
+    .array(z.uuid())
+    .max(MAX_USERS_PER_STEP)
+    // El mensaje es una reason de messages.errors.reasons (es-PE).
+    .refine((ids) => new Set(ids).size === ids.length, { message: 'duplicated_approver' }),
   rule: z.enum(STEP_RULES),
   /** La pantalla no la edita, pero la conserva al guardar y al mover el paso. */
   condition: stepConditionSchema,
@@ -30,6 +34,7 @@ export const policyViewSchema = z.object({
   name: z.string(),
   /** Bloqueo optimista: se devuelve al guardar. */
   version: z.number().int().min(1),
+  hasReservedSteps: z.boolean(),
   steps: z.array(stepSchema.extend({ warnings: z.array(warningSchema) })),
   /** Miembros activos que se pueden elegir como aprobadores. */
   members: z.array(

@@ -28,6 +28,7 @@ const initial: Policy = {
   docType: 'SOF',
   name: 'SOF estándar',
   version: 1,
+  hasReservedSteps: false,
   steps: [
     {
       order: 1,
@@ -105,6 +106,16 @@ describe('getPolicy', () => {
     expect(view.steps[0]?.warnings).toEqual([]);
     expect(view.steps[1]?.warnings).toEqual([{ type: 'inactive_users', userIds: [GONE] }]);
     expect(view.inactiveUsers).toEqual([{ userId: GONE, name: 'Gabi Vega' }]);
+    expect(view.hasReservedSteps).toBe(false);
+  });
+
+  it('indica cuando la política tiene pasos reservados', async () => {
+    const view = await getPolicy(
+      admin(),
+      { docType: 'SOF' },
+      setup({ ...initial, hasReservedSteps: true }).deps,
+    );
+    expect(view.hasReservedSteps).toBe(true);
   });
 
   it('avisa de un rol sin miembros activos', async () => {
@@ -182,6 +193,33 @@ describe('updatePolicySteps', () => {
     expect(error).toBeInstanceOf(ValidationError);
     expect((error as ValidationError).reason).toBe('approver_not_member');
     expect(replaced).toEqual([]);
+  });
+
+  it('con pasos reservados lanza policy_has_reserved_steps y no escribe', async () => {
+    const { deps, replaced, audits } = setup({ ...initial, hasReservedSteps: true });
+    const error = await updatePolicySteps(
+      admin(),
+      { docType: 'SOF', version: 1, steps: validSteps },
+      deps,
+    ).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ConflictError);
+    expect((error as ConflictError).reason).toBe('policy_has_reserved_steps');
+    expect(replaced).toEqual([]);
+    expect(audits).toEqual([]);
+  });
+
+  it('guarda los usuarios de un paso sin repetidos', async () => {
+    const { deps, replaced } = setup();
+    await updatePolicySteps(
+      admin(),
+      {
+        docType: 'SOF',
+        version: 1,
+        steps: [{ ...validSteps[0]!, approverType: 'users', role: null, userIds: [ANA, ANA] }],
+      },
+      deps,
+    );
+    expect(replaced[0]?.[0]?.userIds).toEqual([ANA]);
   });
 
   it('sin pasos falla con policy_without_steps', async () => {

@@ -3,7 +3,6 @@
 // miembros activos. No crea instancias ni consume numeración.
 import { requireAnyPermission } from '@/shared/authorization';
 import type { Ctx } from '@/shared/context';
-import { NotFoundError } from '@/shared/errors';
 
 import { resolveRoute } from '../domain/resolve-route';
 import type { DocType, RoutePreview } from '../domain/route-preview';
@@ -17,7 +16,21 @@ export async function previewRoute(
 ): Promise<RoutePreview> {
   requireAnyPermission(ctx, ['requests.create', 'approval_policies.manage']);
   const policy = await deps.policies.findActive(ctx.tenantId, input.docType);
-  if (!policy) throw new NotFoundError({ message: 'Approval policy not found' });
+  if (!policy) {
+    // E4-H2: al enviar sin política, fallar (no se envía un SOF sin ruta).
+    // Aquí solo se avisa: el editor sigue abierto y muestra que falta configurar la ruta.
+    deps.logger?.warn(
+      { tenantId: ctx.tenantId, docType: input.docType },
+      'approval policy missing: empty route preview',
+    );
+    return { docType: input.docType, policyName: '', steps: [] };
+  }
+  if (policy.hasReservedSteps) {
+    deps.logger?.warn(
+      { tenantId: ctx.tenantId, docType: input.docType, policyId: policy.id },
+      'approval policy has reserved steps: preview shows only the supported ones',
+    );
+  }
   const members = await deps.directory.activeMembers(ctx.tenantId);
   return resolveRoute(input.docType, policy, input.total, members);
 }

@@ -26,9 +26,13 @@ function toUserIds(value: unknown): string[] {
     : [];
 }
 
-/** Los tipos reservados (requester_manager, external_email) no se editan en el MVP: se omiten. */
+/**
+ * Los tipos reservados (requester_manager, external_email) y los roles desconocidos no se editan en
+ * el MVP: devuelve null y la política queda marcada con `hasReservedSteps`.
+ */
 function toStep(row: StepRow): PolicyStep | null {
   if (row.approverType !== 'role' && row.approverType !== 'users') return null;
+  if (row.approverType === 'role' && toRole(row.approverRef) === null) return null;
   const condition =
     typeof row.condition === 'object' && row.condition !== null && !Array.isArray(row.condition)
       ? (row.condition as Record<string, unknown>)
@@ -44,13 +48,16 @@ function toStep(row: StepRow): PolicyStep | null {
   };
 }
 
-function toPolicy(row: PolicyRow, steps: readonly StepRow[]): Policy {
+function toPolicy(row: PolicyRow, rows: readonly StepRow[]): Policy {
+  const parsed = rows.map(toStep);
+  const steps = parsed.flatMap((step) => step ?? []);
   return {
     id: row.id,
     docType: row.docType as DocType,
     name: row.name,
     version: row.version,
-    steps: steps.flatMap((step) => toStep(step) ?? []),
+    steps,
+    hasReservedSteps: steps.length !== rows.length,
   };
 }
 

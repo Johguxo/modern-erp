@@ -3,14 +3,19 @@
 import type { DbExecutor } from '@/db';
 import { createAuditLogFor } from '@/modules/identity';
 import type { ClientInfo } from '@/shared/ports/client-info';
+import type { Logger } from '@/shared/ports/logger';
 
 import type { GetPolicyDeps, PolicyAdminDeps, PreviewRouteDeps } from '../application/ports';
 
 import { createApproverDirectory } from './approver-directory';
 import { createDrizzlePolicyRepository } from './drizzle-policy-repository';
 
-export function createPreviewRouteDeps(tx: DbExecutor): PreviewRouteDeps {
-  return { policies: createDrizzlePolicyRepository(tx), directory: createApproverDirectory(tx) };
+export function createPreviewRouteDeps(tx: DbExecutor, logger?: Logger): PreviewRouteDeps {
+  return {
+    policies: createDrizzlePolicyRepository(tx),
+    directory: createApproverDirectory(tx),
+    ...(logger ? { logger } : {}),
+  };
 }
 
 export function createGetPolicyDeps(tx: DbExecutor): GetPolicyDeps {

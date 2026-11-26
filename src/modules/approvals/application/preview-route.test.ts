@@ -1,7 +1,8 @@
 import { makeCtx } from '@tests/support/ctx';
 import { describe, expect, it } from 'vitest';
 
-import { ForbiddenError, NotFoundError } from '@/shared/errors';
+import { ForbiddenError } from '@/shared/errors';
+import { CapturingLogger } from '@tests/support/fakes/capturing-logger';
 
 import type { Policy } from '../domain/policy';
 
@@ -21,6 +22,7 @@ const policy: Policy = {
   docType: 'SOF',
   name: 'SOF estándar',
   version: 3,
+  hasReservedSteps: false,
   steps: [
     {
       order: 1,
@@ -45,7 +47,9 @@ const policy: Policy = {
 
 function makeDeps(found: Policy | null = policy) {
   const calls: unknown[] = [];
+  const logger = new CapturingLogger();
   const deps: PreviewRouteDeps = {
+    logger,
     policies: {
       findActive: (tenantId, docType) => {
         calls.push({ tenantId, docType });
@@ -54,7 +58,7 @@ function makeDeps(found: Policy | null = policy) {
     },
     directory: { activeMembers: () => Promise.resolve(members) },
   };
-  return { deps, calls };
+  return { deps, calls, logger };
 }
 
 describe('previewRoute', () => {
@@ -98,11 +102,23 @@ describe('previewRoute', () => {
     ).resolves.toMatchObject({ policyName: 'SOF estándar' });
   });
 
-  it('sin política activa lanza NotFoundError', async () => {
+  it('sin política activa devuelve una ruta vacía y lo registra', async () => {
     const ctx = makeCtx({ permissions: ['requests.create'] });
-    await expect(
-      previewRoute(ctx, { docType: 'SOF', total: null }, makeDeps(null).deps),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    const { deps, logger } = makeDeps(null);
+    await expect(previewRoute(ctx, { docType: 'SOF', total: null }, deps)).resolves.toEqual({
+      docType: 'SOF',
+      policyName: '',
+      steps: [],
+    });
+    expect(logger.entries.map((entry) => entry.level)).toEqual(['warn']);
+  });
+
+  it('con pasos reservados devuelve lo que entiende y lo registra', async () => {
+    const ctx = makeCtx({ permissions: ['requests.create'] });
+    const { deps, logger } = makeDeps({ ...policy, hasReservedSteps: true });
+    const route = await previewRoute(ctx, { docType: 'SOF', total: '6000.00' }, deps);
+    expect(route.steps).toHaveLength(2);
+    expect(logger.entries.map((entry) => entry.level)).toEqual(['warn']);
   });
 
   it('sin permiso lanza ForbiddenError y no consulta la política', async () => {

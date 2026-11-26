@@ -27,6 +27,8 @@ export interface PolicyView {
   readonly docType: DocType;
   readonly name: string;
   readonly version: number;
+  /** La política tiene pasos que esta pantalla no puede editar: se muestra un aviso y no se guarda. */
+  readonly hasReservedSteps: boolean;
   readonly steps: PolicyStepView[];
   readonly members: { userId: string; name: string; roles: Role[] }[];
   /** Usuarios de los pasos que ya no son miembros activos. */
@@ -51,6 +53,7 @@ export async function toPolicyView(
     docType: policy.docType,
     name: policy.name,
     version: policy.version,
+    hasReservedSteps: policy.hasReservedSteps,
     steps: [...policy.steps]
       .sort((a, b) => a.order - b.order)
       .map((step) => ({

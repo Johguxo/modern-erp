@@ -61,4 +61,9 @@ describe('validatePolicySteps', () => {
     expect(error.reason).toBe('approver_not_member');
     expect(error.fieldErrors).toEqual({ 'steps.0.userIds': ['approver_not_member'] });
   });
+
+  it('devuelve los pasos sin usuarios repetidos', () => {
+    const result = validatePolicySteps([{ ...usersStep, userIds: [USER_A, USER_A] }], members);
+    expect(result[0]?.userIds).toEqual([USER_A]);
+  });
 });

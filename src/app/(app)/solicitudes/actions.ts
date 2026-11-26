@@ -20,6 +20,7 @@ import {
   submitRequestContract,
   updateDraftContract,
 } from '@/modules/requests/contracts';
+import { getLogger } from '@/shared/adapters/pino-logger';
 
 import { action } from '../../_lib/action';
 import { catalogExtras } from '../../_lib/catalog';
@@ -72,6 +73,6 @@ export const searchCatalogAction = action(
 export const previewRouteAction = action(
   previewRouteContract,
   'requests.create',
-  ({ ctx, input, tx }) => previewRoute(ctx, input, createPreviewRouteDeps(tx)),
+  ({ ctx, input, tx }) => previewRoute(ctx, input, createPreviewRouteDeps(tx, getLogger())),
   { name: 'approvals.previewRoute', access: 'read' },
 );

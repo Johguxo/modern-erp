@@ -65,6 +65,9 @@ export function ApprovalRoutePanel({
           );
         })}
       </ol>
+      {route.steps.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">{t.noPolicy}</p>
+      ) : null}
       {status === 'updating' ? (
         <p role="status" className="text-[13px] text-muted-foreground">
           {t.updating}

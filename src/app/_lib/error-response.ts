@@ -10,7 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 type Reasons = typeof messages.errors.reasons;
 
 /** Motivos que la UI necesita para decidir qué ofrecer (p. ej. «Recargar»); el resto no sale. */
-const CLIENT_REASONS: ReadonlySet<string> = new Set(['cancel_not_allowed']);
+const CLIENT_REASONS: ReadonlySet<string> = new Set(['cancel_not_allowed', 'stale_version']);
 
 function messageFor(
   code: ErrorCode,

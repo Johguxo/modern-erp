@@ -5,10 +5,14 @@ import { ValidationError } from '@/shared/errors';
 
 import type { PolicyStepSpec } from './policy';
 
+/**
+ * Valida los pasos y los devuelve normalizados: sin usuarios repetidos dentro de un paso (el
+ * contrato ya los rechaza; esto es una defensa para quien llame sin pasar por él).
+ */
 export function validatePolicySteps(
   steps: readonly PolicyStepSpec[],
   activeMemberIds: ReadonlySet<string>,
-): void {
+): PolicyStepSpec[] {
   if (steps.length === 0) {
     throw new ValidationError({
       reason: 'policy_without_steps',
@@ -42,4 +46,5 @@ export function validatePolicySteps(
       fieldErrors,
     });
   }
+  return steps.map((step) => ({ ...step, userIds: [...new Set(step.userIds)] }));
 }

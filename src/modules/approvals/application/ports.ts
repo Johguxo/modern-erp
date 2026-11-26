@@ -3,12 +3,16 @@
 import type { AuditLog } from '@/modules/identity';
 import type { Role } from '@/shared/permissions';
 import type { ClientInfo } from '@/shared/ports/client-info';
+import type { Logger } from '@/shared/ports/logger';
 
 import type { Policy, PolicyStepSpec } from '../domain/policy';
 import type { DocType } from '../domain/route-preview';
 
 export interface PolicyRepository {
-  /** La política activa del tipo de documento, con sus pasos en orden; null si el tenant no tiene. */
+  /**
+   * La política activa del tipo de documento, con sus pasos en orden; null si el tenant no tiene.
+   * `hasReservedSteps` indica pasos que esta versión no sabe leer (se omiten de `steps`).
+   */
   findActive(tenantId: string, docType: DocType): Promise<Policy | null>;
   /** Como `findActive`, pero bloquea la fila de la política (FOR UPDATE) para editarla. */
   lockActive(tenantId: string, docType: DocType): Promise<Policy | null>;
@@ -39,6 +43,8 @@ export interface ApproverDirectory {
 export interface PreviewRouteDeps {
   readonly policies: Pick<PolicyRepository, 'findActive'>;
   readonly directory: Pick<ApproverDirectory, 'activeMembers'>;
+  /** Para avisar de una política que falta o tiene pasos reservados; sin él no se registra. */
+  readonly logger?: Logger;
 }
 
 export interface GetPolicyDeps {

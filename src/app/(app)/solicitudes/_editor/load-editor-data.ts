@@ -13,6 +13,7 @@ import {
 import { createTenantCurrencyFor } from '@/modules/identity';
 import { createGetRequestDeps, getEditableDraft, type RequestView } from '@/modules/requests';
 import type { Currency } from '@/modules/requests/contracts';
+import { getLogger } from '@/shared/adapters/pino-logger';
 import type { Ctx } from '@/shared/context';
 
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
@@ -50,7 +51,7 @@ export function loadEditorData(ctx: Ctx, draftId?: string): Promise<EditorData> 
       previewRoute(
         ctx,
         { docType: 'SOF', total: draft ? draft.totalAmount : null },
-        createPreviewRouteDeps(tx),
+        createPreviewRouteDeps(tx, getLogger()),
       ),
       // Misma fuente que createDraft: tenant_settings.currency.
       draft ? draft.currency : createTenantCurrencyFor(tx)(ctx.tenantId),

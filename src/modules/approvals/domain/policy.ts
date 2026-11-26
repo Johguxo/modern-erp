@@ -35,5 +35,11 @@ export interface Policy {
   readonly name: string;
   /** Bloqueo optimista: sube con cada guardado de los pasos. */
   readonly version: number;
+  /** Los pasos que sí se entienden (ver `hasReservedSteps`). */
   readonly steps: readonly PolicyStep[];
+  /**
+   * La política tiene pasos que el MVP no edita (`requester_manager`, `external_email` o un rol
+   * desconocido): no están en `steps` y guardar los borraría, así que no se permite.
+   */
+  readonly hasReservedSteps: boolean;
 }

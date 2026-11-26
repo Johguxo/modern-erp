@@ -424,7 +424,85 @@ describe('previewRoute con la política real', () => {
       userId: user.id,
       permissions: ['requests.create', 'approval_policies.manage'],
     });
-    await expect(preview(ctx, null)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    // El editor del SOF no se rompe: la ruta queda vacía (E4-H2 impedirá enviar sin ruta).
+    await expect(preview(ctx, null)).resolves.toEqual({
+      docType: 'SOF',
+      policyName: '',
+      steps: [],
+    });
     await expect(read(ctx)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('con un paso reservado: avisa en la vista, previewRoute usa los demás y guardar se niega', async () => {
+    const [policy] = await admin()
+      .select({ id: approvalPolicies.id })
+      .from(approvalPolicies)
+      .where(eq(approvalPolicies.tenantId, A.tenantId));
+    await admin()
+      .insert(approvalPolicySteps)
+      .values({
+        tenantId: A.tenantId,
+        policyId: policy?.id ?? '',
+        stepOrder: 3,
+        name: 'Jefe directo',
+        approverType: 'requester_manager',
+        approverRef: {},
+        rule: 'any',
+      });
+    const before = await storedSteps(A.tenantId);
+
+    const view = await read(adminCtx);
+    expect(view.hasReservedSteps).toBe(true);
+    expect(view.steps.map((step) => step.name)).toEqual(['Almacén', 'Gerencia local']);
+    const route = await preview(requesterCtx, null);
+    expect(route.steps.map((step) => step.name)).toEqual(['Almacén', 'Gerencia local']);
+
+    const attempt = save(adminCtx, {
+      docType: 'SOF',
+      version: view.version,
+      steps: [roleStep('Compras', 'purchasing')],
+    });
+    await expect(attempt).rejects.toMatchObject({
+      code: 'CONFLICT',
+      reason: 'policy_has_reserved_steps',
+    });
+    expect(await storedSteps(A.tenantId)).toEqual(before);
+    expect(await storedVersion(A.tenantId)).toBe(view.version);
+
+    await admin()
+      .delete(approvalPolicySteps)
+      .where(
+        and(eq(approvalPolicySteps.tenantId, A.tenantId), eq(approvalPolicySteps.stepOrder, 3)),
+      );
+    await restoreStandard();
+  });
+
+  it('un rol desconocido en un paso también cuenta como reservado', async () => {
+    const [policy] = await admin()
+      .select({ id: approvalPolicies.id })
+      .from(approvalPolicies)
+      .where(eq(approvalPolicies.tenantId, A.tenantId));
+    await admin()
+      .update(approvalPolicySteps)
+      .set({ approverRef: 'galactic_overlord' })
+      .where(
+        and(
+          eq(approvalPolicySteps.policyId, policy?.id ?? ''),
+          eq(approvalPolicySteps.stepOrder, 2),
+        ),
+      );
+    const view = await read(adminCtx);
+    expect(view.hasReservedSteps).toBe(true);
+    expect(view.steps.map((step) => step.name)).toEqual(['Almacén']);
+    await admin()
+      .update(approvalPolicySteps)
+      .set({ approverRef: 'approver' })
+      .where(
+        and(
+          eq(approvalPolicySteps.policyId, policy?.id ?? ''),
+          eq(approvalPolicySteps.stepOrder, 2),
+        ),
+      );
+    expect((await read(adminCtx)).hasReservedSteps).toBe(false);
   });
 });

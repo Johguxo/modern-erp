@@ -40,6 +40,13 @@ export async function updatePolicySteps(
 
   const current = await deps.policies.lockActive(ctx.tenantId, input.docType);
   if (!current) throw new NotFoundError({ message: 'Approval policy not found' });
+  if (current.hasReservedSteps) {
+    // Reemplazar los pasos borraría los que esta pantalla no sabe editar.
+    throw new ConflictError({
+      reason: 'policy_has_reserved_steps',
+      message: 'The policy has reserved steps that cannot be edited here',
+    });
+  }
   if (current.version !== input.version) {
     throw new ConflictError({
       reason: 'stale_version',
@@ -48,9 +55,9 @@ export async function updatePolicySteps(
   }
 
   const members = await deps.directory.activeMembers(ctx.tenantId);
-  validatePolicySteps(input.steps, new Set(members.map((member) => member.userId)));
+  const steps = validatePolicySteps(input.steps, new Set(members.map((member) => member.userId)));
 
-  const updated = await deps.policies.replaceSteps(ctx.tenantId, current.id, input.steps);
+  const updated = await deps.policies.replaceSteps(ctx.tenantId, current.id, steps);
 
   await recordAudit(
     ctx,

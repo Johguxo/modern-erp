@@ -11,6 +11,7 @@ import {
   lineSubtotal,
   normalizeQuantity,
   parseQuantity,
+  parseUnitPrice,
   sumTotal,
 } from './money';
 
@@ -31,6 +32,21 @@ describe('parseQuantity', () => {
       expect(parseQuantity(raw)).toBeNull();
     },
   );
+});
+
+describe('parseUnitPrice', () => {
+  it.each([
+    ['0', '0'],
+    ['12.5', '12.5'],
+    [' 3.3333 ', '3.3333'],
+    ['9999999999.9999', '9999999999.9999'],
+  ])('%j es válido', (raw, expected) => {
+    expect(parseUnitPrice(raw)?.toString()).toBe(expected);
+  });
+
+  it.each(['-1', '1.23456', '1e3', '', 'abc', '1,5', '.5', '12345678901'])('rechaza %j', (raw) => {
+    expect(parseUnitPrice(raw)).toBeNull();
+  });
 });
 
 describe('normalizeQuantity', () => {

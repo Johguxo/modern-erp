@@ -333,6 +333,36 @@ describe('constraints', () => {
     expect(badStep.code).toBe('23514');
   });
 
+  it('un paso de reconfirmación exige line_ids y uno normal no los admite (23514)', async () => {
+    const [instance] = await storedInstances(requestA);
+    const lineId = '00000000-0000-4000-8000-0000000000a1';
+    const stepValues = (order: number, extra: Partial<typeof approvalSteps.$inferInsert>) => ({
+      tenantId: A.world.tenantId,
+      instanceId: instance?.id ?? '',
+      requestId: requestA,
+      stepOrder: order,
+      name: 'Reconfirmación',
+      rule: 'any',
+      status: 'waiting',
+      ...extra,
+    });
+    for (const [order, extra] of [
+      [20, { kind: 'reconfirmation' }],
+      [21, { kind: 'reconfirmation', lineIds: [] }],
+      [22, { kind: 'normal', lineIds: [lineId] }],
+    ] as [number, Partial<typeof approvalSteps.$inferInsert>][]) {
+      const error = await capturePgError(() =>
+        admin().insert(approvalSteps).values(stepValues(order, extra)),
+      );
+      expect(error.code).toBe('23514');
+    }
+    const [ok] = await admin()
+      .insert(approvalSteps)
+      .values(stepValues(23, { kind: 'reconfirmation', lineIds: [lineId] }))
+      .returning({ id: approvalSteps.id });
+    expect(ok).toBeDefined();
+  });
+
   it('un asignado es un usuario o un correo externo, no ambos ni ninguno', async () => {
     const stepId = ids.A.approval_steps ?? '';
     for (const values of [

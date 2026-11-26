@@ -18,7 +18,7 @@ import type { SharedDeps } from './pipeline';
 export function requestsExtras(
   shared: SharedDeps,
   tx: DbExecutor,
-): RequestsExtras & Required<Pick<RequestsExtras, 'assignments'>> {
+): RequestsExtras & Required<Pick<RequestsExtras, 'assignments' | 'history'>> {
   const engine = createApprovalEngine(tx, { clock: shared.clock, logger: shared.logger });
   return {
     client: shared.client,
@@ -34,7 +34,7 @@ export function requestsExtras(
 /** Para lecturas desde Server Components (sin cliente HTTP real que auditar). */
 export function readOnlyRequestsExtras(
   tx: DbExecutor,
-): RequestsExtras & Required<Pick<RequestsExtras, 'assignments'>> {
+): RequestsExtras & Required<Pick<RequestsExtras, 'assignments' | 'history'>> {
   const engine = createApprovalEngine(tx, { clock: systemClock, logger: getLogger() });
   return {
     client: UNKNOWN_CLIENT,

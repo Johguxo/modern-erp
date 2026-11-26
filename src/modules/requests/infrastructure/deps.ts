@@ -28,7 +28,6 @@ import { createDrizzleRequestRepository } from './drizzle-request-repository';
 import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-store';
 import { noopApprovalAssignments } from './noop-approval-assignments';
 import { noopApprovalCanceller } from './noop-approval-canceller';
-import { noopApprovalHistory } from './noop-approval-history';
 import { noopApprovalStarter } from './noop-approval-starter';
 import { unavailableApprovalDecider } from './unavailable-approval-decider';
 import { createRequestLabels } from './request-labels';
@@ -92,14 +91,15 @@ export function createGetRequestDeps(
 /** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
 export function createGetRequestDetailDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client' | 'history'> & {
+  extras: Pick<RequestsExtras, 'client'> & {
     readonly assignments: ApprovalAssignments;
+    readonly history: ApprovalHistory;
   },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
     labels: createRequestLabels(tx, { client: extras.client }),
-    history: extras.history ?? noopApprovalHistory,
+    history: extras.history,
   };
 }
 

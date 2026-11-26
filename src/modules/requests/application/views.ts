@@ -113,6 +113,8 @@ export interface TimelineItemView {
   readonly rule: 'any' | 'all' | null;
   /** Los asignados que aún no deciden (paso pendiente), por nombre; los sin nombre se omiten. */
   readonly assigneeNames: string[];
+  /** Cuántos asignados aún no deciden, tengan nombre o no (0: el paso no tiene aprobadores). */
+  readonly assigneeCount: number;
 }
 
 export interface RequestDetail {
@@ -160,5 +162,6 @@ export function toTimelineItems(
         return name ? [name] : [];
       })
       .sort((a, b) => a.localeCompare(b, 'es-PE')),
+    assigneeCount: item.assigneeIds.length,
   }));
 }

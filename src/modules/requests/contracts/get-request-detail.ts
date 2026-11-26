@@ -30,6 +30,7 @@ export const timelineItemSchema = z.object({
   stepName: z.string().nullable(),
   rule: z.enum(['any', 'all']).nullable(),
   assigneeNames: z.array(z.string()),
+  assigneeCount: z.number().int().nonnegative(),
 });
 
 export const outputSchema = z.object({

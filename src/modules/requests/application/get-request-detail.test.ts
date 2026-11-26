@@ -217,8 +217,12 @@ describe('getRequestDetail', () => {
       stepName: 'Gerencia local',
       rule: 'any',
       assigneeNames: ['Ruby Pérez', 'Sergio Díaz'],
+      assigneeCount: 3,
     });
     expect(calls.timeline).toBe(1);
+    // Un solo lote de nombres, con el aprobador incluido.
+    expect(calls.userNames).toHaveLength(1);
+    expect(calls.userNames[0]).toEqual(expect.arrayContaining([ANA, OWNER, APPROVER]));
     expect(() => getRequestDetailContract.outputSchema.parse(detail)).not.toThrow();
   });
 

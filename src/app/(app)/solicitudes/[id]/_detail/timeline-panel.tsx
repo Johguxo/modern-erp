@@ -10,7 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
 import { panelActions, soonNoteId } from './detail-actions';
-import { assigneeList, stepTitle } from './timeline-text';
+import { pendingHint, stepTitle } from './timeline-text';
 
 const t = messages.requests.detail;
 
@@ -55,19 +55,18 @@ function Marker({ item }: { item: TimelineItemView }) {
 function stepHint(item: TimelineItemView, timeZone: string): ReactNode {
   const hints = t.timeline.hints;
   if (item.state === 'pending') {
-    // Sin nombre de paso, la línea viene de las fechas del documento (sin motor).
-    if (item.stepName === null) return hints.approvalPending;
-    const who = assigneeList(item.assigneeNames, item.rule);
-    if (!who) return hints.noApprovers;
+    const pending = pendingHint(item);
+    if (pending.kind === 'message') return pending.text;
+    const since = pending.since ? (
+      <>
+        {hints.pendingSince} <DateText value={pending.since} timeZone={timeZone} />
+      </>
+    ) : null;
+    if (!pending.who) return since;
     return (
       <>
-        {who}
-        {item.at ? (
-          <>
-            {' · '}
-            {hints.pendingSince} <DateText value={item.at} timeZone={timeZone} />
-          </>
-        ) : null}
+        {pending.who}
+        {since ? <> · {since}</> : null}
       </>
     );
   }

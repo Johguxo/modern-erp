@@ -671,6 +671,7 @@ export const messages = {
           submitted: 'Enviada a aprobación',
           resubmitted: 'Reenviada a aprobación',
           step_approved: 'Paso aprobado',
+          step_signed: 'Aprobación parcial',
           changes_requested: 'Se pidieron cambios',
           approval: 'Aprobación',
           approved: 'Aprobada',
@@ -680,6 +681,8 @@ export const messages = {
         },
         /** «Aprobado por Almacén»: el nombre del paso es el que escribió el administrador. */
         approvedBy: (stepName: string) => `Aprobado por ${stepName}`,
+        /** Firma parcial de un paso que exige a todos: «Aprobación parcial · Almacén». */
+        signedBy: (stepName: string) => `Aprobación parcial · ${stepName}`,
         hints: {
           approvalPending: 'Esperando la decisión de los aprobadores.',
           approvalUpcoming: 'Empieza cuando se envía a aprobación.',

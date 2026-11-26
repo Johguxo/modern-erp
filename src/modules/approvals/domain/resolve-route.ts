@@ -19,7 +19,7 @@ export type StepWarning =
   | { readonly type: 'inactive_users'; readonly userIds: readonly string[] };
 
 /** Usuarios activos del paso, en el orden en que se eligieron (los desactivados se omiten). */
-function approversOf(
+export function stepApprovers(
   step: Pick<PolicyStepSpec, 'approverType' | 'role' | 'userIds'>,
   members: readonly ActiveApprover[],
 ): ApproverName[] {
@@ -41,7 +41,7 @@ export function stepWarnings(
   members: readonly ActiveApprover[],
 ): StepWarning[] {
   if (step.approverType === 'role') {
-    return step.role !== null && approversOf(step, members).length === 0
+    return step.role !== null && stepApprovers(step, members).length === 0
       ? [{ type: 'role_without_members' }]
       : [];
   }
@@ -64,7 +64,7 @@ export function resolveRoute(
     .sort((a, b) => a.order - b.order)
     .filter((step) => stepApplies(step.condition, total))
     .flatMap((step): PreviewStep[] => {
-      const approvers = approversOf(step, members);
+      const approvers = stepApprovers(step, members);
       if (step.approverType === 'role') {
         return step.role === null
           ? []

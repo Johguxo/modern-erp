@@ -88,6 +88,16 @@ export function createDrizzlePolicyRepository(db: DbExecutor): PolicyRepository 
       return row ? toPolicy(row, await stepsOf(tenantId, row.id)) : null;
     },
 
+    async findActiveForStart(tenantId, docType) {
+      const [row] = await db
+        .select()
+        .from(approvalPolicies)
+        .where(activeWhere(tenantId, docType))
+        .limit(1)
+        .for('share');
+      return row ? toPolicy(row, await stepsOf(tenantId, row.id)) : null;
+    },
+
     async lockActive(tenantId, docType) {
       const [row] = await db
         .select()

@@ -36,7 +36,7 @@ Estado: en revisión · Issue: [#21](https://github.com/Johguxo/modern-erp/issue
 
 > Nota (E3-H4): el detalle ya muestra `approve`, `request_changes`, `reject` (si `pendingForMe`) y `resubmit` (dueño en `changes_requested`) deshabilitados. Aquí: conectarlos (con `stepId`) y agregarlos a `IMPLEMENTED_ACTIONS`; `pendingForMe` puede pasar a un `isPending(ctx, id)` del puerto `ApprovalAssignments`.
 
-Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
+Estado: en curso (H2a backend en revisión; H2b UI pendiente) · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/22)
 
 ### E4-H3 · Línea de tiempo
 **Criterios de aceptación**
@@ -44,6 +44,8 @@ Estado: pendiente · Issue: [#22](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Panel de la pantalla 3 igual al prototipo: hechos en verde con check, pendiente en ámbar, futuros en gris; cada ítem con quién y cuándo (zona del tenant).
 
 > Nota (E3-H4): la línea de tiempo sale hoy de `deriveTimeline` (fechas de la solicitud, sin autor en aprobada/rechazada/anulada). Aquí: puerto `ApprovalTimeline` con `approval_events`; `deriveTimeline` queda de respaldo para SOF sin instancia. El tipo `TimelineItem` ya trae `actorId`/`actorName` y `comment`. El ítem `cancelled` de los SOF sin instancia sale de `closed_by`/`close_comment` (E3-H5).
+
+> Nota (E4-H2a): `approval_events` ya tiene todos los eventos (`submitted`, `resubmitted`, `step_pending` con `assigneeIds`/`noAssignees`, `step_approved`, `step_rejected`, `changes_requested`, `approved`, `cancelled`), con actor, comentario y `data`, ordenados por `created_at` (`clock_timestamp`). Aquí: puerto `ApprovalTimeline` en requests implementado por el motor; `deriveTimeline` queda de respaldo.
 
 Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/23)
 
@@ -59,5 +61,7 @@ Estado: pendiente · Issue: [#23](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Pruebas unitarias de las tres ramas de la regla y una E2E del caso del prototipo (cambiar `GEN-046` por `GEN-045`).
 
 > Nota (E3-H4): `correct_line` ya se muestra (deshabilitada) a quien tiene `requests.correct_line` en `in_approval`/`approved`. El resaltado y el aviso de línea corregida usan `revision`/`needsReconfirmation`, que ya vienen en la vista; la columna # muestra `lineNo`.
+
+> Nota (E4-H2a): `approval_steps.kind = 'reconfirmation'` y `line_ids` ya existen; la instancia puede volver de `approved` a `in_progress` (grant sobre `status`). `replaceLines` en `changes_requested` borra y reinserta líneas: con `request_line_revisions` (FK a la línea) hay que pasar a actualizar en sitio y marcar `removed` cuando la solicitud tiene número.
 
 Estado: pendiente · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)

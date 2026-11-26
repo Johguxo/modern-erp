@@ -58,6 +58,7 @@ function setup(rows: InboxRow[], pending: string[] = [], assigned: string[] = []
       assignedRequestIds: () => Promise.resolve(assigned),
       isAssigned: (_ctx, id) => Promise.resolve(assigned.includes(id)),
       pendingRequestIds: () => Promise.resolve(pending),
+      pendingStepId: () => Promise.resolve(null),
     },
     labels: {
       userNames: (_ctx, ids) => {

@@ -6,6 +6,22 @@ export {
   createPreviewRouteDeps,
   type PolicyAdminExtras,
 } from './infrastructure/deps';
+export {
+  createApprovalEngine,
+  type ApprovalEngine,
+  type ApprovalEngineExtras,
+} from './infrastructure/engine';
+export type { ApprovalAssignmentsView } from './application/approval-queries';
+export type { DecideApprovalInput, DecideApprovalOutput } from './application/decide-approval-step';
+export type { StartApprovalInput } from './application/start-approval';
+export type { CancelApprovalInput } from './application/cancel-approval';
+export type {
+  ApprovalEventType,
+  DecisionKind,
+  DecisionOutcome,
+  InstanceStatus,
+  StepStatus,
+} from './domain/approval-instance';
 export { standardPolicySetupStep } from './infrastructure/standard-policy-step';
 export type {
   ApproverDirectory,

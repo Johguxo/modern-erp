@@ -5,11 +5,11 @@ import { createSettingsDeps, getCompanySettings } from '@/modules/identity';
 import { createSequenceDeps, getDocumentSequence } from '@/modules/requests';
 import { hasPermission } from '@/shared/authorization';
 import { NotFoundError } from '@/shared/errors';
+import { UNKNOWN_CLIENT } from '@/shared/ports/client-info';
 import { PageHeader } from '@/ui/base/page-header';
 import { messages } from '@/ui/messages/es-PE';
 
 import { readOnlySettingsExtras } from '../../../_lib/company';
-import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
 
 import { CompanyForm } from './company-form';
@@ -26,7 +26,7 @@ export default async function CompanyPage() {
     // Un cliente sin secuencia (no debería pasar) no tumba la página: se oculta la tarjeta.
     sequence: await getDocumentSequence(
       ctx,
-      createSequenceDeps(tx, { client: readOnlyRequestsExtras().client }),
+      createSequenceDeps(tx, { client: UNKNOWN_CLIENT }),
     ).catch((error: unknown) => {
       if (error instanceof NotFoundError) return null;
       throw error;

@@ -2,8 +2,12 @@
 // SOF y un solicitante. Se crean con getDbAdmin() (sin RLS) y `cleanup()` de identity-fixtures los
 // borra (los tenants quedan registrados con fx.tenant()).
 import { makeCtx } from '@tests/support/ctx';
+import { CapturingLogger } from '@tests/support/fakes/capturing-logger';
+import { SequentialIdGenerator } from '@tests/support/fakes/sequential-id-generator';
 import { FixedClock } from '@tests/support/fakes/fixed-clock';
 
+import { requestsExtras } from '@/app/_lib/requests';
+import type { SharedDeps } from '@/app/_lib/pipeline';
 import { getDbAdmin } from '@/db/admin';
 import { standardPolicySetupStep } from '@/modules/approvals';
 import { withTenant } from '@/db/with-tenant';
@@ -131,7 +135,24 @@ export async function seedRequestsWorld(
   };
 }
 
-/** Corre fn dentro de withTenant con las dependencias reales de requests. */
+/** SharedDeps de prueba: lo que el pipeline de la entrega pasaría al armar las dependencias. */
+export function testShared(clock: FixedClock = new FixedClock(DEFAULT_RUN_AT)): SharedDeps {
+  return {
+    clock,
+    ids: new SequentialIdGenerator(),
+    logger: new CapturingLogger(),
+    client: UNKNOWN_CLIENT,
+    afterCommit: () => undefined,
+  };
+}
+
+export const DEFAULT_RUN_AT = new Date('2026-11-25T15:00:00.000Z');
+
+/**
+ * Corre fn dentro de withTenant con las dependencias de requests armadas como la entrega
+ * (`requestsExtras`, con el motor de aprobaciones real). `extras` reemplaza una pieza para probar
+ * un fallo o un caso aislado.
+ */
 export function runRequests<T>(
   ctx: Ctx,
   fn: (deps: RequestsDeps) => Promise<T>,
@@ -140,19 +161,21 @@ export function runRequests<T>(
     approvals: RequestsDeps['approvals'];
     canceller: RequestsDeps['canceller'];
     assignments: RequestsDeps['assignments'];
+    decider: RequestsDeps['decider'];
   }> = {},
 ): Promise<T> {
-  return withTenant(ctx, (tx) =>
-    fn(
+  return withTenant(ctx, (tx) => {
+    const composed = requestsExtras(testShared(extras.clock), tx);
+    return fn(
       createRequestsDeps(tx, {
-        client: UNKNOWN_CLIENT,
-        clock: extras.clock ?? new FixedClock(new Date('2026-11-25T15:00:00.000Z')),
+        ...composed,
         ...(extras.approvals ? { approvals: extras.approvals } : {}),
         ...(extras.canceller ? { canceller: extras.canceller } : {}),
         ...(extras.assignments ? { assignments: extras.assignments } : {}),
+        ...(extras.decider ? { decider: extras.decider } : {}),
       }),
-    ),
-  );
+    );
+  });
 }
 
 /** Borrador completo y enviable del mundo dado. */
@@ -251,14 +274,19 @@ export const NO_ASSIGNMENTS: ApprovalAssignments = {
   assignedRequestIds: () => Promise.resolve([]),
   isAssigned: () => Promise.resolve(false),
   pendingRequestIds: () => Promise.resolve([]),
+  pendingStepId: () => Promise.resolve(null),
 };
 
-/** ApprovalAssignments falso: lo que E4-H2 aportará, con listas fijas. */
+export const FAKE_STEP_ID = '99999999-9999-4999-8999-999999999999';
+
+/** ApprovalAssignments falso con listas fijas (para probar la bandeja sin motor). */
 export function fakeAssignments(assigned: string[], pending: string[] = assigned) {
   return {
     assignedRequestIds: () => Promise.resolve(assigned),
     isAssigned: (_ctx: Ctx, requestId: string) => Promise.resolve(assigned.includes(requestId)),
     pendingRequestIds: () => Promise.resolve(pending),
+    pendingStepId: (_ctx: Ctx, requestId: string) =>
+      Promise.resolve(pending.includes(requestId) ? FAKE_STEP_ID : null),
   } satisfies ApprovalAssignments;
 }
 
@@ -277,7 +305,7 @@ export function runInbox(
       createListRequestsDeps(tx, {
         client: UNKNOWN_CLIENT,
         clock: extras.clock ?? new FixedClock(new Date('2026-11-25T15:00:00.000Z')),
-        ...(extras.assignments ? { assignments: extras.assignments } : {}),
+        assignments: extras.assignments ?? NO_ASSIGNMENTS,
       }),
     ),
   );

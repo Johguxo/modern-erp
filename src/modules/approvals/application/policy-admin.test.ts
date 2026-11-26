@@ -19,8 +19,8 @@ const OTHER_TENANT_USER = '44444444-4444-4444-8444-444444444444';
 type AuditEntry = Parameters<AuditLog['record']>[0];
 
 const members: DirectoryMember[] = [
-  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'] },
-  { userId: LUIS, name: 'Luis Rojas', roles: ['approver'] },
+  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'], canDecide: true },
+  { userId: LUIS, name: 'Luis Rojas', roles: ['approver'], canDecide: true },
 ];
 
 const initial: Policy = {
@@ -59,6 +59,7 @@ function setup(policy: Policy | null = initial) {
     policies: {
       findActive: () => Promise.resolve(stored),
       lockActive: () => Promise.resolve(stored),
+      findActiveForStart: () => Promise.resolve(stored),
       replaceSteps: (_tenantId, _policyId, steps) => {
         replaced.push([...steps]);
         stored = {
@@ -70,6 +71,7 @@ function setup(policy: Policy | null = initial) {
       },
     },
     directory: {
+      decidingRoles: ['admin', 'warehouse', 'approver'],
       activeMembers: () => Promise.resolve(members),
       namesOf: (_tenantId, ids) =>
         Promise.resolve(new Map(ids.map((id) => [id, id === GONE ? 'Gabi Vega' : 'Otro']))),
@@ -121,10 +123,19 @@ describe('getPolicy', () => {
   it('avisa de un rol sin miembros activos', async () => {
     const policy: Policy = {
       ...initial,
-      steps: [{ ...initial.steps[0]!, role: 'purchasing' }],
+      steps: [{ ...initial.steps[0]!, role: 'admin' }],
     };
     const view = await getPolicy(admin(), { docType: 'SOF' }, setup(policy).deps);
     expect(view.steps[0]?.warnings).toEqual([{ type: 'role_without_members' }]);
+  });
+
+  it('avisa de un rol que no puede aprobar solicitudes', async () => {
+    const policy: Policy = {
+      ...initial,
+      steps: [{ ...initial.steps[0]!, role: 'requester' }],
+    };
+    const view = await getPolicy(admin(), { docType: 'SOF' }, setup(policy).deps);
+    expect(view.steps[0]?.warnings).toEqual([{ type: 'role_cannot_decide' }]);
   });
 
   it('exige approval_policies.manage', async () => {

@@ -22,6 +22,7 @@ import {
   addMember,
   draftInput,
   fakeAssignments,
+  NO_ASSIGNMENTS,
   insertRequest,
   runRequests,
   seedRequestsWorld,
@@ -53,7 +54,7 @@ function detailOf(
       { id },
       createGetRequestDetailDeps(tx, {
         client: UNKNOWN_CLIENT,
-        ...(assignments ? { assignments } : {}),
+        assignments: assignments ?? NO_ASSIGNMENTS,
       }),
     ),
   );

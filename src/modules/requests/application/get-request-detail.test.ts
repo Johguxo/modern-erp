@@ -13,6 +13,7 @@ import type { GetRequestDetailDeps } from './ports';
 
 const OWNER = '11111111-1111-4111-8111-111111111111';
 const ANA = '22222222-2222-4222-8222-222222222222';
+const STEP_ID = '33333333-3333-4333-8333-333333333333';
 const APPROVER = '33333333-3333-4333-8333-333333333333';
 const REQ = '00000000-0000-4000-8000-000000000001';
 const CC = '66666666-6666-4666-8666-666666666661';
@@ -82,9 +83,10 @@ function setup(
         calls.isAssigned += 1;
         return Promise.resolve(assigned.includes(id));
       },
-      pendingRequestIds: () => {
+      pendingRequestIds: () => Promise.resolve(pending),
+      pendingStepId: (_ctx, id) => {
         calls.pending += 1;
-        return Promise.resolve(pending);
+        return Promise.resolve(pending.includes(id) ? STEP_ID : null);
       },
     },
     labels: {
@@ -168,6 +170,7 @@ describe('getRequestDetail', () => {
     const { deps } = setup(request(), [line(1)], { assigned: [REQ], pending: [REQ] });
     const detail = await getRequestDetail(approverCtx, { id: REQ }, deps);
     expect(detail.displayStatus).toBe('awaiting_my_approval');
+    expect(detail.pendingStepId).toBe(STEP_ID);
     expect(detail.status).toBe('in_approval');
     expect(detail.actions).toEqual(['approve', 'request_changes', 'reject', 'download_pdf']);
   });
@@ -176,6 +179,7 @@ describe('getRequestDetail', () => {
     const { deps } = setup(request(), [line(1)], { assigned: [REQ] });
     const detail = await getRequestDetail(approverCtx, { id: REQ }, deps);
     expect(detail.displayStatus).toBe('in_approval');
+    expect(detail.pendingStepId).toBeNull();
     expect(detail.actions).toEqual(['download_pdf']);
   });
 

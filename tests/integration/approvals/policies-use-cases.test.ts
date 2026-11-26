@@ -127,7 +127,7 @@ describe('getPolicy', () => {
     expect(view.steps.every((s) => s.warnings.length === 0)).toBe(true);
   });
 
-  it('un rol sin miembros activos genera la advertencia', async () => {
+  it('un rol que no puede aprobar genera la advertencia', async () => {
     const view = await read(adminCtx);
     expect(view.steps[0]?.warnings).toEqual([]);
 
@@ -136,7 +136,7 @@ describe('getPolicy', () => {
       version: view.version,
       steps: [roleStep('Compras', 'purchasing')],
     });
-    expect(saved.steps[0]?.warnings).toEqual([{ type: 'role_without_members' }]);
+    expect(saved.steps[0]?.warnings).toEqual([{ type: 'role_cannot_decide' }]);
     await restoreStandard();
   });
 

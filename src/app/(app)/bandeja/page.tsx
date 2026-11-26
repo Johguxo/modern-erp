@@ -60,7 +60,7 @@ export default async function InboxPage({
 
   const params = parseInboxParams(await searchParams);
   const data = await withTenant(ctx, (tx) =>
-    listRequests(ctx, params, createListRequestsDeps(tx, readOnlyRequestsExtras())),
+    listRequests(ctx, params, createListRequestsDeps(tx, readOnlyRequestsExtras(tx))),
   );
 
   // Página fuera de rango (p. ej. ?page=9 con 2 páginas): a la última, conservando pestaña y q.

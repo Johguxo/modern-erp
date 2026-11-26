@@ -13,8 +13,8 @@ const ANA = '11111111-1111-4111-8111-111111111111';
 const LUIS = '22222222-2222-4222-8222-222222222222';
 
 const members: DirectoryMember[] = [
-  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'] },
-  { userId: LUIS, name: 'Luis Rojas', roles: ['approver'] },
+  { userId: ANA, name: 'Ana Pérez', roles: ['warehouse'], canDecide: true },
+  { userId: LUIS, name: 'Luis Rojas', roles: ['approver'], canDecide: true },
 ];
 
 const policy: Policy = {

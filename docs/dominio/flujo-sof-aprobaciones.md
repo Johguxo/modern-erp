@@ -74,16 +74,20 @@ Además, cada paso puede tener `condition` (jsonb) para saltarse si no aplica (p
 Al hacer `submit`:
 1. Se elige la política (`doc_type` + condiciones + prioridad).
 2. Se crea una `approval_instance` con una **copia** de sus pasos en `approval_steps` (así, cambiar la política después no altera documentos en curso).
-3. Se resuelven los aprobadores de cada paso en `approval_step_assignees` (para `role`, se toman los usuarios con ese rol en ese momento).
+3. Se resuelven los aprobadores de cada paso en `approval_step_assignees` (para `role`, se toman los usuarios con ese rol en ese momento). Solo se asigna a miembros activos con el permiso `approvals.decide` y nunca al solicitante (E4-H2).
 4. El primer paso aplicable queda `pending`; los demás `waiting`; los que no aplican, `skipped`.
-5. Se encola el aviso por correo a los asignados del paso `pending`.
+5. Se encola el aviso por correo a los asignados del paso `pending` (E5).
 
-Estados de un paso: `waiting` → `pending` → `approved` | `rejected` | `changes_requested`; o `skipped`.
+Sin política activa, con pasos que el MVP no soporta o con todos los pasos `skipped`, el envío falla y no consume número. Reenviar tras `changes_requested` crea una **instancia nueva** (`round` + 1) con la política vigente y el total nuevo; los eventos de rondas anteriores se conservan.
+
+Estados de un paso: `waiting` → `pending` → `approved` | `rejected` | `changes_requested`; o `skipped`; o `cancelled` (los `waiting` cuando un paso se rechaza o pide cambios, y los abiertos al anular).
 
 **Reglas:**
 - Un usuario no puede aprobar su propia solicitud en ningún paso (si es el único asignado, el paso se marca `pending` y se avisa al admin). Configurable a futuro.
 - Si un usuario está asignado a dos pasos seguidos, debe aprobar cada uno (sin aprobación automática) en el MVP.
-- La decisión guarda `decided_by`, `decided_at`, `comment` y genera un evento en `approval_events`.
+- La decisión guarda `decided_by`, `decided_at`, `comment` y genera un evento en `approval_events`. Rechazar y pedir cambios exigen comentario.
+- Regla `any`: la primera aprobación cierra el paso. Regla `all`: se cierra cuando aprueban todos. Un rechazo o pedido de cambios de cualquier asignado cierra el paso, la instancia y el documento.
+- Concurrencia: se bloquea primero la solicitud y luego la instancia. De dos decisiones simultáneas en un paso `any` solo cuenta la primera (la otra recibe `step_already_decided`); en `all`, la segunda recibe `stale_version` y debe recargar.
 - Recordatorio: si un paso lleva `pending` más de `REMINDER_HOURS` (por defecto 24), el worker reenvía el aviso una vez al día.
 
 ## 4. Corrección de una línea sin reiniciar

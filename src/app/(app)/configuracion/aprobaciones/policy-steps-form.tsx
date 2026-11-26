@@ -145,7 +145,7 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
             <ol className="flex flex-col gap-4">
               {fields.map((field, index) => {
                 const step = steps[index];
-                const warnings = step ? stepWarnings(step, view.members) : [];
+                const warnings = step ? stepWarnings(step, view.members, view.decidingRoles) : [];
                 return (
                   <li key={field.id}>
                     <fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-surface p-4 md:p-5">
@@ -247,21 +247,37 @@ export function PolicyStepsForm({ policy, readOnly }: { policy: PolicyView; read
                           )}
                         />
                       )}
-                      {warnings.map((warning) =>
-                        warning.type === 'role_without_members' ? (
-                          <Warning key={warning.type}>
-                            {t.warnings.roleWithoutMembers(
-                              step?.role ? messages.roles[step.role] : '',
-                            )}
-                          </Warning>
-                        ) : (
-                          <Warning key={warning.type}>
-                            {t.warnings.inactiveUsers(
-                              warning.userIds.map((id) => names.get(id) ?? '').join(', '),
-                            )}
-                          </Warning>
-                        ),
-                      )}
+                      {warnings.map((warning) => {
+                        const roleName = step?.role ? messages.roles[step.role] : '';
+                        const namesOf = (ids: readonly string[]) =>
+                          ids.map((id) => names.get(id) ?? '').join(', ');
+                        switch (warning.type) {
+                          case 'role_without_members':
+                            return (
+                              <Warning key={warning.type}>
+                                {t.warnings.roleWithoutMembers(roleName)}
+                              </Warning>
+                            );
+                          case 'role_cannot_decide':
+                            return (
+                              <Warning key={warning.type}>
+                                {t.warnings.roleCannotDecide(roleName)}
+                              </Warning>
+                            );
+                          case 'users_cannot_decide':
+                            return (
+                              <Warning key={warning.type}>
+                                {t.warnings.usersCannotDecide(namesOf(warning.userIds))}
+                              </Warning>
+                            );
+                          case 'inactive_users':
+                            return (
+                              <Warning key={warning.type}>
+                                {t.warnings.inactiveUsers(namesOf(warning.userIds))}
+                              </Warning>
+                            );
+                        }
+                      })}
                       <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"

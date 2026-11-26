@@ -1,9 +1,11 @@
-// Enviar un SOF a aprobación (requests.create). Todo en la transacción de withTenant:
+// Enviar un SOF a aprobación (requests.create), o reenviarlo tras «Cambios solicitados» (E4-H2).
+// Todo en la transacción de withTenant:
 //   1. bloquea la solicitud (FOR UPDATE) y revisa versión y estado;
 //   2. revisa lo obligatorio (G5) y que las referencias sigan activas; los precios del borrador
 //      quedan congelados (no se vuelve a leer el catálogo) y el total se recalcula desde las líneas;
-//   3. bloquea la secuencia (FOR UPDATE, siempre después de la solicitud) y toma el número;
-//   4. pasa a in_approval y arranca la aprobación.
+//   3. al enviar: bloquea la secuencia (FOR UPDATE, siempre después de la solicitud) y toma el
+//      número; al reenviar conserva el número y no toca la secuencia;
+//   4. pasa a in_approval y arranca la aprobación (una instancia nueva por ronda).
 // Si cualquier paso lanza, la transacción se revierte entera y no se consume número.
 import { recordAudit } from '@/modules/identity';
 import { requirePermission } from '@/shared/authorization';
@@ -12,7 +14,7 @@ import { NotFoundError } from '@/shared/errors';
 
 import { lineSubtotal, sumTotal } from '../domain/money';
 import { advance, formatDocumentNumber } from '../domain/numbering';
-import { assertSubmittable } from '../domain/request';
+import { assertSubmittable, type Request } from '../domain/request';
 import { nextStatus } from '../domain/request-state-machine';
 
 import { assertRefsStillValid } from './catalog-snapshot';
@@ -34,8 +36,10 @@ export async function submitRequest(
 
   const current = await lockOwnRequest(ctx, deps.requests, input.id);
   const { request } = current;
-  // Del §1: solo un borrador se envía (InvalidTransitionError con from/event en otro caso).
-  const status = nextStatus(request.status, 'submit');
+  // Del §1: solo un borrador se envía y solo «Cambios solicitados» se reenvía
+  // (InvalidTransitionError con from/event en otro caso).
+  const resubmit = request.status === 'changes_requested';
+  const status = nextStatus(request.status, resubmit ? 'resubmit' : 'submit');
   assertVersion(request.version, input.version);
 
   const activeLines = current.lines.filter((line) => line.status === 'active');
@@ -61,38 +65,48 @@ export async function submitRequest(
     activeLines.map((line) => lineSubtotal(line.quantity, line.unitPrice)),
   );
 
-  const sequence = await deps.sequences.lockForUpdate(ctx.tenantId, request.docType);
-  if (!sequence) {
-    throw new NotFoundError({ message: `Document sequence ${request.docType} not found` });
+  const totalPatch = totalAmount !== request.totalAmount ? { totalAmount } : {};
+  let submitted: Request;
+  if (resubmit) {
+    submitted = await deps.requests.updateHeader(ctx.tenantId, request.id, request.version, {
+      status,
+      ...totalPatch,
+    });
+  } else {
+    const sequence = await deps.sequences.lockForUpdate(ctx.tenantId, request.docType);
+    if (!sequence) {
+      throw new NotFoundError({ message: `Document sequence ${request.docType} not found` });
+    }
+    const advanced = advance(sequence);
+    const number = formatDocumentNumber(sequence.prefix, advanced.issuedNumber, sequence.padding);
+    await deps.sequences.update(ctx.tenantId, request.docType, {
+      nextNumber: advanced.nextNumber,
+      lastIssuedNumber: advanced.lastIssuedNumber,
+    });
+    submitted = await deps.requests.updateHeader(ctx.tenantId, request.id, request.version, {
+      status,
+      number,
+      submittedAt: deps.clock.now(),
+      ...totalPatch,
+    });
   }
-  const advanced = advance(sequence);
-  const number = formatDocumentNumber(sequence.prefix, advanced.issuedNumber, sequence.padding);
-  await deps.sequences.update(ctx.tenantId, request.docType, {
-    nextNumber: advanced.nextNumber,
-    lastIssuedNumber: advanced.lastIssuedNumber,
-  });
 
-  const submitted = await deps.requests.updateHeader(ctx.tenantId, request.id, request.version, {
-    status,
-    number,
-    submittedAt: deps.clock.now(),
-    ...(totalAmount !== request.totalAmount ? { totalAmount } : {}),
-  });
-
-  await deps.approvals.start(ctx, {
+  const { round } = await deps.approvals.start(ctx, {
     requestId: submitted.id,
     docType: submitted.docType,
     totalAmount: submitted.totalAmount,
+    requesterId: submitted.requesterId,
   });
 
   await recordAudit(
     ctx,
     {
-      action: 'request.submitted',
+      action: resubmit ? 'request.resubmitted' : 'request.submitted',
       entityType: 'request',
       entityId: submitted.id,
       data: {
-        number,
+        number: submitted.number,
+        ...(resubmit ? { round } : {}),
         lineCount: lines.length,
         totalAmount: submitted.totalAmount,
         currency: submitted.currency,

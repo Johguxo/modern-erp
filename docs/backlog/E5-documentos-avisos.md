@@ -18,6 +18,8 @@ Estado: pendiente · Issue: [#25](https://github.com/Johguxo/modern-erp/issues/2
 - [ ] Respeta `tenant_settings.notification_channels`.
 - [ ] En desarrollo, los correos se ven en Mailpit (http://127.0.0.1:54324), como desde E1-H3.
 
+> Nota (E4-H2a): `decideRequest`/`submitRequest` devuelven el paso `pending` siguiente y el evento `step_pending` trae `assigneeIds` (y `noAssignees` para avisar al admin); encolar el correo con `afterCommit`. `approval_steps.pending_since` sirve para los recordatorios (E5-H3).
+
 Estado: pendiente · Issue: [#26](https://github.com/Johguxo/modern-erp/issues/26)
 
 ### E5-H3 · Recordatorios

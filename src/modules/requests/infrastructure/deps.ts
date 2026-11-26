@@ -10,6 +10,7 @@ import type { Clock } from '@/shared/ports/clock';
 import type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalDecider,
   ApprovalStarter,
   GetRequestDeps,
   GetRequestDetailDeps,
@@ -27,18 +28,21 @@ import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-
 import { noopApprovalAssignments } from './noop-approval-assignments';
 import { noopApprovalCanceller } from './noop-approval-canceller';
 import { noopApprovalStarter } from './noop-approval-starter';
+import { unavailableApprovalDecider } from './unavailable-approval-decider';
 import { createRequestLabels } from './request-labels';
 
 /** Lo que la entrega aporta a requests (además de la transacción). */
 export interface RequestsExtras {
   readonly client: ClientInfo;
   readonly clock: Clock;
-  /** E4-H2 pasa aquí el motor de aprobaciones; por defecto no hace nada. */
+  /**
+   * El motor de aprobaciones (E4-H2) conectado por la entrega. Los valores por omisión no hacen nada
+   * y solo sirven para pruebas: un envío sin `approvals` no crea instancia.
+   */
   readonly approvals?: ApprovalStarter;
-  /** E4-H2 pasa aquí el cierre de la aprobación al anular; por defecto no hace nada. */
   readonly canceller?: ApprovalCanceller;
-  /** E4-H2 pasa aquí las asignaciones del motor; por defecto nadie tiene nada asignado. */
   readonly assignments?: ApprovalAssignments;
+  readonly decider?: ApprovalDecider;
 }
 
 export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): RequestsDeps {
@@ -52,6 +56,7 @@ export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): Requ
     approvals: extras.approvals ?? noopApprovalStarter,
     assignments: extras.assignments ?? noopApprovalAssignments,
     canceller: extras.canceller ?? noopApprovalCanceller,
+    decider: extras.decider ?? unavailableApprovalDecider,
     audit: createAuditLogFor(tx),
     client: extras.client,
     clock: extras.clock,
@@ -73,18 +78,18 @@ export function createSequenceDeps(
 /** Lectura de una solicitud (sin auditoría ni reloj). */
 export function createGetRequestDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'assignments'> = {},
+  extras: { readonly assignments: ApprovalAssignments },
 ): GetRequestDeps {
   return {
     requests: createDrizzleRequestRepository(tx),
-    assignments: extras.assignments ?? noopApprovalAssignments,
+    assignments: extras.assignments,
   };
 }
 
 /** Detalle del SOF (E3-H4): la lectura de una solicitud más los nombres resueltos en lote. */
 export function createGetRequestDetailDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client' | 'assignments'>,
+  extras: Pick<RequestsExtras, 'client'> & { readonly assignments: ApprovalAssignments },
 ): GetRequestDetailDeps {
   return {
     ...createGetRequestDeps(tx, extras),
@@ -95,11 +100,13 @@ export function createGetRequestDetailDeps(
 /** Bandeja (E3-H3): consulta sobre `requests` y nombres resueltos en lote desde identity/catalog. */
 export function createListRequestsDeps(
   tx: DbExecutor,
-  extras: Pick<RequestsExtras, 'client' | 'clock' | 'assignments'>,
+  extras: Pick<RequestsExtras, 'client' | 'clock'> & {
+    readonly assignments: ApprovalAssignments;
+  },
 ): ListRequestsDeps {
   return {
     queries: createDrizzleRequestQueryRepository(tx),
-    assignments: extras.assignments ?? noopApprovalAssignments,
+    assignments: extras.assignments,
     labels: createRequestLabels(tx, { client: extras.client }),
     clock: extras.clock,
   };

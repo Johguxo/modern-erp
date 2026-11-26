@@ -320,6 +320,11 @@ export function createAccounts(): Accounts {
         if (tenantIds.length > 0) {
           await sql`delete from audit_events where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from invitations where tenant_id in ${sql(tenantIds)}`;
+          // Aprobaciones (E4-H2): eventos, asignados, pasos e instancias antes que las solicitudes.
+          await sql`delete from approval_events where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_step_assignees where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_steps where tenant_id in ${sql(tenantIds)}`;
+          await sql`delete from approval_instances where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from request_line_revisions where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from request_lines where tenant_id in ${sql(tenantIds)}`;
           await sql`delete from requests where tenant_id in ${sql(tenantIds)}`;

@@ -23,6 +23,7 @@ import {
   addMember,
   draftInput,
   fakeAssignments,
+  NO_ASSIGNMENTS,
   insertRequest,
   runInbox,
   runRequests,
@@ -301,7 +302,7 @@ describe('visibilidad tras anular', () => {
         getRequestDetail(
           ctx,
           { id: draft.id },
-          createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT }),
+          createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT, assignments: NO_ASSIGNMENTS }),
         ),
       );
 
@@ -324,7 +325,7 @@ describe('visibilidad tras anular', () => {
       getRequestDetail(
         reader.ctx,
         { id: sent.id },
-        createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT }),
+        createGetRequestDetailDeps(tx, { client: UNKNOWN_CLIENT, assignments: NO_ASSIGNMENTS }),
       ),
     );
 

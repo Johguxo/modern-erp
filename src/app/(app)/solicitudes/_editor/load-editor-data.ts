@@ -17,6 +17,7 @@ import { getLogger } from '@/shared/adapters/pino-logger';
 import type { Ctx } from '@/shared/context';
 
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
+import { readOnlyRequestsExtras } from '../../../_lib/requests';
 
 export interface SelectOption {
   readonly id: string;
@@ -43,7 +44,11 @@ export function loadEditorData(ctx: Ctx, draftId?: string): Promise<EditorData> 
     const catalog = createCatalogDeps(tx, readOnlyCatalogExtras());
     // El borrador va primero: su total decide la ruta inicial y su moneda es la del documento.
     const draft = draftId
-      ? await getEditableDraft(ctx, { id: draftId }, createGetRequestDeps(tx))
+      ? await getEditableDraft(
+          ctx,
+          { id: draftId },
+          createGetRequestDeps(tx, readOnlyRequestsExtras(tx)),
+        )
       : null;
     const [costCenters, equipment, route, currency] = await Promise.all([
       listCostCenters(ctx, ACTIVE_FIRST_PAGE, catalog),

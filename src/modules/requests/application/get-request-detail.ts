@@ -28,9 +28,8 @@ export async function getRequestDetail(
     request.status === 'in_approval' &&
     request.requesterId !== ctx.userId &&
     hasPermission(ctx, 'approvals.decide');
-  const pendingForMe = mayDecide
-    ? (await deps.assignments.pendingRequestIds(ctx)).includes(request.id)
-    : false;
+  const pendingStepId = mayDecide ? await deps.assignments.pendingStepId(ctx, request.id) : null;
+  const pendingForMe = pendingStepId !== null;
 
   const timeline = deriveTimeline(request);
   const [names, areas] = await Promise.all([
@@ -60,6 +59,7 @@ export async function getRequestDetail(
     currency: request.currency,
     totalAmount: request.totalAmount,
     version: request.version,
+    pendingStepId,
     lines: [...activeLines]
       .sort((a, b) => a.lineNo - b.lineNo)
       .map((line) => ({

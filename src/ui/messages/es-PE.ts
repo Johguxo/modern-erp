@@ -629,6 +629,19 @@ export const messages = {
       draftNumber: 'Borrador',
       totalOf: (amount: string) => `Total ${amount}`,
       submittedNotice: (number: string) => `Enviaste ${number} a aprobación.`,
+      decidedNotice: {
+        approved: (number: string | null) =>
+          `Aprobaste ${number ?? 'la solicitud'}. Quedó aprobada.`,
+        advanced: (number: string | null) =>
+          `Aprobaste ${number ?? 'la solicitud'}. Pasa al siguiente paso de aprobación.`,
+        partial: (number: string | null) =>
+          `Aprobaste ${number ?? 'la solicitud'}. Faltan otros aprobadores de este paso.`,
+        rejected: (number: string | null) => `Rechazaste ${number ?? 'la solicitud'}.`,
+        changes_requested: (number: string | null) =>
+          `Pediste cambios en ${number ?? 'la solicitud'}.`,
+      },
+      resubmittedNotice: (number: string | null) =>
+        `Reenviaste ${number ?? 'la solicitud'} a aprobación.`,
       cancelledNotice: (number: string | null) =>
         number === null ? 'Anulaste el borrador.' : `Anulaste ${number}.`,
       noValue: '—',
@@ -691,6 +704,42 @@ export const messages = {
         deliver: 'Registrar entrega',
         download_pdf: 'Descargar PDF',
         soon: 'Esta acción se habilita pronto.',
+      },
+      /** Diálogo de decisión del aprobador (E4-H2). */
+      decision: {
+        approve: {
+          title: (number: string | null) => `Aprobar ${number ?? 'la solicitud'}`,
+          description: 'Tu aprobación queda en la línea de tiempo. Puedes dejar un comentario.',
+          commentLabel: 'Comentario (opcional)',
+          commentPlaceholder: 'Por ejemplo: aprobado con la condición acordada',
+          submit: 'Aprobar',
+          submitting: 'Aprobando…',
+        },
+        request_changes: {
+          title: (number: string | null) => `Pedir cambios en ${number ?? 'la solicitud'}`,
+          description:
+            'El solicitante podrá editar la solicitud y reenviarla. Tu comentario le explica qué cambiar.',
+          commentLabel: 'Comentario (obligatorio)',
+          commentPlaceholder: 'Cuenta qué hay que cambiar',
+          submit: 'Pedir cambios',
+          submitting: 'Enviando…',
+        },
+        reject: {
+          title: (number: string | null) => `Rechazar ${number ?? 'la solicitud'}`,
+          description:
+            'El rechazo cierra la solicitud y no se puede deshacer. El comentario lo ve quien tenga acceso al documento.',
+          commentLabel: 'Comentario (obligatorio)',
+          commentPlaceholder: 'Cuenta por qué se rechaza esta solicitud',
+          submit: 'Rechazar solicitud',
+          submitting: 'Rechazando…',
+        },
+        counter: (used: number, max: number) => `${used} / ${max}`,
+        remaining: (left: number) =>
+          left < 0
+            ? `Te pasaste por ${-left} ${left === -1 ? 'carácter' : 'caracteres'}`
+            : `Quedan ${left} ${left === 1 ? 'carácter' : 'caracteres'}`,
+        back: 'Volver',
+        reload: 'Recargar',
       },
       cancel: {
         title: (number: string | null) => (number ? `Anular ${number}` : 'Anular borrador'),

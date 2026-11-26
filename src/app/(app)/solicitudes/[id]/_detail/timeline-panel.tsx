@@ -130,6 +130,9 @@ export function TimelinePanel({
               readOnly={readOnly}
               large
               noteId={noteId}
+              version={detail.version}
+              number={detail.number}
+              stepId={detail.pendingStepId}
             />
           ) : null}
           {decisions.length > 0 ? (
@@ -141,6 +144,9 @@ export function TimelinePanel({
                   requestId={detail.id}
                   readOnly={readOnly}
                   noteId={noteId}
+                  version={detail.version}
+                  number={detail.number}
+                  stepId={detail.pendingStepId}
                 />
               ))}
             </div>

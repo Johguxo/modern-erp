@@ -9,6 +9,7 @@ import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
 import { CancelRequestDialog } from './cancel-request-dialog';
+import { DecisionDialog } from './decision-dialog';
 import { isActionEnabled, isImplemented } from './detail-actions';
 
 const t = messages.requests.detail.actions;
@@ -35,6 +36,7 @@ export function ActionButton({
   version,
   number = null,
   status,
+  stepId = null,
 }: {
   action: RequestAction;
   requestId: string;
@@ -49,6 +51,8 @@ export function ActionButton({
   number?: string | null;
   /** Estado del documento: «Editar» se llama «Editar solicitud» tras pedir cambios. */
   status?: RequestStatus;
+  /** El paso pendiente del usuario: las decisiones lo necesitan. */
+  stepId?: string | null;
 }) {
   const style = STYLE[action];
   const size = large ? 'lg' : 'default';
@@ -71,6 +75,27 @@ export function ActionButton({
         number={number}
         large={large}
         className={classes}
+      />
+    );
+  }
+  if (
+    isActionEnabled(action, readOnly) &&
+    (action === 'approve' || action === 'request_changes' || action === 'reject') &&
+    version !== undefined &&
+    stepId !== null
+  ) {
+    return (
+      <DecisionDialog
+        decision={action}
+        requestId={requestId}
+        version={version}
+        stepId={stepId}
+        number={number}
+        trigger={
+          <Button variant={style.variant} size={size} className={classes}>
+            {t[action]}
+          </Button>
+        }
       />
     );
   }

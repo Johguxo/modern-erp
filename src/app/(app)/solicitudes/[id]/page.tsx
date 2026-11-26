@@ -18,6 +18,21 @@ import { TimelinePanel } from './_detail/timeline-panel';
 
 const t = messages.requests.detail;
 
+/** Aviso tras decidir (?decision=<resultado>): solo valores conocidos y para quien no es el dueño. */
+function decidedNotice(
+  param: string | string[] | undefined,
+  notOwner: boolean,
+  number: string | null,
+) {
+  if (!notOwner || typeof param !== 'string') return undefined;
+  const outcome = Object.keys(t.decidedNotice).find((key) => key === param);
+  if (outcome === undefined) return undefined;
+  return {
+    tone: 'success',
+    text: t.decidedNotice[outcome as keyof typeof t.decidedNotice](number),
+  } as const;
+}
+
 // Detalle del SOF (E3-H4, pantalla 3): ítems, documento, línea de tiempo y acciones. Quien no puede
 // ver la solicitud (otro tenant, borrador ajeno, id inválido o sin permisos) recibe 404 y no se
 // entera de que existe.
@@ -29,7 +44,7 @@ export default async function RequestPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const { enviado, anulado } = await searchParams;
+  const { enviado, anulado, decision } = await searchParams;
   const { ctx } = await requireCtx();
   if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
 
@@ -52,7 +67,7 @@ export default async function RequestPage({
       ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
       : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
         ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
-        : undefined;
+        : decidedNotice(decision, detail.requesterId !== ctx.userId, detail.number);
 
   return (
     <div className="flex flex-col gap-5">

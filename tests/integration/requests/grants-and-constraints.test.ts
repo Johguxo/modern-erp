@@ -245,6 +245,26 @@ describe('DELETE de líneas solo con la solicitud editable (política restrictiv
     expect(deleted).toHaveLength(1);
   });
 
+  it('otro tenant no borra las líneas de una solicitud en changes_requested (borra 0)', async () => {
+    const requestId = await insertRequest(A, {
+      status: 'changes_requested',
+      number: `T-CRB-${Math.random().toString(36).slice(2, 8)}`.toUpperCase(),
+      submittedAt: new Date('2026-11-25T15:00:00.000Z'),
+    });
+    const keptLine = await insertLine(A, requestId);
+
+    const deleted = await withTenant({ tenantId: B.tenantId, userId: B.userId }, (tx) =>
+      tx.execute(sql`delete from request_lines where request_id = ${requestId} returning id`),
+    );
+
+    expect(deleted).toHaveLength(0);
+    const rows = await admin()
+      .select({ id: requestLines.id })
+      .from(requestLines)
+      .where(eq(requestLines.id, keptLine));
+    expect(rows).toHaveLength(1);
+  });
+
   it.each(['in_approval', 'approved', 'delivered', 'rejected', 'cancelled'])(
     'con la solicitud en %s no se borra ninguna línea',
     async (status) => {

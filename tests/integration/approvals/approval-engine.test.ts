@@ -574,6 +574,62 @@ describe('decidir', () => {
     expect(approved).toMatchObject({ outcome: 'advanced' });
   });
 
+  it('latestDecision devuelve la decisión de la última ronda aunque el reloj sea el mismo', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    const asked = await decideAs(W.ana, {
+      id: sent.id,
+      version: sent.version,
+      stepId: await stepIdOf(sent.id, 1),
+      decision: 'request_changes',
+      comment: 'Ronda 1: falta el equipo',
+    });
+    const resent = await runRequests(W.world.ctx, (deps) =>
+      submitRequest(W.world.ctx, { id: sent.id, version: asked.version }, deps),
+    );
+    await decideAs(W.ana, {
+      id: sent.id,
+      version: resent.version,
+      stepId: await stepIdOf(sent.id, 1, 2),
+      decision: 'reject',
+      comment: 'Ronda 2: no corresponde',
+    });
+
+    // Las dos rondas se decidieron con el mismo instante fijo: solo la ronda las distingue.
+    const steps = (await storedSteps(sent.id)).filter((s) => s.decidedAt !== null);
+    expect(new Set(steps.map((s) => s.decidedAt?.getTime())).size).toBe(1);
+    const decision = await withTenant(W.world.ctx, (tx) =>
+      createApprovalEngine(tx, {
+        clock: testShared().clock,
+        logger: testShared().logger,
+      }).history.latestDecision(W.world.ctx, sent.id),
+    );
+
+    expect(decision).toMatchObject({ kind: 'reject', comment: 'Ronda 2: no corresponde' });
+  });
+
+  it('latestDecision con el contexto de otro tenant devuelve null', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    await decideAs(W.ana, {
+      id: sent.id,
+      version: sent.version,
+      stepId: await stepIdOf(sent.id, 1),
+      decision: 'reject',
+      comment: 'No corresponde',
+    });
+    const latest = (ctx: Ctx) =>
+      withTenant(ctx, (tx) =>
+        createApprovalEngine(tx, {
+          clock: testShared().clock,
+          logger: testShared().logger,
+        }).history.latestDecision(ctx, sent.id),
+      );
+
+    expect(await latest(W.world.ctx)).toMatchObject({ kind: 'reject' });
+    expect(await latest(B.world.ctx)).toBeNull();
+  });
+
   it('un SOF «En aprobación» sin instancia (anterior al motor): approval_not_started y se puede anular', async () => {
     const legacyId = await insertRequest(W.world, { status: 'in_approval' });
     const reader = {

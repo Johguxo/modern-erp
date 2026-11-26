@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  correctLineContract,
   createDraftContract,
   listRequestsContract,
   platformUpdateDocumentSequenceContract,
@@ -127,5 +128,74 @@ describe('listRequestsContract', () => {
 
   it.each([{ tab: 'otra' }, { page: 0 }, { q: 'x'.repeat(101) }])('rechaza %j', (value) => {
     expect(parse(value).success).toBe(false);
+  });
+});
+
+describe('correctLineContract', () => {
+  const parse = (value: unknown) => correctLineContract.inputSchema.safeParse(value);
+  const base = { id: ID, version: 3, reason: ' Equipo equivocado ' };
+
+  it('acepta corregir, agregar y quitar; normaliza texto, cantidad y precio', () => {
+    const update = parse({
+      ...base,
+      change: {
+        type: 'update',
+        lineId: PRODUCT,
+        productId: PRODUCT,
+        quantity: ' 2.5 ',
+        unitPrice: ' 12.5 ',
+        equipmentId: '',
+        notes: ' ',
+      },
+    });
+    expect(update.success).toBe(true);
+    expect(update.data).toEqual({
+      ...base,
+      reason: 'Equipo equivocado',
+      change: {
+        type: 'update',
+        lineId: PRODUCT,
+        productId: PRODUCT,
+        quantity: '2.500',
+        unitPrice: '12.5000',
+        equipmentId: null,
+        notes: null,
+      },
+    });
+    expect(
+      parse({
+        ...base,
+        change: { type: 'add', productId: PRODUCT, quantity: '1', unitPrice: '0' },
+      }).success,
+    ).toBe(true);
+    expect(parse({ ...base, change: { type: 'remove', lineId: PRODUCT } }).success).toBe(true);
+  });
+
+  it('exige un motivo y nunca acepta number para cantidad o precio', () => {
+    const change = { type: 'remove', lineId: PRODUCT };
+    expect(parse({ ...base, reason: '   ', change }).success).toBe(false);
+    expect(parse({ ...base, reason: 'x'.repeat(501), change }).success).toBe(false);
+    for (const extra of [{ quantity: 2 }, { unitPrice: 10 }]) {
+      expect(
+        parse({
+          ...base,
+          change: { type: 'add', productId: PRODUCT, quantity: '1', unitPrice: '1', ...extra },
+        }).success,
+      ).toBe(false);
+    }
+  });
+
+  it('rechaza precios inválidos y claves extra', () => {
+    for (const unitPrice of ['-1', '1.23456', '1e3', '', 'abc']) {
+      expect(
+        parse({
+          ...base,
+          change: { type: 'add', productId: PRODUCT, quantity: '1', unitPrice },
+        }).success,
+      ).toBe(false);
+    }
+    expect(
+      parse({ ...base, change: { type: 'remove', lineId: PRODUCT, quantity: '1' } }).success,
+    ).toBe(false);
   });
 });

@@ -60,11 +60,15 @@ export async function submitRequest(
     },
     deps.catalog,
   );
-  const lines = current.lines;
+  const lines = resubmit
+    ? current.lines.map((line) => ({ ...line, needsReconfirmation: false }))
+    : current.lines;
   const totalAmount = sumTotal(
     activeLines.map((line) => lineSubtotal(line.quantity, line.unitPrice)),
   );
 
+  // Al reenviar, las marcas de reconfirmación de la ronda anterior ya no cuentan (E4-H4).
+  if (resubmit) await deps.requests.clearReconfirmation(ctx.tenantId, request.id);
   const totalPatch = totalAmount !== request.totalAmount ? { totalAmount } : {};
   let submitted: Request;
   if (resubmit) {

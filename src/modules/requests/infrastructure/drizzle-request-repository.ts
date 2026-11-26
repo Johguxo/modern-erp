@@ -4,13 +4,14 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import { isUniqueViolation, type DbExecutor } from '@/db';
-import { requestLines, requests } from '@/db/schema';
-import { ConflictError } from '@/shared/errors';
+import { requestLineRevisions, requestLines, requests } from '@/db/schema';
+import { ConflictError, NotFoundError } from '@/shared/errors';
 
 import type {
   HeaderInsert,
   HeaderPatch,
   LineInsert,
+  LinePatch,
   RequestRepository,
   RequestWithLines,
 } from '../application/ports';
@@ -89,7 +90,7 @@ function lineValues(tenantId: string, requestId: string, line: LineInsert) {
   };
 }
 
-function lineChanges(line: LineInsert) {
+function lineChanges(line: Omit<LineInsert, 'lineNo'>) {
   return {
     productId: line.productId,
     productCodeSnapshot: line.productCode,
@@ -193,6 +194,82 @@ export function createDrizzleRequestRepository(db: DbExecutor): RequestRepositor
       }
       await insertLines(tenantId, requestId, plan.inserts);
       return linesOf(tenantId, requestId);
+    },
+
+    async updateLine(tenantId, lineId, expectedRevision, patch: LinePatch) {
+      const [row] = await db
+        .update(requestLines)
+        .set({
+          ...(patch.values ? lineChanges(patch.values) : {}),
+          ...(patch.status !== undefined ? { status: patch.status } : {}),
+          revision: expectedRevision + 1,
+        })
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.id, lineId),
+            eq(requestLines.revision, expectedRevision),
+          ),
+        )
+        .returning();
+      if (!row) {
+        throw new ConflictError({
+          reason: 'stale_version',
+          message: `Line ${lineId} is not at revision ${expectedRevision}`,
+        });
+      }
+      return toLine(row);
+    },
+
+    async insertLine(tenantId, requestId, line) {
+      const [inserted] = await insertLines(tenantId, requestId, [line]);
+      if (!inserted) throw new Error('Line insert returned no row');
+      return inserted;
+    },
+
+    async appendRevision(tenantId, revision) {
+      // La línea debe ser de este tenant y de esta solicitud: la FK sola no lo garantiza.
+      const [line] = await db
+        .select({ id: requestLines.id })
+        .from(requestLines)
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.requestId, revision.requestId),
+            eq(requestLines.id, revision.requestLineId),
+          ),
+        )
+        .limit(1);
+      if (!line) throw new NotFoundError({ message: 'Request line not found' });
+      await db.insert(requestLineRevisions).values({
+        tenantId,
+        requestId: revision.requestId,
+        requestLineId: revision.requestLineId,
+        revision: revision.revision,
+        snapshot: revision.snapshot,
+        changedBy: revision.changedBy,
+        reason: revision.reason,
+      });
+    },
+
+    async flagReconfirmation(tenantId, lineId) {
+      await db
+        .update(requestLines)
+        .set({ needsReconfirmation: true })
+        .where(and(eq(requestLines.tenantId, tenantId), eq(requestLines.id, lineId)));
+    },
+
+    async clearReconfirmation(tenantId, requestId) {
+      await db
+        .update(requestLines)
+        .set({ needsReconfirmation: false })
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.requestId, requestId),
+            eq(requestLines.needsReconfirmation, true),
+          ),
+        );
     },
 
     async updateHeader(tenantId, id, expectedVersion, patch: HeaderPatch) {

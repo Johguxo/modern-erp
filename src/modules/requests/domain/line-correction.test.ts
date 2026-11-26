@@ -1,7 +1,7 @@
 // E4-H4 · Aplicar una corrección a las líneas vigentes (puro).
 import { describe, expect, it } from 'vitest';
 
-import { applyLineCorrection, type LineValues } from './line-correction';
+import { applyLineCorrection, normalizeCorrectionReason, type LineValues } from './line-correction';
 import type { RequestLine } from './request';
 
 const line = (id: string, lineNo: number, extra: Partial<RequestLine> = {}): RequestLine => ({
@@ -128,5 +128,26 @@ describe('applyLineCorrection · agregar y quitar', () => {
         values: valuesOf(A, { quantity: '99999999999.000', unitPrice: '99999.0000' }),
       }),
     ).toThrow(expect.objectContaining({ reason: 'amount_too_large' }));
+  });
+});
+
+describe('normalizeCorrectionReason', () => {
+  it('recorta los bordes', () => {
+    expect(normalizeCorrectionReason('  Se registró el equipo equivocado ')).toBe(
+      'Se registró el equipo equivocado',
+    );
+  });
+
+  it.each([null, undefined, '', '   '])('rechaza un motivo vacío (%j)', (raw) => {
+    expect(() => normalizeCorrectionReason(raw)).toThrow(
+      expect.objectContaining({ code: 'VALIDATION', reason: 'correction_reason_required' }),
+    );
+  });
+
+  it('rechaza más de 500 caracteres', () => {
+    expect(() => normalizeCorrectionReason('x'.repeat(501))).toThrow(
+      expect.objectContaining({ reason: 'correction_reason_too_long' }),
+    );
+    expect(normalizeCorrectionReason('x'.repeat(500))).toHaveLength(500);
   });
 });

@@ -62,6 +62,8 @@ export async function decideRequest(
   assertVersion(request.version, input.version);
 
   const now = deps.clock.now();
+  // Aprobado el último paso, ya nadie debe reconfirmar nada (E4-H4).
+  if (outcome === 'approved') await deps.requests.clearReconfirmation(ctx.tenantId, request.id);
   const decided = await deps.requests.updateHeader(ctx.tenantId, request.id, request.version, {
     status,
     ...(outcome === 'approved' ? { approvedAt: now } : {}),
@@ -86,5 +88,7 @@ export async function decideRequest(
     },
     deps,
   );
-  return { ...toRequestView(decided, lines), outcome };
+  const settled =
+    outcome === 'approved' ? lines.map((line) => ({ ...line, needsReconfirmation: false })) : lines;
+  return { ...toRequestView(decided, settled), outcome };
 }

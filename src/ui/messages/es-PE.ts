@@ -916,6 +916,14 @@ export const messages = {
       decision_comment_required: () => 'Escribe un comentario para rechazar o pedir cambios.',
       decision_comment_too_long: (p: Params) =>
         `El comentario puede tener hasta ${p.max ?? '?'} caracteres.`,
+      // Corrección de una línea (E4-H4).
+      correction_reason_required: () => 'Escribe el motivo de la corrección.',
+      correction_reason_too_long: (p: Params) =>
+        `El motivo puede tener hasta ${p.max ?? '?'} caracteres.`,
+      unit_price_invalid: () => 'Ingresa un precio de cero o más, con hasta 4 decimales.',
+      line_not_found: () => 'Este ítem ya no existe en la solicitud. Recarga la página.',
+      line_unchanged: () => 'No cambiaste nada en este ítem.',
+      last_line: () => 'La solicitud debe conservar al menos un ítem.',
       account_disabled: () => 'Tu cuenta está desactivada. Contacta al administrador de LinkUs.',
       // Importación del catálogo (E2-H3): el archivo en sí.
       file_unsupported: () => 'El archivo debe ser un Excel moderno (.xlsx) o un CSV (.csv).',

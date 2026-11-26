@@ -187,3 +187,24 @@ export function applyLineCorrection(
     newTotal: sumTotal(active.map((other) => (other.id === line.id ? subtotal : other.subtotal))),
   };
 }
+
+/** Motivo sin espacios en los bordes; `correction_reason_required` si queda vacío o `too_long` si pasa el máximo. */
+export function normalizeCorrectionReason(raw: string | null | undefined): string {
+  const reason = raw?.trim() ?? '';
+  if (reason === '') {
+    throw new ValidationError({
+      reason: 'correction_reason_required',
+      fieldErrors: { reason: ['correction_reason_required'] },
+      message: 'A correction needs a reason',
+    });
+  }
+  if (reason.length > CORRECTION_REASON_MAX) {
+    throw new ValidationError({
+      reason: 'correction_reason_too_long',
+      params: { max: CORRECTION_REASON_MAX },
+      fieldErrors: { reason: ['correction_reason_too_long'] },
+      message: `Correction reason longer than ${CORRECTION_REASON_MAX}`,
+    });
+  }
+  return reason;
+}

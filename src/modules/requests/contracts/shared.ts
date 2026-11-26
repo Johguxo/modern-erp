@@ -3,7 +3,7 @@
 import { z } from 'zod';
 
 import { MAX_SEQUENCE_NUMBER, PREFIX_MAX, PREFIX_PATTERN } from '../domain/numbering';
-import { CURRENCIES, parseQuantity } from '../domain/money';
+import { CURRENCIES, parseQuantity, parseUnitPrice } from '../domain/money';
 import { MAX_LINES, NOTES_MAX, REASON_MAX } from '../domain/request';
 import { REQUEST_STATUSES } from '../domain/request-state-machine';
 
@@ -25,6 +25,17 @@ export const quantitySchema = z
     }
   })
   .transform((value) => parseQuantity(value)?.toFixed(3) ?? value);
+
+/** Precio unitario como texto (cero o más, hasta 4 decimales); sale canónico. Nunca number. */
+export const unitPriceSchema = z
+  .string()
+  .trim()
+  .superRefine((value, ctx) => {
+    if (parseUnitPrice(value) === null) {
+      ctx.addIssue({ code: 'custom', message: 'unit_price_invalid' });
+    }
+  })
+  .transform((value) => parseUnitPrice(value)?.toFixed(4) ?? value);
 
 export const lineInputSchema = z
   .object({

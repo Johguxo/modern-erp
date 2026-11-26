@@ -150,6 +150,11 @@ function memoryRequests(): RequestRepository & { store: Map<string, RequestWithL
       store.set(requestId, { request: found.request, lines: next });
       return Promise.resolve(next);
     },
+    updateLine: () => Promise.reject(new Error('not used')),
+    insertLine: () => Promise.reject(new Error('not used')),
+    appendRevision: () => Promise.reject(new Error('not used')),
+    flagReconfirmation: () => Promise.resolve(),
+    clearReconfirmation: () => Promise.resolve(),
     syncLines(_tenantId, requestId, plan) {
       const found = store.get(requestId);
       if (!found) throw new Error('missing');

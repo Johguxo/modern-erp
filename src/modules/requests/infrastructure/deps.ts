@@ -10,6 +10,7 @@ import type { Clock } from '@/shared/ports/clock';
 import type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalCorrector,
   ApprovalDecider,
   ApprovalStarter,
   ApprovalTimeline,
@@ -29,6 +30,7 @@ import { createDrizzleRequestsPlatformStore } from './drizzle-requests-platform-
 import { noopApprovalAssignments } from './noop-approval-assignments';
 import { noopApprovalCanceller } from './noop-approval-canceller';
 import { noopApprovalStarter } from './noop-approval-starter';
+import { unavailableApprovalCorrector } from './unavailable-approval-corrector';
 import { unavailableApprovalDecider } from './unavailable-approval-decider';
 import { createRequestLabels } from './request-labels';
 
@@ -44,6 +46,7 @@ export interface RequestsExtras {
   readonly canceller?: ApprovalCanceller;
   readonly assignments?: ApprovalAssignments;
   readonly decider?: ApprovalDecider;
+  readonly corrector?: ApprovalCorrector;
   readonly timeline?: ApprovalTimeline;
 }
 
@@ -59,6 +62,7 @@ export function createRequestsDeps(tx: DbExecutor, extras: RequestsExtras): Requ
     assignments: extras.assignments ?? noopApprovalAssignments,
     canceller: extras.canceller ?? noopApprovalCanceller,
     decider: extras.decider ?? unavailableApprovalDecider,
+    corrector: extras.corrector ?? unavailableApprovalCorrector,
     audit: createAuditLogFor(tx),
     client: extras.client,
     clock: extras.clock,

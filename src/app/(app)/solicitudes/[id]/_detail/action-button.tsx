@@ -8,12 +8,13 @@ import { Button } from '@/ui/components/button';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
-import { isActionEnabled } from './detail-actions';
+import { isActionEnabled, isImplemented } from './detail-actions';
 
 const t = messages.requests.detail.actions;
 
 const STYLE: Record<RequestAction, { variant: 'default' | 'outline'; className?: string }> = {
   edit_draft: { variant: 'default' },
+  resubmit: { variant: 'default' },
   deliver: { variant: 'default' },
   approve: { variant: 'default', className: 'bg-success text-white hover:bg-success/90' },
   request_changes: { variant: 'outline' },
@@ -36,7 +37,7 @@ export function ActionButton({
   readOnly: boolean;
   /** El botón principal del panel mide 48 px; los demás, 44 px. */
   large?: boolean;
-  /** Id de la nota «se habilita pronto», si se muestra. */
+  /** Id de la nota «se habilita pronto»; solo lo usan las acciones aún sin conectar. */
   noteId?: string;
   className?: string;
 }) {
@@ -51,14 +52,17 @@ export function ActionButton({
       </Button>
     );
   }
+  // aria-disabled (y no disabled): el botón recibe el foco y el lector de pantalla oye la nota. Sin
+  // onClick, un clic no hace nada. En solo lectura, «Editar borrador» ya está explicado por el
+  // aviso del layout: no se describe como «se habilita pronto».
   return (
     <Button
       type="button"
       variant={style.variant}
       size={size}
-      className={classes}
-      disabled
-      aria-describedby={noteId}
+      className={cn(classes, 'aria-disabled:pointer-events-none aria-disabled:opacity-50')}
+      aria-disabled="true"
+      aria-describedby={isImplemented(action) ? undefined : noteId}
     >
       {t[action]}
     </Button>

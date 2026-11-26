@@ -9,7 +9,7 @@ import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
-import { panelActions, SOON_NOTE_ID, soonNoteId } from './detail-actions';
+import { panelActions, soonNoteId } from './detail-actions';
 
 const t = messages.requests.detail;
 
@@ -80,7 +80,6 @@ export function TimelinePanel({
 }) {
   const panel = panelActions(detail.actions);
   const noteId = soonNoteId(detail.actions);
-  const soon = noteId !== undefined;
   const decisions: RequestAction[] = panel.filter((a) => a === 'request_changes' || a === 'reject');
   const others = panel.filter((a) => a !== 'approve' && !decisions.includes(a));
 
@@ -95,6 +94,7 @@ export function TimelinePanel({
       <ol className="m-0 flex list-none flex-col p-0">
         {detail.timeline.map((item, index) => {
           const last = index === detail.timeline.length - 1;
+          const hint = stepHint(item, timeZone);
           return (
             <li
               key={`${item.kind}-${index}`}
@@ -109,7 +109,7 @@ export function TimelinePanel({
                 <span className="sr-only">{t.timeline.states[item.state]}: </span>
                 {t.timeline.steps[item.kind]}
               </p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">{stepHint(item, timeZone)}</p>
+              {hint ? <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p> : null}
             </li>
           );
         })}
@@ -149,11 +149,6 @@ export function TimelinePanel({
               noteId={noteId}
             />
           ))}
-          {soon ? (
-            <p id={SOON_NOTE_ID} className="text-[13px] text-muted-foreground">
-              {t.actions.soon}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </aside>

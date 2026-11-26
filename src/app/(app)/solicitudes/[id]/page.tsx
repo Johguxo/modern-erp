@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
-import { z } from 'zod';
 
 import { withTenant } from '@/db';
 import { createGetRequestDetailDeps, getRequestDetail } from '@/modules/requests';
+import { getRequestDetailContract } from '@/modules/requests/contracts';
 import { isDomainError } from '@/shared/errors';
 import { NoticeBanner } from '@/ui/base/notice-banner';
 import { messages } from '@/ui/messages/es-PE';
@@ -10,7 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
 
-import { soonNoteId } from './_detail/detail-actions';
+import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
 import { DetailHeader } from './_detail/detail-header';
 import { DetailItems } from './_detail/detail-items';
 import { DocumentCard } from './_detail/document-card';
@@ -31,7 +31,7 @@ export default async function RequestPage({
   const { id } = await params;
   const { enviado } = await searchParams;
   const { ctx } = await requireCtx();
-  if (!z.uuid().safeParse(id).success) notFound();
+  if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
 
   const detail = await withTenant(ctx, (tx) =>
     getRequestDetail(ctx, { id }, createGetRequestDetailDeps(tx, readOnlyRequestsExtras())),
@@ -45,14 +45,22 @@ export default async function RequestPage({
   const noteId = soonNoteId(detail.actions);
   // Tras enviar, el editor llega con ?enviado=1.
   const notice =
-    enviado === '1' && detail.number !== null
+    enviado === '1' &&
+    detail.number !== null &&
+    detail.requesterId === ctx.userId &&
+    detail.status === 'in_approval'
       ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
       : undefined;
 
   return (
     <div className="flex flex-col gap-5">
-      <NoticeBanner notice={notice} />
+      <NoticeBanner notice={notice} className="mb-0" />
       <DetailHeader detail={detail} />
+      {noteId ? (
+        <p id={SOON_NOTE_ID} className="-mt-2 text-[13px] text-muted-foreground">
+          {t.actions.soon}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-start gap-5">
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
           <DetailItems

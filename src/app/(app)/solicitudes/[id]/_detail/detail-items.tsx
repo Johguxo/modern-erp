@@ -75,14 +75,14 @@ export function DetailItems({
               </tr>
             </thead>
             <tbody className="max-md:block">
-              {detail.lines.map((line, index) => (
+              {detail.lines.map((line) => (
                 <tr
                   key={line.id}
                   className="border-t border-row-divider align-top max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2 max-md:px-5 max-md:py-4"
                 >
                   <td className="py-3 pr-2 pl-5 font-semibold max-md:col-span-2 max-md:p-0">
                     <span className="md:hidden">{columns.number} </span>
-                    {index + 1}
+                    {line.lineNo}
                     <span className="font-semibold md:hidden"> · {line.productCode}</span>
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap max-md:hidden">{line.productCode}</td>

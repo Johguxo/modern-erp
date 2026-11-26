@@ -1,9 +1,6 @@
 // E3-H4 · Detalle del SOF (pantalla 3), en escritorio y en celular (390×844): cabecera, ítems,
 // documento, línea de tiempo, botones según estado y permisos, aviso de envío y 404.
 // Inicios de sesión por proyecto: prueba 1 → 1, prueba 2 → 1.
-import { mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-
 import type { Page } from '@playwright/test';
 
 import { messages } from '../../src/ui/messages/es-PE';
@@ -154,6 +151,7 @@ test('el solicitante ve el detalle de su SOF, del borrador y del aprobado, y los
   // Botones: el dueño puede anular (aún sin conectar); nadie decide ni corrige.
   const cancel = button(page, t.actions.cancel);
   await expect(cancel).toBeDisabled();
+  await expect(cancel).toHaveAttribute('aria-describedby', 'detail-soon-note');
   expect((await cancel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await expect(page.getByText(t.actions.soon)).toHaveCount(1);
   for (const absent of [
@@ -167,17 +165,6 @@ test('el solicitante ve el detalle de su SOF, del borrador y del aprobado, y los
   }
   await expect(page.getByRole('link', { name: t.actions.edit_draft })).toHaveCount(0);
   await expectNoPageOverflow(page);
-
-  // Capturas de revisión (solo si se pide con E2E_SCREENSHOT_DIR).
-  const shots = process.env.E2E_SCREENSHOT_DIR;
-  if (shots) {
-    mkdirSync(shots, { recursive: true });
-    const mobile = (page.viewportSize()?.width ?? 1280) < 768;
-    await page.screenshot({
-      path: join(shots, mobile ? 'detalle-mobile.png' : 'detalle-desktop.png'),
-      fullPage: true,
-    });
-  }
 
   // Sin ?enviado=1 no hay aviso.
   await page.goto(`/solicitudes/${sentId}`);
@@ -195,8 +182,11 @@ test('el solicitante ve el detalle de su SOF, del borrador y del aprobado, y los
     t.timeline.steps.approved,
   );
   await expect(page.getByRole('button', { name: t.actions.cancel })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: t.actions.download_pdf })).toBeDisabled();
-  await expect(page.getByText(t.actions.soon)).toHaveCount(0);
+  // El PDF aún no está conectado: sigue deshabilitado y apunta a la nota única.
+  const pdf = page.getByRole('button', { name: t.actions.download_pdf });
+  await expect(pdf).toBeDisabled();
+  await expect(pdf).toHaveAttribute('aria-describedby', 'detail-soon-note');
+  await expect(page.getByText(t.actions.soon)).toHaveCount(1);
 
   // ── Borrador propio: «Editar borrador» funciona y abre el editor ────────────────────────────
   await page.goto(`/solicitudes/${draftId}`);

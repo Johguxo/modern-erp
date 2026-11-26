@@ -21,11 +21,15 @@ export function DetailHeader({ detail }: { detail: RequestDetail }) {
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <nav aria-label={t.breadcrumbLabel} className="mb-1 text-[13px] text-muted-foreground">
-          <Link href="/bandeja" className="text-primary hover:text-primary-hover">
-            {t.breadcrumbInbox}
-          </Link>
-          <span aria-hidden="true"> / </span>
-          <span aria-current="page">{number}</span>
+          <ol className="m-0 flex list-none flex-wrap items-center gap-x-1.5 p-0">
+            <li>
+              <Link href="/bandeja" className="text-primary hover:text-primary-hover">
+                {t.breadcrumbInbox}
+              </Link>
+            </li>
+            <li aria-hidden="true">/</li>
+            <li aria-current="page">{number}</li>
+          </ol>
         </nav>
         <h1 className="text-2xl font-semibold tracking-tight break-words text-foreground md:text-3xl">
           {t.title(detail.number, detail.reason)}

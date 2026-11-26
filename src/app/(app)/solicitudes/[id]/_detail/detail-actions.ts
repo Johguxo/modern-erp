@@ -12,9 +12,12 @@ export function isImplemented(action: RequestAction): boolean {
   return IMPLEMENTED_ACTIONS.includes(action);
 }
 
-/** En solo lectura (ADR-006) ninguna acción de escritura se puede usar. */
+/** Acciones de lectura: siguen disponibles en solo lectura (ADR-006). */
+const READ_ACTIONS: readonly RequestAction[] = ['download_pdf'];
+
+/** En solo lectura (ADR-006) las acciones de escritura no se pueden usar; las de lectura sí. */
 export function isActionEnabled(action: RequestAction, readOnly: boolean): boolean {
-  return isImplemented(action) && !readOnly;
+  return isImplemented(action) && (!readOnly || READ_ACTIONS.includes(action));
 }
 
 /** Acciones del panel de la línea de tiempo, en el orden en que se dibujan. */
@@ -22,9 +25,9 @@ export function panelActions(actions: readonly RequestAction[]): RequestAction[]
   return actions.filter((action) => !ELSEWHERE.includes(action));
 }
 
-/** La nota «se habilita pronto» aparece si el panel tiene alguna acción aún sin conectar. */
+/** La nota «se habilita pronto» aparece si alguna acción visible (panel, ítems o documento) falta. */
 export function showsSoonNote(actions: readonly RequestAction[]): boolean {
-  return panelActions(actions).some((action) => !isImplemented(action));
+  return actions.some((action) => !isImplemented(action));
 }
 
 /** Id de la nota «se habilita pronto», a la que apuntan los botones deshabilitados. */

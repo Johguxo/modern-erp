@@ -169,6 +169,7 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
           decidedBy: patch.decidedBy,
           decidedAt: patch.decidedAt,
           comment: patch.comment,
+          updatedAt: patch.decidedAt,
         })
         .where(
           and(
@@ -184,7 +185,7 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
     async activateStep(tenantId, stepId, now) {
       const rows = await db
         .update(approvalSteps)
-        .set({ status: 'pending', pendingSince: now })
+        .set({ status: 'pending', pendingSince: now, updatedAt: now })
         .where(
           and(
             eq(approvalSteps.tenantId, tenantId),
@@ -196,10 +197,10 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
       return rows.length === 1;
     },
 
-    async cancelOpenSteps(tenantId, instanceId) {
+    async cancelOpenSteps(tenantId, instanceId, now) {
       const rows = await db
         .update(approvalSteps)
-        .set({ status: 'cancelled' })
+        .set({ status: 'cancelled', updatedAt: now })
         .where(
           and(
             eq(approvalSteps.tenantId, tenantId),
@@ -211,10 +212,10 @@ export function createDrizzleInstanceRepository(db: DbExecutor): ApprovalInstanc
       return rows.length;
     },
 
-    async closeInstance(tenantId, instanceId, status) {
+    async closeInstance(tenantId, instanceId, status, now) {
       const rows = await db
         .update(approvalInstances)
-        .set({ status })
+        .set({ status, updatedAt: now })
         .where(
           and(
             eq(approvalInstances.tenantId, tenantId),

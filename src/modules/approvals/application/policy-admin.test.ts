@@ -59,6 +59,7 @@ function setup(policy: Policy | null = initial) {
     policies: {
       findActive: () => Promise.resolve(stored),
       lockActive: () => Promise.resolve(stored),
+      findActiveForStart: () => Promise.resolve(stored),
       replaceSteps: (_tenantId, _policyId, steps) => {
         replaced.push([...steps]);
         stored = {

@@ -1,21 +1,34 @@
 // Vista de la política para la pantalla de configuración (E4-H1). La forma pública (con Zod) está
 // en contracts/policy-view.ts.
+import type { Role } from '@/shared/permissions';
+
 import type { Policy, PolicyStepSpec } from '../domain/policy';
-import { stepWarnings, type StepWarning } from '../domain/resolve-route';
+import { stepWarnings } from '../domain/resolve-route';
 import type { DocType } from '../domain/route-preview';
 
 import type { ApproverDirectory, DirectoryMember } from './ports';
 
-export interface PolicyStepView extends PolicyStepSpec {
-  readonly warnings: StepWarning[];
+/** Como PolicyStepSpec, pero con arreglos mutables: la pantalla los edita en un formulario. */
+export interface PolicyStepView {
+  readonly name: string;
+  readonly approverType: PolicyStepSpec['approverType'];
+  readonly role: PolicyStepSpec['role'];
+  readonly userIds: string[];
+  readonly rule: PolicyStepSpec['rule'];
+  readonly condition: Record<string, unknown>;
+  readonly warnings: ViewWarning[];
 }
+
+export type ViewWarning =
+  | { readonly type: 'role_without_members' }
+  | { readonly type: 'inactive_users'; readonly userIds: string[] };
 
 export interface PolicyView {
   readonly docType: DocType;
   readonly name: string;
   readonly version: number;
   readonly steps: PolicyStepView[];
-  readonly members: DirectoryMember[];
+  readonly members: { userId: string; name: string; roles: Role[] }[];
   /** Usuarios de los pasos que ya no son miembros activos. */
   readonly inactiveUsers: { readonly userId: string; readonly name: string }[];
 }
@@ -46,8 +59,12 @@ export async function toPolicyView(
         role: step.role,
         userIds: [...step.userIds],
         rule: step.rule,
-        condition: step.condition,
-        warnings: stepWarnings(step, members),
+        condition: { ...step.condition },
+        warnings: stepWarnings(step, members).map((warning) =>
+          warning.type === 'inactive_users'
+            ? { type: warning.type, userIds: [...warning.userIds] }
+            : warning,
+        ),
       })),
     members: members.map(({ userId, name, roles }) => ({ userId, name, roles: [...roles] })),
     inactiveUsers: inactiveIds.map((userId) => ({ userId, name: names.get(userId) ?? '' })),

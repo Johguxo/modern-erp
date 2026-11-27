@@ -104,8 +104,10 @@ test('cambiar el equipo de una línea mantiene las firmas y resalta esa fila', a
   const world = await seedWorld(accounts);
   await sendDraft(page, world);
 
+  // Almacén aprueba su paso y después corrige: la gerencia sigue pendiente.
   await switchTo(page, world.warehouse);
   await openDetail(page, world);
+  await approve(page);
   await expect(statusBadge(page, messages.status.in_approval)).toBeVisible();
 
   const dialog = await openCorrectDialog(page);
@@ -178,7 +180,7 @@ test('subir la cantidad en un SOF aprobado pide reconfirmación y la gerencia la
   await openDetail(page, world);
   await expect(statusBadge(page, messages.status.approved)).toBeVisible();
   const dialog = await openCorrectDialog(page);
-  await dialog.getByLabel(dialogText.quantityLabel, { exact: true }).fill('5');
+  await dialog.getByRole('textbox', { name: dialogText.quantityLabel, exact: true }).fill('5');
   await dialog.getByLabel(dialogText.reasonLabel).fill('Faltaban filtros para la obra');
   await dialog.getByRole('button', { name: dialogText.submit.update, exact: true }).click();
 

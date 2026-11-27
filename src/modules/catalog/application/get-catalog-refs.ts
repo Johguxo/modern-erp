@@ -1,5 +1,5 @@
 // Referencias activas del catálogo por id (productos, equipos y centros de costo) para los módulos
-// que arman documentos con ellas (requests). Solo lectura: catalog.manage o requests.create.
+// que arman documentos con ellas (requests). Solo lectura: catalog.manage, requests.create o requests.correct_line.
 import type { Ctx } from '@/shared/context';
 
 import { requireCatalogRead } from './master-data';

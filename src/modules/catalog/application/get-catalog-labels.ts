@@ -33,6 +33,7 @@ export async function getCatalogLabels(
   requireAnyPermission(ctx, [
     'catalog.manage',
     'requests.create',
+    'requests.correct_line',
     'requests.read_own',
     'requests.read_all',
   ]);

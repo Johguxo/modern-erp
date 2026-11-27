@@ -85,10 +85,12 @@ export const correctLineAction = action(
   { name: 'requests.correctLine' },
 );
 
-// El buscador solo lee: sigue disponible en solo lectura (ADR-006).
+// El buscador solo lee: sigue disponible en solo lectura (ADR-006). Lo usan quien crea SOF y quien
+// corrige líneas (E4-H4): la acción solo exige sesión y el caso de uso revisa que tenga
+// `catalog.manage`, `requests.create` o `requests.correct_line`.
 export const searchCatalogAction = action(
   searchProductsContract,
-  'requests.create',
+  null,
   ({ ctx, input, tx, shared }) =>
     searchProducts(ctx, input, createCatalogDeps(tx, catalogExtras(shared))),
   { name: 'catalog.searchProducts', access: 'read' },

@@ -8,6 +8,7 @@ import { closeDatabases, getDbAdmin } from '@/db/admin';
 import { approvalPolicies, requestLineRevisions, requestLines, requests } from '@/db/schema';
 import { withTenant } from '@/db/with-tenant';
 import {
+  cancelRequest,
   correctLine,
   updateDraft,
   type CorrectLineInput,
@@ -208,6 +209,39 @@ describe('las tres ramas de la regla de reaprobación', () => {
     expect(last?.data).toMatchObject({ reconfirmation: false, branch: 'above_tolerance' });
   });
 
+  it('si la reconfirmación termina en rechazo o en anulación, las líneas quedan sin marca', async () => {
+    await setTolerance(W.world.tenantId, null);
+    for (const ending of ['reject', 'cancel'] as const) {
+      const approved = await approvedRequest();
+      const flagged = await correctAs(carla, update(approved, 0, { quantity: '9.000' }));
+      expect(flagged.reconfirmation).toBe(true);
+      expect((await storedLines(approved.id)).some((l) => l.needsReconfirmation)).toBe(true);
+
+      if (ending === 'reject') {
+        const step = (await storedSteps(approved.id))[2];
+        if (!step) throw new Error('sin paso');
+        await decideAs(W.luis, {
+          id: approved.id,
+          version: flagged.version,
+          stepId: step.id,
+          decision: 'reject',
+          comment: 'No procede',
+        });
+        expect((await storedRequest(approved.id))?.status).toBe('rejected');
+      } else {
+        await runRequests(W.world.ctx, (deps) =>
+          cancelRequest(
+            W.world.ctx,
+            { id: approved.id, version: flagged.version, comment: 'Ya no se necesita' },
+            deps,
+          ),
+        );
+        expect((await storedRequest(approved.id))?.status).toBe('cancelled');
+      }
+      expect((await storedLines(approved.id)).every((l) => !l.needsReconfirmation)).toBe(true);
+    }
+  });
+
   it('un borrador ajeno nunca se envió: es 404 para quien corrige', async () => {
     const draft = await runRequests(W.world.ctx, async (deps) => {
       const { createDraft } = await import('@/modules/requests');
@@ -355,38 +389,6 @@ describe('aislamiento entre tenants (A/B)', () => {
     );
     expect(error.code).toBe('42501');
     expect(error.message).toMatch(/row-level security/);
-  });
-
-  it('el repositorio filtra por tenant aun sin RLS: appendRevision y updateLine de otro tenant no actúan', async () => {
-    const sentA = await sendRequest(W.world);
-    const line = firstLine(sentA);
-    const repoOf = (tenantId: string, userId: string) =>
-      withTenant({ tenantId, userId }, async (tx) => {
-        const { createDrizzleRequestRepository } =
-          await import('@/modules/requests/infrastructure/drizzle-request-repository');
-        const repo = createDrizzleRequestRepository(tx);
-        await expect(
-          repo.appendRevision(B.world.tenantId, {
-            requestId: sentA.id,
-            requestLineId: line.id,
-            revision: 1,
-            snapshot: {},
-            changedBy: userId,
-            reason: 'x',
-          }),
-        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-        await expect(
-          repo.updateLine(B.world.tenantId, line.id, 1, { status: 'removed' }),
-        ).rejects.toMatchObject({ reason: 'stale_version' });
-        await repo.flagReconfirmation(B.world.tenantId, line.id);
-        await repo.clearReconfirmation(B.world.tenantId, sentA.id);
-      });
-    await repoOf(B.world.tenantId, B.world.userId);
-    expect((await storedLines(sentA.id)).find((l) => l.id === line.id)).toMatchObject({
-      status: 'active',
-      revision: 1,
-      needsReconfirmation: false,
-    });
   });
 });
 

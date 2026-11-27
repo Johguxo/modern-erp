@@ -43,6 +43,18 @@ describe('stepTitle · correcciones de línea (E4-H4)', () => {
     ).toBe('Reconfirmación pedida · líneas 2 y 3');
   });
 
+  it('agregar o quitar una línea no dice «corregida»', () => {
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [4], changeType: 'add' }),
+    ).toBe('Línea 4 agregada');
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [2], changeType: 'remove' }),
+    ).toBe('Línea 2 quitada');
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [2], changeType: 'update' }),
+    ).toBe('Línea 2 corregida');
+  });
+
   it('sin número de línea usa el título genérico', () => {
     expect(stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [] })).toBe(
       'Línea corregida',

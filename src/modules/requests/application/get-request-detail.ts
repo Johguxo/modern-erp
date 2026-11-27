@@ -63,16 +63,15 @@ export async function getRequestDetail(
   ]);
   const equipmentOf = (id: string | null): string | null =>
     id ? (areas.equipment.get(id) ?? null) : null;
-  // «GEN-045 · Motor principal» → «GEN-045»; el rótulo lo arma el puerto con « · ».
-  const equipmentCodes = new Map(
-    [...areas.equipment].map(([id, label]) => [id, label.split(' · ')[0] ?? label]),
-  );
   const correctionNotice =
     correction && correctionData
       ? buildCorrectionNotice(
           correctionData,
-          correction.actorId ? (names.get(correction.actorId) ?? null) : null,
-          equipmentCodes,
+          {
+            id: correction.actorId,
+            name: correction.actorId ? (names.get(correction.actorId) ?? null) : null,
+          },
+          areas.equipmentCodes,
         )
       : null;
   // Una marca vieja no resalta fuera de la aprobación (la firma ya cubre esa línea).

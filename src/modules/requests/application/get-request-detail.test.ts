@@ -122,6 +122,10 @@ function setup(
             [EQ_HEAD, 'GEN-045 · Motor principal'],
             [EQ_LINE, 'GEN-046 · Motor auxiliar'],
           ]),
+          equipmentCodes: new Map([
+            [EQ_HEAD, 'GEN-045'],
+            [EQ_LINE, 'GEN-046'],
+          ]),
           costCenters: new Map([[CC, 'Mantenimiento']]),
         });
       },
@@ -263,6 +267,7 @@ describe('getRequestDetail', () => {
       const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
       expect(detail.correctionNotice).toEqual({
         lineNo: 2,
+        actorId: OWNER,
         actorName: 'Ruby Pérez',
         changeType: 'update',
         changes: [{ field: 'equipmentId', from: 'GEN-046', to: 'GEN-045' }],
@@ -322,6 +327,21 @@ describe('getRequestDetail', () => {
       expect(
         (await getRequestDetail(requesterCtx, { id: REQ }, odd.deps)).correctionNotice,
       ).toBeNull();
+    });
+
+    it('una cantidad que no es decimal ignora el aviso sin romper el detalle', async () => {
+      const { deps } = setup(request(), lines(), {
+        entries: [
+          entry({ kind: 'submitted' }),
+          corrected(2, {
+            changedFields: ['quantity'],
+            before: { quantity: 'dos' },
+            after: { quantity: '3.000' },
+          }),
+        ],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+      expect(detail.correctionNotice).toBeNull();
     });
 
     it('agregar y quitar no listan campos; la reconfirmación va en el aviso', async () => {

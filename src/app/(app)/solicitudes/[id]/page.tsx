@@ -12,6 +12,7 @@ import { messages } from '@/ui/messages/es-PE';
 import { readOnlyCatalogExtras } from '../../../_lib/catalog';
 import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
+import { toOption } from '../_editor/load-editor-data';
 
 import { CorrectionNotice } from './_detail/correction-notice';
 import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
@@ -47,19 +48,17 @@ export default async function RequestPage({
       createGetRequestDetailDeps(tx, readOnlyRequestsExtras(tx)),
     );
     // Los equipos activos solo hacen falta para el diálogo «Corregir una línea».
-    const active = found.actions.includes('correct_line')
-      ? await listEquipment(
-          ctx,
-          { q: null, status: 'active', page: 1, pageSize: 100 },
-          createCatalogDeps(tx, readOnlyCatalogExtras()),
-        )
-      : null;
+    const active =
+      found.actions.includes('correct_line') && !ctx.readOnly
+        ? await listEquipment(
+            ctx,
+            { q: null, status: 'active', page: 1, pageSize: 100 },
+            createCatalogDeps(tx, readOnlyCatalogExtras()),
+          )
+        : null;
     return {
       detail: found,
-      equipment: (active?.items ?? []).map((item) => ({
-        id: item.id,
-        label: `${item.code} · ${item.name}`,
-      })),
+      equipment: (active?.items ?? []).map(toOption),
     };
   }).catch((error: unknown) => {
     if (isDomainError(error) && (error.code === 'NOT_FOUND' || error.code === 'FORBIDDEN')) {
@@ -80,6 +79,7 @@ export default async function RequestPage({
         ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
         : corregido === '1' &&
             detail.correctionNotice !== null &&
+            detail.correctionNotice.actorId === ctx.userId &&
             (detail.status === 'in_approval' || detail.status === 'approved')
           ? ({ tone: 'success', text: t.correctLine.savedNotice(detail.number) } as const)
           : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId

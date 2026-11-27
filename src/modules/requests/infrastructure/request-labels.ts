@@ -18,6 +18,7 @@ export function createRequestLabels(tx: DbExecutor, extras: CatalogExtras): Requ
         equipment: new Map(
           labels.equipment.map((item) => [item.id, `${item.code} · ${item.name}`]),
         ),
+        equipmentCodes: new Map(labels.equipment.map((item) => [item.id, item.code])),
         costCenters: new Map(labels.costCenters.map((item) => [item.id, item.name])),
       };
     },

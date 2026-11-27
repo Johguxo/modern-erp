@@ -6,6 +6,7 @@ import { correctionNoticeText } from './correction-notice-text';
 
 const notice = (overrides: Partial<CorrectionNotice> = {}): CorrectionNotice => ({
   lineNo: 3,
+  actorId: 'user-1',
   actorName: 'Jhony Pérez',
   changeType: 'update',
   changes: [{ field: 'equipmentId', from: 'GEN-046', to: 'GEN-045' }],
@@ -23,7 +24,7 @@ describe('correctionNoticeText', () => {
 
   it('con reconfirmación en aprobación: solo esa línea vuelve a aprobación', () => {
     expect(correctionNoticeText(notice({ reconfirmation: true }), 'in_approval').body).toBe(
-      'Se cambió el equipo de GEN-046 a GEN-045. Solo esta línea vuelve a aprobación; las demás conservan sus firmas.',
+      'Se cambió el equipo de GEN-046 a GEN-045. Solo esa línea vuelve a aprobación; las demás conservan sus firmas.',
     );
   });
 

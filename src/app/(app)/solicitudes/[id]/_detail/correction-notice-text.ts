@@ -1,5 +1,5 @@
 // Texto del aviso de corrección (E4-H4), sin React. El flujo §4 decide si hay reconfirmación; el
-// aviso solo lo cuenta: «solo esta línea vuelve a aprobación» o «las firmas se mantienen».
+// aviso solo lo cuenta: «solo esa línea vuelve a aprobación» o «las firmas se mantienen».
 import type { CorrectionChange, CorrectionNotice, RequestStatus } from '@/modules/requests';
 import { trimDecimal } from '@/ui/format/money';
 import { messages } from '@/ui/messages/es-PE';

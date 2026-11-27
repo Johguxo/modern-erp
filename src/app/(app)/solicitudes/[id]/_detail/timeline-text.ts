@@ -6,7 +6,7 @@ import { messages } from '@/ui/messages/es-PE';
 const t = messages.requests.detail.timeline;
 
 type TitleSource = Pick<TimelineItemView, 'kind' | 'stepName'> &
-  Partial<Pick<TimelineItemView, 'lineNos'>>;
+  Partial<Pick<TimelineItemView, 'lineNos' | 'changeType'>>;
 type PendingSource = Pick<
   TimelineItemView,
   'stepName' | 'assigneeCount' | 'assigneeNames' | 'rule' | 'at'
@@ -24,8 +24,11 @@ export function stepTitle(item: TitleSource): string {
     if (item.kind === 'approval') return item.stepName;
   }
   const lineNos = item.lineNos ?? [];
-  if (item.kind === 'line_corrected' && lineNos[0] !== undefined)
+  if (item.kind === 'line_corrected' && lineNos[0] !== undefined) {
+    if (item.changeType === 'add') return t.lineAdded(lineNos[0]);
+    if (item.changeType === 'remove') return t.lineRemoved(lineNos[0]);
     return t.lineCorrected(lineNos[0]);
+  }
   if (item.kind === 'reconfirmation_requested' && lineNos.length > 0) {
     return t.reconfirmationRequested(
       lineNos.length,

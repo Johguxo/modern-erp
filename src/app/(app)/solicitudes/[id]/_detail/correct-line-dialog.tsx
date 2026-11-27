@@ -384,7 +384,9 @@ export function CorrectLineDialog({
               aria-required="true"
               aria-invalid={errors.reason ? true : undefined}
               aria-describedby={
-                errors.reason ? `${ids}-reason-error ${ids}-reason-counter` : `${ids}-reason-counter`
+                errors.reason
+                  ? `${ids}-reason-error ${ids}-reason-counter`
+                  : `${ids}-reason-counter`
               }
               onChange={(event) => patch({ reason: event.target.value })}
             />

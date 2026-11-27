@@ -170,6 +170,8 @@ export interface RequestLabels {
     ids: { readonly equipmentIds: readonly string[]; readonly costCenterIds: readonly string[] },
   ): Promise<{
     readonly equipment: ReadonlyMap<string, string>;
+    /** id → solo el código del equipo («GEN-045»). */
+    readonly equipmentCodes: ReadonlyMap<string, string>;
     readonly costCenters: ReadonlyMap<string, string>;
   }>;
 }

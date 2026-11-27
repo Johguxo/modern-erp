@@ -31,6 +31,7 @@ export const detailLineSchema = z.object({
 
 export const correctionNoticeSchema = z.object({
   lineNo: z.number().int(),
+  actorId: z.string().nullable(),
   actorName: z.string().nullable(),
   changeType: z.enum(['update', 'add', 'remove']),
   changes: z.array(
@@ -54,6 +55,7 @@ export const timelineItemSchema = z.object({
   assigneeNames: z.array(z.string()),
   assigneeCount: z.number().int().nonnegative(),
   lineNos: z.array(z.number().int()),
+  changeType: z.enum(['update', 'add', 'remove']).nullable(),
 });
 
 export const outputSchema = z.object({

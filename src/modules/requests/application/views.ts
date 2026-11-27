@@ -5,7 +5,7 @@ import type { Request, RequestLine } from '../domain/request';
 import type { RequestAction } from '../domain/request-actions';
 import type { TimelineItem, TimelineKind, TimelineState } from '../domain/request-timeline';
 
-import { lineNosOf } from './correction-data';
+import { changeTypeOf, lineNosOf } from './correction-data';
 
 export type RequestLineView = RequestLine;
 
@@ -121,6 +121,8 @@ export interface CorrectionChange {
 /** El aviso de la última corrección de la ronda vigente (prototipo, pantalla 3). */
 export interface CorrectionNotice {
   readonly lineNo: number;
+  /** Quién corrigió; el detalle lo usa para saber si quien mira fue él. */
+  readonly actorId: string | null;
   readonly actorName: string | null;
   readonly changeType: 'update' | 'add' | 'remove';
   /** Vacío al agregar o quitar una línea. */
@@ -147,6 +149,8 @@ export interface TimelineItemView {
   readonly assigneeCount: number;
   /** Líneas que nombra la corrección o la reconfirmación (E4-H4); vacío en los demás hitos. */
   readonly lineNos: number[];
+  /** Solo en `line_corrected`: si la línea se actualizó, se agregó o se quitó. */
+  readonly changeType: 'update' | 'add' | 'remove' | null;
 }
 
 export interface RequestDetail {
@@ -173,7 +177,7 @@ export interface RequestDetail {
   /** Solo líneas activas, por número de línea. Mutable para encajar con los contratos Zod. */
   readonly lines: RequestDetailLine[];
   readonly timeline: TimelineItemView[];
-  /** La última corrección de la ronda vigente, mientras el SOF sigue en aprobación o aprobado. */
+  /** La última corrección de la ronda vigente, mientras el SOF sigue en aprobación, aprobado o entregado. */
   readonly correctionNotice: CorrectionNotice | null;
   readonly actions: RequestAction[];
 }
@@ -198,5 +202,6 @@ export function toTimelineItems(
       .sort((a, b) => a.localeCompare(b, 'es-PE')),
     assigneeCount: item.assigneeIds.length,
     lineNos: lineNosOf(item),
+    changeType: changeTypeOf(item),
   }));
 }

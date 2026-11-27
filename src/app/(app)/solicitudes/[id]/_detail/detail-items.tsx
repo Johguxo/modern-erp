@@ -96,6 +96,14 @@ export function DetailItems({
                   <td className="py-3 pr-2 pl-5 font-semibold max-md:col-span-2 max-md:p-0">
                     <span className="md:hidden">{columns.number} </span>
                     {line.lineNo}
+                    {line.highlighted ? (
+                      <span className="sr-only">
+                        {' '}
+                        {line.needsReconfirmation
+                          ? t.items.awaitingReconfirmation
+                          : t.items.corrected}
+                      </span>
+                    ) : null}
                     <span className="font-semibold md:hidden"> · {line.productCode}</span>
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap max-md:hidden">{line.productCode}</td>

@@ -660,6 +660,9 @@ export const messages = {
           subtotal: 'Subtotal',
         },
         empty: 'Esta solicitud no tiene ítems.',
+        /** Solo lectores de pantalla: por qué la fila va resaltada. */
+        corrected: '(corregida)',
+        awaitingReconfirmation: '(por reconfirmar)',
         quantityWithUnit: (quantity: string, unit: string) => `${quantity} ${unit}`,
         total: 'Total estimado',
       },
@@ -718,7 +721,7 @@ export const messages = {
             `Se cambió el precio${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
           notes: 'Se cambiaron las notas.',
         },
-        reconfirmation: 'Solo esta línea vuelve a aprobación; las demás conservan sus firmas.',
+        reconfirmation: 'Solo esa línea vuelve a aprobación; las demás conservan sus firmas.',
         reconfirmed: 'La reconfirmación de esta línea ya fue aprobada.',
         signaturesKept: 'Las firmas se mantienen.',
       },
@@ -750,6 +753,8 @@ export const messages = {
         signedBy: (stepName: string) => `Aprobación parcial · ${stepName}`,
         /** «Línea 3 corregida» (E4-H4). */
         lineCorrected: (lineNo: number) => `Línea ${lineNo} corregida`,
+        lineAdded: (lineNo: number) => `Línea ${lineNo} agregada`,
+        lineRemoved: (lineNo: number) => `Línea ${lineNo} quitada`,
         /** «Reconfirmación pedida · línea 3» o «· líneas 2 y 3». */
         reconfirmationRequested: (count: number, list: string) =>
           `Reconfirmación pedida · ${count === 1 ? 'línea' : 'líneas'} ${list}`,

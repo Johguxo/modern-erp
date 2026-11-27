@@ -6,11 +6,14 @@ import { z } from 'zod';
 import type { TimelineItem } from '../domain/request-timeline';
 
 /** Los campos de una línea que el aviso sabe describir. */
+const DECIMAL = /^-?\d+(\.\d+)?$/;
+const decimal = z.string().regex(DECIMAL);
+
 const factsSchema = z.object({
   productCode: z.string().nullish(),
   equipmentId: z.string().nullish(),
-  quantity: z.string().nullish(),
-  unitPrice: z.string().nullish(),
+  quantity: decimal.nullish(),
+  unitPrice: decimal.nullish(),
   notes: z.string().nullish(),
 });
 export type CorrectionFacts = z.infer<typeof factsSchema>;
@@ -30,6 +33,15 @@ const reconfirmationSchema = z.object({ lineNos: z.array(z.number().int()) });
 export function parseLineCorrected(data: unknown): LineCorrectedData | null {
   const parsed = lineCorrectedSchema.safeParse(data);
   return parsed.success ? parsed.data : null;
+}
+
+/** El tipo de cambio de un ítem `line_corrected`; null en los demás o si el dato no encaja. */
+export function changeTypeOf(
+  item: Pick<TimelineItem, 'kind' | 'data'>,
+): LineCorrectedData['changeType'] | null {
+  return item.kind === 'line_corrected'
+    ? (parseLineCorrected(item.data)?.changeType ?? null)
+    : null;
 }
 
 /** Los números de línea que nombra un ítem de corrección; vacío en los demás ítems. */

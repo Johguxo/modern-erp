@@ -8,7 +8,7 @@ const FIELDS = ['productId', 'equipmentId', 'quantity', 'unitPrice', 'notes'] as
 
 export function buildCorrectionNotice(
   data: LineCorrectedData,
-  actorName: string | null,
+  actor: { readonly id: string | null; readonly name: string | null },
   /** Código del equipo («GEN-045») por id; los ids que faltan quedan como «sin equipo». */
   equipmentCodes: ReadonlyMap<string, string>,
 ): CorrectionNotice {
@@ -40,7 +40,8 @@ export function buildCorrectionNotice(
       : [];
   return {
     lineNo: data.lineNo,
-    actorName,
+    actorId: actor.id,
+    actorName: actor.name,
     changeType: data.changeType,
     changes,
     reconfirmation: data.reconfirmation,

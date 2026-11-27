@@ -74,6 +74,7 @@ function setup(rows: InboxRow[], pending: string[] = [], assigned: string[] = []
         calls.areaIds.push(ids);
         return Promise.resolve({
           equipment: new Map([[EQ, 'GEN-045 · Motor principal']]),
+          equipmentCodes: new Map([[EQ, 'GEN-045']]),
           costCenters: new Map([[CC, 'Mantenimiento']]),
         });
       },

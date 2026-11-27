@@ -659,6 +659,32 @@ export const messages = {
         quantityWithUnit: (quantity: string, unit: string) => `${quantity} ${unit}`,
         total: 'Total estimado',
       },
+      /** Aviso naranja de la última corrección (E4-H4, prototipo pantalla 3). */
+      correction: {
+        headline: (lineNo: number, actor: string | null) =>
+          actor ? `Línea ${lineNo} corregida por ${actor}.` : `Línea ${lineNo} corregida.`,
+        added: 'Se agregó la línea.',
+        removed: 'Se quitó la línea.',
+        /** Cambios por campo; `from` y `to` ya vienen formateados, o null si no había valor. */
+        changed: {
+          productId: (from: string | null, to: string | null) =>
+            `Se cambió el producto${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          equipmentId: (from: string | null, to: string | null) =>
+            from && to
+              ? `Se cambió el equipo de ${from} a ${to}.`
+              : to
+                ? `Se asignó el equipo ${to}.`
+                : `Se quitó el equipo${from ? ` ${from}` : ''}.`,
+          quantity: (from: string | null, to: string | null) =>
+            `Se cambió la cantidad${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          unitPrice: (from: string | null, to: string | null) =>
+            `Se cambió el precio${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          notes: 'Se cambiaron las notas.',
+        },
+        reconfirmation: 'Solo esta línea vuelve a aprobación; las demás conservan sus firmas.',
+        reconfirmed: 'La reconfirmación de esta línea ya fue aprobada.',
+        signaturesKept: 'Las firmas se mantienen.',
+      },
       document: {
         title: 'Documento',
         fileName: (number: string | null) => `${number ?? 'Borrador'}.pdf`,

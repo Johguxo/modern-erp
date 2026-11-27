@@ -11,6 +11,7 @@ import { messages } from '@/ui/messages/es-PE';
 import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
 
+import { CorrectionNotice } from './_detail/correction-notice';
 import { SOON_NOTE_ID, soonNoteId } from './_detail/detail-actions';
 import { DetailHeader } from './_detail/detail-header';
 import { DetailItems } from './_detail/detail-items';
@@ -78,6 +79,9 @@ export default async function RequestPage({
       ) : null}
       <div className="flex flex-wrap items-start gap-5">
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
+          {detail.correctionNotice ? (
+            <CorrectionNotice notice={detail.correctionNotice} status={detail.status} />
+          ) : null}
           <DetailItems
             detail={detail}
             actions={detail.actions}

@@ -39,6 +39,8 @@ export type {
 export type {
   RequestDetail,
   RequestDetailLine,
+  CorrectionNotice,
+  CorrectionChange,
   RequestLineView,
   RequestView,
   SequenceView,

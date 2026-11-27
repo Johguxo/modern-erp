@@ -1,10 +1,11 @@
 // Tabla de ítems del detalle (solo líneas activas). En pantallas angostas cada fila es una tarjeta.
-// El resaltado de la línea corregida llega con E4-H4.
+// La línea corregida (o la que espera reconfirmación) va resaltada con los tokens de aviso.
 import type { ReactNode } from 'react';
 
 import type { RequestAction, RequestDetail } from '@/modules/requests';
 import { MoneyText } from '@/ui/base/money-text';
 import { trimDecimal } from '@/ui/format/money';
+import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
@@ -78,7 +79,11 @@ export function DetailItems({
               {detail.lines.map((line) => (
                 <tr
                   key={line.id}
-                  className="border-t border-row-divider align-top max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2 max-md:px-5 max-md:py-4"
+                  data-highlighted={line.highlighted ? 'true' : undefined}
+                  className={cn(
+                    'border-t border-row-divider align-top max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2 max-md:px-5 max-md:py-4',
+                    line.highlighted && 'bg-warning-bg',
+                  )}
                 >
                   <td className="py-3 pr-2 pl-5 font-semibold max-md:col-span-2 max-md:p-0">
                     <span className="md:hidden">{columns.number} </span>

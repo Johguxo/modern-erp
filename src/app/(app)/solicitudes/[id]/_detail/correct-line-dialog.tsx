@@ -31,6 +31,7 @@ import { Field } from '../../_editor/field';
 import type { SelectOption } from '../../_editor/load-editor-data';
 import { correctLineAction } from '../../actions';
 
+import { offersReload } from './correct-line-reload';
 import {
   buildInput,
   initialFormState,
@@ -45,6 +46,15 @@ import {
 
 const t = messages.requests.detail.correctLine;
 const MODES: readonly CorrectMode[] = ['update', 'add', 'remove'];
+/** Campo con error → sufijo del id de su control, en el orden en que se enfoca. */
+const FOCUS_ORDER = [
+  ['lineId', 'line'],
+  ['productId', 'product'],
+  ['quantity', 'quantity'],
+  ['unitPrice', 'price'],
+  ['notes', 'notes'],
+  ['reason', 'reason'],
+] as const;
 
 export function CorrectLineDialog({
   requestId,
@@ -94,7 +104,14 @@ export function CorrectLineDialog({
     setErrors({});
     setGeneral(undefined);
     setReload(false);
+    setBusy(false);
     setChangingProduct(false);
+  }
+
+  /** Lleva el foco al primer campo con error, en el orden de la pantalla. */
+  function focusFirstError(found: FormErrors) {
+    const first = FOCUS_ORDER.find(([key]) => found[key] !== undefined);
+    if (first) document.getElementById(`${ids}-${first[1]}`)?.focus();
   }
 
   async function submit() {
@@ -103,6 +120,7 @@ export function CorrectLineDialog({
     if (!built.ok) {
       setErrors(built.errors);
       setGeneral(undefined);
+      focusFirstError(built.errors);
       return;
     }
     setBusy(true);
@@ -114,11 +132,7 @@ export function CorrectLineDialog({
       if (!result.ok) {
         setErrors(serverFieldErrors(result.error.fieldErrors));
         setGeneral(result.error.message);
-        setReload(
-          result.error.code === 'CONFLICT' ||
-            result.error.code === 'INVALID_TRANSITION' ||
-            result.error.reason === 'stale_version',
-        );
+        setReload(offersReload(result.error));
         return;
       }
       navigating = true;
@@ -210,11 +224,21 @@ export function CorrectLineDialog({
           ) : (
             <>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-status-neutral-fg">
+                <span
+                  id={`${ids}-product-label`}
+                  className="text-[13px] font-semibold text-status-neutral-fg"
+                >
                   {t.productLabel}
                 </span>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="min-w-0 text-sm break-words">
+                  <span
+                    id={`${ids}-product`}
+                    tabIndex={-1}
+                    aria-labelledby={`${ids}-product-label`}
+                    aria-invalid={errors.productId ? true : undefined}
+                    aria-describedby={errors.productId ? `${ids}-product-error` : undefined}
+                    className="min-w-0 text-sm break-words"
+                  >
                     {state.productId ? state.productLabel : t.noProduct}
                   </span>
                   {state.productId !== '' ? (
@@ -229,7 +253,11 @@ export function CorrectLineDialog({
                   ) : null}
                 </div>
                 {errors.productId ? (
-                  <p role="alert" className="text-[13px] text-destructive">
+                  <p
+                    id={`${ids}-product-error`}
+                    role="alert"
+                    className="text-[13px] text-destructive"
+                  >
                     {errors.productId}
                   </p>
                 ) : null}
@@ -238,7 +266,10 @@ export function CorrectLineDialog({
                 // Enter en el buscador no debe enviar la corrección.
                 <div
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') event.preventDefault();
+                    // Solo en el campo de texto: Enter sobre «Elegir» sigue eligiendo.
+                    if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+                      event.preventDefault();
+                    }
                   }}
                 >
                   <CatalogSearch
@@ -350,11 +381,15 @@ export function CorrectLineDialog({
               autoComplete="off"
               placeholder={t.reasonPlaceholder}
               value={state.reason}
+              aria-required="true"
               aria-invalid={errors.reason ? true : undefined}
-              aria-describedby={errors.reason ? `${ids}-reason-error` : undefined}
+              aria-describedby={
+                errors.reason ? `${ids}-reason-error ${ids}-reason-counter` : `${ids}-reason-counter`
+              }
               onChange={(event) => patch({ reason: event.target.value })}
             />
             <p
+              id={`${ids}-reason-counter`}
               className={cn(
                 'text-[13px] text-muted-foreground',
                 used > CORRECTION_REASON_MAX && 'text-danger',

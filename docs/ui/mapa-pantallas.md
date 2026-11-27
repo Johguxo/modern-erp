@@ -78,7 +78,7 @@ El menú tiene un solo ítem «Catálogo» (→ `/configuracion/productos`, acti
 
 **3. Detalle**
 - Cabecera con número, motivo, solicitante, equipo, total y estado.
-- Aviso naranja cuando hay líneas corregidas (texto del prototipo).
-- Tabla de ítems con la línea corregida resaltada; botón "Corregir una línea" (solo con permiso) que abre un diálogo con los campos editables y un motivo obligatorio.
+- Aviso naranja con la última corrección de la ronda vigente (E4-H4), en tres variantes: «Solo esa línea vuelve a aprobación; las demás conservan sus firmas» (se pidió reconfirmación), «Las firmas se mantienen» (el total no subió por encima de la tolerancia; el prototipo muestra solo la primera, pero el caso GEN-046 → GEN-045 no cambia el monto, §4) y «La reconfirmación de esta línea ya fue aprobada» (SOF aprobado o entregado). Describe el cambio («Se cambió el equipo de GEN-046 a GEN-045»).
+- Tabla de ítems con la línea corregida resaltada (solo en «En aprobación»; con texto para lector de pantalla); botón "Corregir una línea" (permiso `requests.correct_line`, en aprobación o aprobado) que abre un diálogo sin prototipo, con el lenguaje del diálogo «Anular»: Corregir, Agregar o Quitar; producto, equipo, cantidad, precio, notas y motivo obligatorio. La línea de tiempo suma «Línea N corregida/agregada/quitada» y «Reconfirmación pedida · línea N».
 - Línea de tiempo vertical (eventos + pasos pendientes y futuros).
 - Acciones según estado y permiso: Aprobar · Pedir cambios · Rechazar (con comentario obligatorio en rechazar y pedir cambios) · Registrar entrega · Anular · Descargar PDF.

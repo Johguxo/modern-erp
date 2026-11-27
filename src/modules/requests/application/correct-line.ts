@@ -72,11 +72,9 @@ export async function correctLine(
   // Escrituras de la línea: la revisión anterior (solo insert) y la línea al día.
   let written: RequestLine;
   if (applied.type === 'add') {
-    if (!applied.next) throw new Error('Added line without values');
     written = await deps.requests.insertLine(ctx.tenantId, request.id, applied.next);
   } else {
     const { line } = applied;
-    if (!line) throw new Error('Corrected line is missing');
     await deps.requests.appendRevision(ctx.tenantId, {
       requestId: request.id,
       requestLineId: line.id,
@@ -85,10 +83,12 @@ export async function correctLine(
       changedBy: ctx.userId,
       reason,
     });
-    written = await deps.requests.updateLine(ctx.tenantId, line.id, line.revision, {
-      ...(applied.next ? { values: applied.next } : {}),
-      ...(applied.type === 'remove' ? { status: 'removed' as const } : {}),
-    });
+    written = await deps.requests.updateLine(
+      ctx.tenantId,
+      line.id,
+      line.revision,
+      applied.type === 'remove' ? { status: 'removed' } : { values: applied.next },
+    );
   }
 
   const { reconfirmation } = await deps.corrector.record(ctx, {

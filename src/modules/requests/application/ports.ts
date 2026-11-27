@@ -374,7 +374,6 @@ export interface CorrectDeps extends AuditDeps {
   readonly assignments: ApprovalAssignments;
   readonly catalog: CatalogLookup;
   readonly corrector: ApprovalCorrector;
-  readonly clock: Clock;
 }
 
 /** Anular un SOF (E3-H5): bloquea, cambia el estado, cierra la aprobación y audita. */

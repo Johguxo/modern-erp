@@ -51,20 +51,43 @@ export const CORRECTABLE_FIELDS = [
 ] as const;
 export type CorrectableField = (typeof CORRECTABLE_FIELDS)[number];
 
-export interface AppliedCorrection {
-  readonly type: ResolvedLineChange['type'];
-  /** La línea vigente antes del cambio; null al agregar. */
-  readonly line: RequestLine | null;
-  /** Lo que queda guardado (con su `lineNo`); null al quitar. */
-  readonly next: LineInsert | null;
-  readonly before: LineFacts | null;
-  readonly after: LineFacts | null;
-  /** Campos que cambian al corregir; vacío al agregar o quitar. */
-  readonly changedFields: readonly CorrectableField[];
+interface AppliedBase {
   /** Total antes y después, sobre las líneas vigentes (texto con 2 decimales). */
   readonly previousTotal: string;
   readonly newTotal: string;
 }
+
+export interface AppliedAdd extends AppliedBase {
+  readonly type: 'add';
+  readonly line: null;
+  /** Lo que queda guardado (con su `lineNo`). */
+  readonly next: LineInsert;
+  readonly before: null;
+  readonly after: LineFacts;
+  readonly changedFields: readonly [];
+}
+
+export interface AppliedUpdate extends AppliedBase {
+  readonly type: 'update';
+  /** La línea vigente antes del cambio. */
+  readonly line: RequestLine;
+  readonly next: LineInsert;
+  readonly before: LineFacts;
+  readonly after: LineFacts;
+  /** Campos que cambian al corregir. */
+  readonly changedFields: readonly CorrectableField[];
+}
+
+export interface AppliedRemove extends AppliedBase {
+  readonly type: 'remove';
+  readonly line: RequestLine;
+  readonly next: null;
+  readonly before: LineFacts;
+  readonly after: null;
+  readonly changedFields: readonly [];
+}
+
+export type AppliedCorrection = AppliedAdd | AppliedUpdate | AppliedRemove;
 
 export function factsOf(line: LineFacts): LineFacts {
   return {

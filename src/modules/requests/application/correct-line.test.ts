@@ -1,6 +1,5 @@
 // E4-H4 · correctLine con repositorio, catálogo y motor falsos (la base se prueba en integración).
 import { makeCtx } from '@tests/support/ctx';
-import { FixedClock } from '@tests/support/fakes/fixed-clock';
 import { InMemoryRequests } from '@tests/support/fakes/in-memory-requests';
 import { describe, expect, it } from 'vitest';
 
@@ -146,7 +145,6 @@ function setup(status: RequestStatus = 'in_approval', engine: Engine = {}) {
       },
     },
     client: UNKNOWN_CLIENT,
-    clock: new FixedClock(NOW),
   };
   return { requests, deps, calls, recorded, audit };
 }

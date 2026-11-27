@@ -24,9 +24,15 @@ type Status = 'loading' | 'ready' | 'error';
 export function CatalogSearch({
   currency,
   onAdd,
+  pick = false,
+  title,
 }: {
   currency: CurrencyCode;
   onAdd: (product: CatalogItem) => void;
+  /** «Elegir» en vez de «Agregar»: el buscador sirve para escoger un producto (E4-H4). */
+  pick?: boolean;
+  /** Título de la sección; por defecto, «Agregar desde el catálogo». */
+  title?: string;
 }) {
   const searchId = useId();
   const [text, setText] = useState('');
@@ -60,10 +66,10 @@ export function CatalogSearch({
 
   return (
     <section
-      aria-label={t.title}
+      aria-label={title ?? t.title}
       className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5"
     >
-      <h2 className="text-base font-semibold">{t.title}</h2>
+      <h2 className="text-base font-semibold">{title ?? t.title}</h2>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={searchId} className="text-[13px] font-normal text-muted-foreground">
           {t.search}
@@ -126,12 +132,16 @@ export function CatalogSearch({
                   disabled={otherCurrency}
                   aria-label={
                     otherCurrency
-                      ? t.cannotAdd(product.code)
-                      : t.addItem(product.code, product.name)
+                      ? pick
+                        ? t.cannotPick(product.code)
+                        : t.cannotAdd(product.code)
+                      : pick
+                        ? t.pickItem(product.code, product.name)
+                        : t.addItem(product.code, product.name)
                   }
                   onClick={() => onAdd(product)}
                 >
-                  {otherCurrency ? t.otherCurrency : t.add}
+                  {otherCurrency ? t.otherCurrency : pick ? t.pick : t.add}
                 </Button>
               </li>
             );

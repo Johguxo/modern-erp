@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { withTenant } from '@/db';
+import { createCatalogDeps, listEquipment } from '@/modules/catalog';
 import { createGetRequestDetailDeps, getRequestDetail } from '@/modules/requests';
 import { getRequestDetailContract } from '@/modules/requests/contracts';
 import { isDomainError } from '@/shared/errors';
@@ -8,6 +9,7 @@ import { NoticeBanner } from '@/ui/base/notice-banner';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
+import { readOnlyCatalogExtras } from '../../../_lib/catalog';
 import { readOnlyRequestsExtras } from '../../../_lib/requests';
 import { requireCtx } from '../../../_lib/session';
 
@@ -34,13 +36,32 @@ export default async function RequestPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const { enviado, anulado, decision, reenviado } = await searchParams;
+  const { enviado, anulado, decision, reenviado, corregido } = await searchParams;
   const { ctx } = await requireCtx();
   if (!getRequestDetailContract.inputSchema.safeParse({ id }).success) notFound();
 
-  const detail = await withTenant(ctx, (tx) =>
-    getRequestDetail(ctx, { id }, createGetRequestDetailDeps(tx, readOnlyRequestsExtras(tx))),
-  ).catch((error: unknown) => {
+  const { detail, equipment } = await withTenant(ctx, async (tx) => {
+    const found = await getRequestDetail(
+      ctx,
+      { id },
+      createGetRequestDetailDeps(tx, readOnlyRequestsExtras(tx)),
+    );
+    // Los equipos activos solo hacen falta para el diálogo «Corregir una línea».
+    const active = found.actions.includes('correct_line')
+      ? await listEquipment(
+          ctx,
+          { q: null, status: 'active', page: 1, pageSize: 100 },
+          createCatalogDeps(tx, readOnlyCatalogExtras()),
+        )
+      : null;
+    return {
+      detail: found,
+      equipment: (active?.items ?? []).map((item) => ({
+        id: item.id,
+        label: `${item.code} · ${item.name}`,
+      })),
+    };
+  }).catch((error: unknown) => {
     if (isDomainError(error) && (error.code === 'NOT_FOUND' || error.code === 'FORBIDDEN')) {
       notFound();
     }
@@ -57,14 +78,18 @@ export default async function RequestPage({
           detail.requesterId === ctx.userId &&
           detail.status === 'in_approval'
         ? ({ tone: 'success', text: t.submittedNotice(detail.number) } as const)
-        : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
-          ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
-          : decidedNotice(
-              decision,
-              detail.status,
-              detail.requesterId !== ctx.userId,
-              detail.number,
-            );
+        : corregido === '1' &&
+            detail.correctionNotice !== null &&
+            (detail.status === 'in_approval' || detail.status === 'approved')
+          ? ({ tone: 'success', text: t.correctLine.savedNotice(detail.number) } as const)
+          : anulado === '1' && detail.status === 'cancelled' && detail.closedById === ctx.userId
+            ? ({ tone: 'success', text: t.cancelledNotice(detail.number) } as const)
+            : decidedNotice(
+                decision,
+                detail.status,
+                detail.requesterId !== ctx.userId,
+                detail.number,
+              );
 
   const mobileBar = showsMobileBar(detail, ctx.readOnly);
 
@@ -87,6 +112,7 @@ export default async function RequestPage({
             actions={detail.actions}
             readOnly={ctx.readOnly}
             noteId={noteId}
+            equipment={equipment}
           />
           <DocumentCard detail={detail} readOnly={ctx.readOnly} noteId={noteId} />
         </div>

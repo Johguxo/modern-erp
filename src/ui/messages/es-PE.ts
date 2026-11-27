@@ -567,6 +567,10 @@ export const messages = {
       empty: 'No encontramos productos con esa búsqueda.',
       error: 'No pudimos buscar en el catálogo. Inténtalo de nuevo.',
       results: 'Resultados del catálogo',
+      /** Al elegir un producto para corregir una línea (E4-H4). */
+      pick: 'Elegir',
+      pickItem: (code: string, name: string) => `Elegir ${code} ${name}`,
+      cannotPick: (code: string) => `${code} no se puede elegir: otra moneda`,
     },
     items: {
       title: 'Ítems de la solicitud',
@@ -658,6 +662,39 @@ export const messages = {
         empty: 'Esta solicitud no tiene ítems.',
         quantityWithUnit: (quantity: string, unit: string) => `${quantity} ${unit}`,
         total: 'Total estimado',
+      },
+      /** Diálogo «Corregir una línea» (E4-H4). */
+      correctLine: {
+        title: (number: string | null) => `Corregir una línea de ${number ?? 'la solicitud'}`,
+        description:
+          'La corrección queda en la línea de tiempo con tu motivo. Si sube el monto, esa línea se vuelve a aprobar; si no, las firmas se mantienen.',
+        modeLabel: 'Qué quieres hacer',
+        modes: { update: 'Corregir', add: 'Agregar', remove: 'Quitar' },
+        lineLabel: 'Línea',
+        lineOption: (lineNo: number, code: string, description: string) =>
+          `#${lineNo} · ${code} · ${description}`,
+        productLabel: 'Producto',
+        changeProduct: 'Cambiar producto',
+        cancelChangeProduct: 'Mantener producto',
+        noProduct: 'Sin producto elegido',
+        pickProduct: 'Elegir producto',
+        productRequired: 'Elige un producto.',
+        equipmentLabel: 'Equipo',
+        quantityLabel: 'Cantidad',
+        priceLabel: 'Precio unitario',
+        notesLabel: 'Notas (opcional)',
+        notesTooLong: (max: number) => `Las notas pueden tener hasta ${max} caracteres.`,
+        reasonLabel: 'Motivo (obligatorio)',
+        reasonPlaceholder: 'Cuenta por qué se corrige esta línea',
+        removeWarning:
+          'La línea se quita de la solicitud. Su historial queda guardado en la línea de tiempo.',
+        counter: (used: number, max: number) => `${used} / ${max}`,
+        submit: { update: 'Guardar corrección', add: 'Agregar línea', remove: 'Quitar línea' },
+        submitting: 'Guardando…',
+        back: 'Volver',
+        reload: 'Recargar',
+        savedNotice: (number: string | null) =>
+          `Guardaste la corrección en ${number ?? 'la solicitud'}.`,
       },
       /** Aviso naranja de la última corrección (E4-H4, prototipo pantalla 3). */
       correction: {

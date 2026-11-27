@@ -44,7 +44,8 @@ export {
   incrementQuantity,
   lineSubtotal,
   parseQuantity,
+  parseUnitPrice,
   sumTotal,
   type Currency,
 } from '../domain/money';
-export { REASON_MAX } from '../domain/request';
+export { NOTES_MAX, REASON_MAX } from '../domain/request';

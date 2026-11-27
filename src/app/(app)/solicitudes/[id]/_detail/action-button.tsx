@@ -3,12 +3,16 @@
 import type { Route } from 'next';
 import Link from 'next/link';
 
-import type { RequestAction, RequestStatus } from '@/modules/requests';
+import type { RequestAction, RequestDetailLine, RequestStatus } from '@/modules/requests';
+import type { CurrencyCode } from '@/ui/format/money';
 import { Button } from '@/ui/components/button';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
+import type { SelectOption } from '../../_editor/load-editor-data';
+
 import { CancelRequestDialog } from './cancel-request-dialog';
+import { CorrectLineDialog } from './correct-line-dialog';
 import { DecisionDialog } from './decision-dialog';
 import { ResubmitButton } from './resubmit-button';
 import { isActionEnabled, isImplemented } from './detail-actions';
@@ -38,6 +42,7 @@ export function ActionButton({
   number = null,
   status,
   stepId = null,
+  correction,
 }: {
   action: RequestAction;
   requestId: string;
@@ -54,6 +59,12 @@ export function ActionButton({
   status?: RequestStatus;
   /** El paso pendiente del usuario: las decisiones lo necesitan. */
   stepId?: string | null;
+  /** Lo que necesita «Corregir una línea»: las líneas, los equipos activos y la moneda. */
+  correction?: {
+    lines: readonly RequestDetailLine[];
+    equipment: readonly SelectOption[];
+    currency: CurrencyCode;
+  };
 }) {
   const style = STYLE[action];
   const size = large ? 'lg' : 'default';
@@ -76,6 +87,25 @@ export function ActionButton({
         requestId={requestId}
         version={version}
         number={number}
+        large={large}
+        className={classes}
+      />
+    );
+  }
+  if (
+    isActionEnabled(action, readOnly) &&
+    action === 'correct_line' &&
+    version !== undefined &&
+    correction
+  ) {
+    return (
+      <CorrectLineDialog
+        requestId={requestId}
+        version={version}
+        number={number}
+        lines={correction.lines}
+        equipment={correction.equipment}
+        currency={correction.currency}
         large={large}
         className={classes}
       />

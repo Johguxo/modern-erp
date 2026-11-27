@@ -8,6 +8,8 @@ import { trimDecimal } from '@/ui/format/money';
 import { cn } from '@/ui/lib/utils';
 import { messages } from '@/ui/messages/es-PE';
 
+import type { SelectOption } from '../../_editor/load-editor-data';
+
 import { ActionButton } from './action-button';
 
 const t = messages.requests.detail;
@@ -23,11 +25,14 @@ export function DetailItems({
   actions,
   readOnly,
   noteId,
+  equipment,
 }: {
   detail: RequestDetail;
   actions: readonly RequestAction[];
   readOnly: boolean;
   noteId?: string;
+  /** Equipos activos para el diálogo de corrección; la página los carga solo si hace falta. */
+  equipment: readonly SelectOption[];
 }) {
   const { columns } = t.items;
   return (
@@ -45,6 +50,9 @@ export function DetailItems({
             requestId={detail.id}
             readOnly={readOnly}
             noteId={noteId}
+            version={detail.version}
+            number={detail.number}
+            correction={{ lines: detail.lines, equipment, currency: detail.currency }}
           />
         ) : null}
       </div>

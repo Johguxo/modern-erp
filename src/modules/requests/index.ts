@@ -20,11 +20,14 @@ export { noopApprovalStarter } from './infrastructure/noop-approval-starter';
 export type {
   ApprovalAssignments,
   ApprovalCanceller,
+  ApprovalCorrector,
   ApprovalDecider,
   ApprovalTimeline,
   DecideDeps,
   ApprovalStarter,
   CancelDeps,
+  CorrectDeps,
+  LineCorrectionRecord,
   GetRequestDeps,
   GetRequestDetailDeps,
   ListRequestsDeps,
@@ -50,6 +53,12 @@ export {
   type DecideRequestInput,
   type DecideRequestOutput,
 } from './application/decide-request';
+export {
+  correctLine,
+  type CorrectLineInput,
+  type CorrectLineOutput,
+} from './application/correct-line';
+export type { LineChangeInput } from './application/resolve-line-change';
 export { getRequest } from './application/get-request';
 export { getRequestDetail } from './application/get-request-detail';
 export {
@@ -63,6 +72,7 @@ export { getDocumentSequence } from './application/get-document-sequence';
 export { updateDocumentSequence } from './application/update-document-sequence';
 export { platformGetDocumentSequence } from './application/platform-get-document-sequence';
 export { platformUpdateDocumentSequence } from './application/platform-update-document-sequence';
+export { REAPPROVAL_BRANCHES, reapprovalBranch, type ReapprovalBranch } from './domain/reapproval';
 export { INBOX_TABS, type DisplayStatus, type InboxTab } from './domain/inbox';
 export { REQUEST_ACTIONS, availableActions, type RequestAction } from './domain/request-actions';
 export {

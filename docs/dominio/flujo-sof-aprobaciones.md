@@ -109,6 +109,17 @@ Es el requisito diferencial del producto. Una corrección **nunca borra** firmas
 - La interfaz muestra la línea corregida resaltada y el aviso "Línea N corregida por X. Solo esta línea vuelve a aprobación; las demás conservan sus firmas" (pantalla 3 del prototipo).
 - El PDF muestra la revisión vigente de cada línea y una nota de revisión.
 
+### Cómo se aplica (E4-H4)
+- **Quién y cuándo:** quien tiene `requests.correct_line` corrige, agrega o quita **una** línea por vez, en `in_approval` o `approved`. El motivo es obligatorio (≤ 500); el precio solo se edita al corregir.
+- **Base de la tolerancia:** el total antes de esta corrección, comparado con `decimal.js`. Bajar el total o no cambiarlo nunca pide reconfirmación; el límite es inclusivo. Si la tolerancia falta en la política o no es válida, vale 0.
+- **El paso de reconfirmación:** `kind = 'reconfirmation'`, regla `any`, se llama «Reconfirmación», va al final de la ronda (`pending` si no hay otro pendiente, si no `waiting`) y guarda las líneas en `line_ids`. Lo reciben quienes firmaron pasos posteriores al primero de la ronda, sin quien corrige ni el solicitante, y solo miembros activos con `approvals.decide`. Si no queda nadie, no se crea el paso, las firmas se mantienen y queda en el log y en el evento.
+- **Eventos:** `line_corrected` (antes, después, totales, rama, motivo y `notifyUserIds` para el aviso de E5) y, si hay paso, `reconfirmation_requested` y `step_pending`.
+- **Marca de la línea:** `needs_reconfirmation` se pone solo cuando se crea el paso y se limpia cuando la ronda termina (aprobada, rechazada, cambios pedidos o anulada) y al reenviar.
+- **Bloqueo:** el mismo orden que al decidir (solicitud → instancia), con `version` de la solicitud y `revision` esperada de la línea.
+- **Agregar y quitar:** una línea agregada empieza en revisión 1. Una quitada queda `removed` y deja su número sin reusar. No se puede quitar la última línea activa.
+- **Edición en «Cambios solicitados»:** el solicitante edita en sitio (empareja por producto, actualiza, inserta o marca `removed`); las líneas ya no se borran si la solicitud tiene número.
+- **Límites del MVP:** los pasos `skipped` por monto mínimo no se reactivan aunque el total nuevo los haga aplicar; dos reconfirmaciones seguidas son dos pasos en secuencia; la tolerancia se lee de la política vigente, no de la copia de la instancia.
+
 ### Modelo
 `request_lines` guarda la revisión vigente (`revision`, `status`). El historial completo va en `request_line_revisions` (copia de la línea antes del cambio + `changed_by`, `changed_at`, `reason`).
 

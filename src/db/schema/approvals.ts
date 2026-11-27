@@ -176,6 +176,11 @@ export const approvalSteps = pgTable(
     check('approval_steps_step_order_check', sql`${t.stepOrder} >= 1`),
     check('approval_steps_kind_check', sql`${t.kind} in ('normal','reconfirmation')`),
     check('approval_steps_rule_check', sql`${t.rule} in ('any','all')`),
+    // Un paso de reconfirmación nombra las líneas que reconfirma; uno normal no (E4-H4).
+    check(
+      'approval_steps_reconfirmation_lines_check',
+      sql`(${t.kind} = 'reconfirmation') = (${t.lineIds} is not null and cardinality(${t.lineIds}) > 0)`,
+    ),
     check(
       'approval_steps_status_check',
       sql`${t.status} in ('waiting','pending','approved','rejected','changes_requested','skipped','cancelled')`,

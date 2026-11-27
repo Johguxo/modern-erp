@@ -27,6 +27,7 @@ export function requestsExtras(
     canceller: engine.canceller,
     assignments: engine.assignments,
     decider: engine.decider,
+    corrector: engine.corrector,
     timeline: engine.timeline,
   };
 }
@@ -43,6 +44,7 @@ export function readOnlyRequestsExtras(
     canceller: engine.canceller,
     assignments: engine.assignments,
     decider: engine.decider,
+    corrector: engine.corrector,
     timeline: engine.timeline,
   };
 }

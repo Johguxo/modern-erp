@@ -1,9 +1,11 @@
 // E3-H1 · Primera defensa: los repositorios de requests (y la lectura de referencias del catálogo)
 // filtran por tenantId por sí solos. Se crean con getDbAdmin() (rol dueño, sin RLS ni withTenant):
 // si se quita un eq(tenantId) de la consulta, estas pruebas fallan porque ya no hay RLS que tape el error.
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDatabases, getDbAdmin } from '@/db/admin';
+import { requestLineRevisions } from '@/db/schema';
 import { createDrizzleProductRepository } from '@/modules/catalog/infrastructure/drizzle-product-repository';
 import {
   createDrizzleCostCenterRepository,
@@ -85,6 +87,98 @@ describe('los repositorios de requests filtran por tenantId sin RLS', () => {
       .catch(() => undefined);
 
     expect((await requestRepo().find(B.tenantId, requestB))?.lines).toHaveLength(1);
+  });
+
+  it('syncLines no actualiza, quita ni inserta líneas de otro tenant', async () => {
+    const before = await requestRepo().find(B.tenantId, requestB);
+    const line = before?.lines[0];
+    if (!line) throw new Error('sin línea');
+
+    const lines = await requestRepo().syncLines(A.tenantId, requestB, {
+      updates: [
+        {
+          id: line.id,
+          line: {
+            ...line,
+            productId: line.productId,
+            lineNo: line.lineNo,
+            productCode: 'HACK',
+            description: 'x',
+            unit: 'UND',
+            equipmentId: null,
+            quantity: '9.000',
+            unitPrice: '1.0000',
+            subtotal: '9.00',
+            notes: null,
+          },
+        },
+      ],
+      inserts: [],
+      removed: [line.id],
+    });
+
+    expect(lines).toEqual([]);
+    expect((await requestRepo().find(B.tenantId, requestB))?.lines).toEqual(before?.lines);
+  });
+
+  it('updateLine y appendRevision no actúan sobre la línea de otro tenant', async () => {
+    const before = await requestRepo().find(B.tenantId, requestB);
+    const target = before?.lines[0];
+    if (!target) throw new Error('sin línea');
+
+    await expect(
+      requestRepo().updateLine(A.tenantId, target.id, target.revision, {
+        status: 'removed',
+        values: { ...target, quantity: '9.000', subtotal: '9.00' },
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT', reason: 'stale_version' });
+    await expect(
+      requestRepo().appendRevision(A.tenantId, {
+        requestId: requestB,
+        requestLineId: target.id,
+        revision: target.revision,
+        snapshot: {},
+        changedBy: A.userId,
+        reason: 'x',
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+    expect((await requestRepo().find(B.tenantId, requestB))?.lines).toEqual(before?.lines);
+    const revisions = await getDbAdmin()
+      .select()
+      .from(requestLineRevisions)
+      .where(eq(requestLineRevisions.requestId, requestB));
+    expect(revisions).toEqual([]);
+  });
+
+  it('insertLine con el tenant de A no agrega líneas visibles en la solicitud de B', async () => {
+    const before = await requestRepo().find(B.tenantId, requestB);
+
+    await requestRepo()
+      .insertLine(A.tenantId, requestB, { ...line(A), lineNo: 7 })
+      .catch(() => undefined);
+
+    // Lo que se lee con el tenant de B no cambia: la fila (si llegó a existir) no es de B.
+    expect((await requestRepo().find(B.tenantId, requestB))?.lines).toEqual(before?.lines);
+    expect(await requestRepo().find(A.tenantId, requestB)).toBeNull();
+  });
+
+  it('flagReconfirmation y clearReconfirmation no tocan las líneas de otro tenant', async () => {
+    const target = (await requestRepo().find(B.tenantId, requestB))?.lines[0];
+    if (!target) throw new Error('sin línea');
+    const flagOf = async () =>
+      (await requestRepo().find(B.tenantId, requestB))?.lines[0]?.needsReconfirmation;
+
+    await requestRepo().flagReconfirmation(A.tenantId, target.id);
+    expect(await flagOf()).toBe(false);
+
+    await requestRepo().flagReconfirmation(B.tenantId, target.id);
+    expect(await flagOf()).toBe(true);
+    await requestRepo().clearReconfirmation(A.tenantId, requestB);
+    expect(await flagOf()).toBe(true);
+
+    await requestRepo().clearReconfirmation(B.tenantId, requestB);
+    expect(await flagOf()).toBe(false);
   });
 
   it('la secuencia: find, lockForUpdate y update respetan el tenant', async () => {

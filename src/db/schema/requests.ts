@@ -176,9 +176,9 @@ export const requestLines = pgTable(
     ),
     check('request_lines_notes_length_check', sql`char_length(${t.notes}) <= 500`),
     tenantIsolation(t.tenantId),
-    // Quitar una línea solo es posible mientras la solicitud es editable: borrador o «Cambios
-    // solicitados» (restrictiva: se suma a tenant_isolation). Después del envío, quitar es
-    // status = 'removed'.
+    // Borrar una línea solo es posible con la solicitud en borrador (restrictiva: se suma a
+    // tenant_isolation). Después del envío, quitar es status = 'removed' y la edición de «Cambios
+    // solicitados» es en sitio (E4-H4), porque las revisiones apuntan a la línea.
     pgPolicy('request_lines_delete_only_draft', {
       as: 'restrictive',
       for: 'delete',
@@ -186,7 +186,7 @@ export const requestLines = pgTable(
       using: sql`exists (
         select 1 from requests r
         where r.id = ${t.requestId} and r.tenant_id = ${currentTenantId}
-          and r.status in ('draft', 'changes_requested')
+          and r.status = 'draft'
       )`,
     }),
   ],

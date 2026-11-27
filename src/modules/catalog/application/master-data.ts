@@ -19,9 +19,9 @@ interface MasterDeps<V extends MasterView, F extends object> {
   readonly client: ClientInfo;
 }
 
-/** Lectura: quien administra el catálogo o quien crea SOF. */
+/** Lectura: quien administra el catálogo, quien crea SOF o quien corrige líneas (E4-H4). */
 export function requireCatalogRead(ctx: Ctx): void {
-  requireAnyPermission(ctx, ['catalog.manage', 'requests.create']);
+  requireAnyPermission(ctx, ['catalog.manage', 'requests.create', 'requests.correct_line']);
 }
 
 export function requireCatalogWrite(ctx: Ctx): void {

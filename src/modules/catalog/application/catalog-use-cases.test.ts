@@ -28,6 +28,7 @@ import { upsertProduct } from './upsert-product';
 
 const MANAGER = makeCtx({ roles: ['admin'], permissions: ['catalog.manage', 'requests.create'] });
 const REQUESTER = makeCtx({ permissions: ['requests.create'] });
+const CORRECTOR = makeCtx({ permissions: ['requests.correct_line'] });
 const NOBODY = makeCtx({ permissions: ['approvals.decide'] });
 
 function memoryRepo<V extends MasterView, F extends object>(): MasterRepository<V, F> & {
@@ -290,6 +291,42 @@ describe('getCatalogRefs', () => {
 
     expect((await getCatalogRefs(REQUESTER, input, deps)).products).toEqual([]);
     await expect(getCatalogRefs(NOBODY, input, deps)).rejects.toThrow(ForbiddenError);
+  });
+});
+
+describe('quien solo corrige líneas (requests.correct_line)', () => {
+  it('lee el catálogo activo: busca, lista y resuelve referencias, pero no escribe', async () => {
+    const s = setup();
+    await upsertProduct(MANAGER, PRODUCT, s.productDeps);
+    const productId = s.products.rows[0]?.id ?? '';
+
+    const refs = await getCatalogRefs(
+      CORRECTOR,
+      { productIds: [productId], equipmentIds: [], costCenterIds: [] },
+      { products: s.products, costCenters: s.costCenters, equipment: memoryRepo<never, never>() },
+    );
+    expect(refs.products.map((p) => p.id)).toEqual([productId]);
+    const query = { q: null, status: 'inactive' as const, page: 1, pageSize: 25 };
+    await listProducts(CORRECTOR, query, s.productDeps);
+    expect(s.products.lastFilter?.status).toBe('active');
+    await expect(
+      searchProducts(CORRECTOR, { q: 'tor', limit: 5 }, {
+        products: { search: () => Promise.resolve([]) },
+      } as unknown as Pick<ProductDeps, 'products'>),
+    ).resolves.toEqual({ items: [] });
+    await expect(upsertProduct(CORRECTOR, PRODUCT, s.productDeps)).rejects.toThrow(ForbiddenError);
+  });
+
+  it('getCatalogLabels también le sirve', async () => {
+    const s = setup();
+    await upsertCostCenter(MANAGER, { code: 'CC-1', name: 'Centro' }, s.costDeps);
+    const costCenterId = s.costCenters.rows[0]?.id ?? '';
+    const labels = await getCatalogLabels(
+      CORRECTOR,
+      { equipmentIds: [], costCenterIds: [costCenterId] },
+      { equipment: memoryRepo<never, never>(), costCenters: s.costCenters },
+    );
+    expect(labels.costCenters.map((c) => c.id)).toEqual([costCenterId]);
   });
 });
 

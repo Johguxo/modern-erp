@@ -54,6 +54,8 @@ export const APPROVAL_EVENT_TYPES = [
   'changes_requested',
   'approved',
   'cancelled',
+  'line_corrected',
+  'reconfirmation_requested',
 ] as const;
 export type ApprovalEventType = (typeof APPROVAL_EVENT_TYPES)[number];
 

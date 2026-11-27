@@ -55,12 +55,17 @@ function setup(initial: Request, engine: { outcome?: DecisionOutcome; error?: Er
   let current = initial;
   const patches: object[] = [];
   const decided: object[] = [];
+  const cleared: string[] = [];
   const audit: Parameters<AuditLog['record']>[0][] = [];
   const requests = {
     lockById: (tenantId: string, id: string) =>
       Promise.resolve(
         current.tenantId === tenantId && current.id === id ? { request: current, lines: [] } : null,
       ),
+    clearReconfirmation: (_t: string, id: string) => {
+      cleared.push(id);
+      return Promise.resolve();
+    },
     updateHeader: (_t: string, _id: string, version: number, patch: object) => {
       if (version !== current.version) return Promise.reject(new Error('stale in fake'));
       patches.push(patch);
@@ -92,7 +97,7 @@ function setup(initial: Request, engine: { outcome?: DecisionOutcome; error?: Er
     client: UNKNOWN_CLIENT,
     clock: new FixedClock(NOW),
   };
-  return { deps, patches, decided, audit };
+  return { deps, patches, decided, audit, cleared };
 }
 
 interface InputOverrides {
@@ -125,6 +130,8 @@ describe('decideRequest', () => {
     expect(s.decided).toEqual([
       { requestId: REQ, stepId: STEP, kind: 'approve', comment: 'Conforme' },
     ]);
+    // Al aprobar el último paso, ninguna línea queda pendiente de reconfirmar (E4-H4).
+    expect(s.cleared).toEqual([REQ]);
     expect(s.audit).toHaveLength(1);
     expect(s.audit[0]).toMatchObject({
       action: 'request.decided',
@@ -146,6 +153,7 @@ describe('decideRequest', () => {
       const view = await decideRequest(APPROVER, input(), s.deps);
       expect(view).toMatchObject({ status: 'in_approval', version: 4, outcome, approvedAt: null });
       expect(s.patches).toEqual([{ status: 'in_approval' }]);
+      expect(s.cleared).toEqual([]);
     },
   );
 
@@ -168,6 +176,18 @@ describe('decideRequest', () => {
       closeComment: null,
     });
   });
+
+  it.each([
+    ['rejected', 'reject', 'No corresponde'],
+    ['changes_requested', 'request_changes', 'Falta el equipo'],
+  ] as const)(
+    'si la decisión termina en %s, limpia las marcas de reconfirmación',
+    async (outcome, decision, comment) => {
+      const s = setup(request('in_approval'), { outcome });
+      await decideRequest(APPROVER, input({ decision, comment }), s.deps);
+      expect(s.cleared).toEqual([REQ]);
+    },
+  );
 
   it('pedir cambios deja changes_requested y exige comentario', async () => {
     const s = setup(request('in_approval'), { outcome: 'changes_requested' });

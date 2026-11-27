@@ -140,6 +140,13 @@ export interface ApprovalInstanceRepository {
   activateStep(tenantId: string, stepId: string, now: Date): Promise<boolean>;
   /** Los pasos `waiting` y `pending` de la ronda pasan a `cancelled`. Devuelve cuántos. */
   cancelOpenSteps(tenantId: string, instanceId: string, now: Date): Promise<number>;
+  /**
+   * Una ronda `approved` vuelve a `in_progress` porque una corrección pidió reconfirmación (E4-H4).
+   * Condicional: false si ya no estaba `approved`.
+   */
+  reopenInstance(tenantId: string, instanceId: string, now: Date): Promise<boolean>;
+  /** `approval_policies.settings` de la política con la que corre la ronda (jsonb sin validar). */
+  settingsOf(tenantId: string, instanceId: string): Promise<unknown>;
   /** Cierra la ronda si sigue `in_progress`. */
   closeInstance(
     tenantId: string,

@@ -1,7 +1,7 @@
 // Motor de aprobaciones sobre la transacción de withTenant (E4-H2). Implementa por estructura los
-// puertos que requests define (ApprovalStarter, ApprovalCanceller, ApprovalDecider y
-// ApprovalAssignments): approvals no importa requests, y solo src/app/_lib/requests.ts une los dos
-// módulos (ADR-008).
+// puertos que requests define (ApprovalStarter, ApprovalCanceller, ApprovalDecider,
+// ApprovalCorrector y ApprovalAssignments): approvals no importa requests, y solo
+// src/app/_lib/requests.ts une los dos módulos (ADR-008).
 import type { DbExecutor } from '@/db';
 import type { Ctx } from '@/shared/context';
 import type { Clock } from '@/shared/ports/clock';
@@ -16,6 +16,12 @@ import {
   createApprovalAssignments,
   type ApprovalAssignmentsView,
 } from '../application/approval-queries';
+import {
+  readTolerance,
+  recordCorrection,
+  type RecordCorrectionInput,
+  type RecordCorrectionOutput,
+} from '../application/correct-approval';
 import {
   decideApproval,
   type DecideApprovalInput,
@@ -37,6 +43,14 @@ export interface ApprovalEngine {
   readonly canceller: { cancel(ctx: Ctx, input: CancelApprovalInput): Promise<void> };
   readonly decider: {
     decide(ctx: Ctx, input: DecideApprovalInput): Promise<DecideApprovalOutput>;
+  };
+  /** Corrección de una línea (E4-H4): la tolerancia de la política y el registro de la corrección. */
+  readonly corrector: {
+    tolerance(
+      ctx: Ctx,
+      input: { readonly requestId: string },
+    ): Promise<{ readonly tolerancePct: string }>;
+    record(ctx: Ctx, input: RecordCorrectionInput): Promise<RecordCorrectionOutput>;
   };
   readonly assignments: ApprovalAssignmentsView;
   readonly timeline: ApprovalTimelineView;
@@ -61,6 +75,10 @@ export function createApprovalEngine(db: DbExecutor, extras: ApprovalEngineExtra
     starter: { start: (ctx, input) => startApproval(ctx, input, deps) },
     canceller: { cancel: (ctx, input) => cancelApproval(ctx, input, deps) },
     decider: { decide: (ctx, input) => decideApproval(ctx, input, deps) },
+    corrector: {
+      tolerance: (ctx, input) => readTolerance(ctx, input, deps),
+      record: (ctx, input) => recordCorrection(ctx, input, deps),
+    },
     assignments: createApprovalAssignments(queries),
     timeline: createApprovalTimeline(queries),
   };

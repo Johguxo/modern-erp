@@ -20,6 +20,8 @@ Estado: pendiente · Issue: [#25](https://github.com/Johguxo/modern-erp/issues/2
 
 > Nota (E4-H2a): `decideRequest`/`submitRequest` devuelven el paso `pending` siguiente y el evento `step_pending` trae `assigneeIds` (y `noAssignees` para avisar al admin); encolar el correo con `afterCommit`. `approval_steps.pending_since` sirve para los recordatorios (E5-H3).
 
+> Nota (E4-H4): el evento `line_corrected` trae `data.notifyUserIds` (solicitante y quienes ya firmaron en la ronda, sin quien corrige) para el correo «línea corregida (informativo)»; el paso de reconfirmación avisa con el `step_pending` de siempre. Para la nota de revisión del PDF (E5-H1), leer `request_line_revisions` y `revision` de cada línea.
+
 Estado: pendiente · Issue: [#26](https://github.com/Johguxo/modern-erp/issues/26)
 
 ### E5-H3 · Recordatorios

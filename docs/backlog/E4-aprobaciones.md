@@ -66,4 +66,4 @@ Estado: en revisión · Issue: [#23](https://github.com/Johguxo/modern-erp/issue
 
 > Nota (E4-H3): la línea de tiempo sale de `buildApprovalTimeline` (approvals) y `buildTimeline` (requests). Para `line_corrected` y `reconfirmation_requested`, agregar el tipo en ambos y su texto en `timeline-text.ts`; hoy se ignoran. Los pasos `kind = 'reconfirmation'` ya salen como pendientes con su nombre.
 
-Estado: pendiente · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)
+Estado: en curso (A backend en revisión; B UI pendiente) · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)

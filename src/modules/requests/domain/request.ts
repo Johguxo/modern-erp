@@ -37,6 +37,20 @@ export interface RequestLine {
   readonly needsReconfirmation: boolean;
 }
 
+/** Una línea tal como se guarda al crearla o reemplazarla: sin id, revisión ni estado. */
+export interface LineInsert {
+  readonly lineNo: number;
+  readonly productId: string;
+  readonly productCode: string;
+  readonly description: string;
+  readonly unit: string;
+  readonly equipmentId: string | null;
+  readonly quantity: string;
+  readonly unitPrice: string;
+  readonly subtotal: string;
+  readonly notes: string | null;
+}
+
 export interface Request {
   readonly id: string;
   readonly tenantId: string;

@@ -1,19 +1,21 @@
 // Solicitudes del tenant activo con la transacción de withTenant: RLS y filtro explícito por
 // tenantId. app_user no borra solicitudes y solo actualiza las columnas de 0011; el DELETE de líneas
 // solo pasa con la solicitud en borrador (política restrictiva).
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import { isUniqueViolation, type DbExecutor } from '@/db';
-import { requestLines, requests } from '@/db/schema';
-import { ConflictError } from '@/shared/errors';
+import { requestLineRevisions, requestLines, requests } from '@/db/schema';
+import { ConflictError, NotFoundError } from '@/shared/errors';
 
 import type {
   HeaderInsert,
   HeaderPatch,
   LineInsert,
+  LinePatch,
   RequestRepository,
   RequestWithLines,
 } from '../application/ports';
+import type { LineSyncPlan } from '../domain/line-sync';
 import { formatAmount, formatQuantity, formatUnitPrice, type Currency } from '../domain/money';
 import type { LineStatus, Request, RequestLine } from '../domain/request';
 import type { RequestStatus } from '../domain/request-state-machine';
@@ -76,6 +78,20 @@ function lineValues(tenantId: string, requestId: string, line: LineInsert) {
     tenantId,
     requestId,
     lineNo: line.lineNo,
+    productId: line.productId,
+    productCodeSnapshot: line.productCode,
+    descriptionSnapshot: line.description,
+    unitSnapshot: line.unit,
+    equipmentId: line.equipmentId,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    subtotal: line.subtotal,
+    notes: line.notes,
+  };
+}
+
+function lineChanges(line: Omit<LineInsert, 'lineNo'>) {
+  return {
     productId: line.productId,
     productCodeSnapshot: line.productCode,
     descriptionSnapshot: line.description,
@@ -153,12 +169,107 @@ export function createDrizzleRequestRepository(db: DbExecutor): RequestRepositor
     },
 
     async replaceLines(tenantId, requestId, lines) {
-      // Borra y reinserta: en «Cambios solicitados» también (política 0019). E4-H4 lo cambiará por
-      // actualizar en sitio y marcar `removed` cuando existan revisiones con FK a la línea.
+      // Solo en borrador (la política de la base lo exige); después del envío, `syncLines`.
       await db
         .delete(requestLines)
         .where(and(eq(requestLines.tenantId, tenantId), eq(requestLines.requestId, requestId)));
       return insertLines(tenantId, requestId, lines);
+    },
+
+    async syncLines(tenantId, requestId, plan: LineSyncPlan) {
+      const scope = and(eq(requestLines.tenantId, tenantId), eq(requestLines.requestId, requestId));
+      for (const update of plan.updates) {
+        // app_user solo actualiza las columnas de la línea (0011): sin tenant_id ni request_id.
+        const line = update.line;
+        await db
+          .update(requestLines)
+          .set(lineChanges(line))
+          .where(and(scope, eq(requestLines.id, update.id)));
+      }
+      if (plan.removed.length > 0) {
+        await db
+          .update(requestLines)
+          .set({ status: 'removed' })
+          .where(and(scope, inArray(requestLines.id, [...plan.removed])));
+      }
+      await insertLines(tenantId, requestId, plan.inserts);
+      return linesOf(tenantId, requestId);
+    },
+
+    async updateLine(tenantId, lineId, expectedRevision, patch: LinePatch) {
+      const [row] = await db
+        .update(requestLines)
+        .set({
+          ...(patch.values ? lineChanges(patch.values) : {}),
+          ...(patch.status !== undefined ? { status: patch.status } : {}),
+          revision: expectedRevision + 1,
+        })
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.id, lineId),
+            eq(requestLines.revision, expectedRevision),
+          ),
+        )
+        .returning();
+      if (!row) {
+        throw new ConflictError({
+          reason: 'stale_version',
+          message: `Line ${lineId} is not at revision ${expectedRevision}`,
+        });
+      }
+      return toLine(row);
+    },
+
+    async insertLine(tenantId, requestId, line) {
+      const [inserted] = await insertLines(tenantId, requestId, [line]);
+      if (!inserted) throw new Error('Line insert returned no row');
+      return inserted;
+    },
+
+    async appendRevision(tenantId, revision) {
+      // La línea debe ser de este tenant y de esta solicitud: la FK sola no lo garantiza.
+      const [line] = await db
+        .select({ id: requestLines.id })
+        .from(requestLines)
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.requestId, revision.requestId),
+            eq(requestLines.id, revision.requestLineId),
+          ),
+        )
+        .limit(1);
+      if (!line) throw new NotFoundError({ message: 'Request line not found' });
+      await db.insert(requestLineRevisions).values({
+        tenantId,
+        requestId: revision.requestId,
+        requestLineId: revision.requestLineId,
+        revision: revision.revision,
+        snapshot: revision.snapshot,
+        changedBy: revision.changedBy,
+        reason: revision.reason,
+      });
+    },
+
+    async flagReconfirmation(tenantId, lineId) {
+      await db
+        .update(requestLines)
+        .set({ needsReconfirmation: true })
+        .where(and(eq(requestLines.tenantId, tenantId), eq(requestLines.id, lineId)));
+    },
+
+    async clearReconfirmation(tenantId, requestId) {
+      await db
+        .update(requestLines)
+        .set({ needsReconfirmation: false })
+        .where(
+          and(
+            eq(requestLines.tenantId, tenantId),
+            eq(requestLines.requestId, requestId),
+            eq(requestLines.needsReconfirmation, true),
+          ),
+        );
     },
 
     async updateHeader(tenantId, id, expectedVersion, patch: HeaderPatch) {

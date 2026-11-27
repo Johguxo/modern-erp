@@ -31,6 +31,8 @@ export async function cancelRequest(
   const status = assertCanCancel(request, ctx);
   assertVersion(request.version, input.version);
 
+  // Anulado, ya nadie debe reconfirmar nada (E4-H4): no quedan marcas huérfanas.
+  await deps.requests.clearReconfirmation(ctx.tenantId, request.id);
   const cancelled = await deps.requests.updateHeader(ctx.tenantId, request.id, request.version, {
     status,
     closedAt: deps.clock.now(),
@@ -50,5 +52,8 @@ export async function cancelRequest(
     },
     deps,
   );
-  return toRequestView(cancelled, lines);
+  return toRequestView(
+    cancelled,
+    lines.map((line) => ({ ...line, needsReconfirmation: false })),
+  );
 }

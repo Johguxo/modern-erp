@@ -150,6 +150,24 @@ function memoryRequests(): RequestRepository & { store: Map<string, RequestWithL
       store.set(requestId, { request: found.request, lines: next });
       return Promise.resolve(next);
     },
+    updateLine: () => Promise.reject(new Error('not used')),
+    insertLine: () => Promise.reject(new Error('not used')),
+    appendRevision: () => Promise.reject(new Error('not used')),
+    flagReconfirmation: () => Promise.resolve(),
+    clearReconfirmation: () => Promise.resolve(),
+    syncLines(_tenantId, requestId, plan) {
+      const found = store.get(requestId);
+      if (!found) throw new Error('missing');
+      const next = found.lines.map((line): RequestLine => {
+        const update = plan.updates.find((u) => u.id === line.id);
+        if (update) return { ...toLine(update.line, 0), id: line.id, revision: line.revision };
+        return plan.removed.includes(line.id) ? { ...line, status: 'removed' } : line;
+      });
+      next.push(...plan.inserts.map(toLine));
+      next.sort((a, b) => a.lineNo - b.lineNo);
+      store.set(requestId, { request: found.request, lines: next });
+      return Promise.resolve(next);
+    },
     updateHeader(_tenantId, id, expectedVersion, patch) {
       const found = store.get(id);
       if (found?.request.version !== expectedVersion) {
@@ -387,6 +405,44 @@ describe('updateDraft', () => {
     await expect(
       updateDraft(OTHER, { ...DRAFT, id: draft.id, version: 1 }, s.deps),
     ).rejects.toThrow(NotFoundError);
+  });
+
+  it('en changes_requested edita en sitio: actualiza, agrega y marca quitadas (sin borrar)', async () => {
+    const s = setup();
+    const draft = await createDraft(ME, DRAFT, s.deps);
+    const sent = await submitRequest(ME, { id: draft.id, version: draft.version }, s.deps);
+    const stored = s.requests.store.get(sent.id);
+    if (!stored) throw new Error('missing');
+    s.requests.store.set(sent.id, {
+      ...stored,
+      request: { ...stored.request, status: 'changes_requested' },
+    });
+    const [first] = sent.lines;
+
+    const updated = await updateDraft(
+      ME,
+      {
+        id: sent.id,
+        version: sent.version,
+        costCenterId: CC,
+        equipmentId: null,
+        reason: 'Corregido',
+        lines: [
+          { productId: P1, quantity: '4', equipmentId: EQ, notes: null },
+          { productId: P_NO_PRICE, quantity: '1', equipmentId: null, notes: null },
+        ],
+      },
+      s.deps,
+    );
+
+    expect(updated.lines.map((l) => [l.lineNo, l.productId, l.status])).toEqual([
+      [1, P1, 'active'],
+      [2, P2, 'removed'],
+      [3, P_NO_PRICE, 'active'],
+    ]);
+    expect(updated.lines[0]).toMatchObject({ id: first?.id, quantity: '4.000', subtotal: '50.00' });
+    expect(updated.totalAmount).toBe('50.00');
+    expect(s.audit.at(-1)).toMatchObject({ action: 'request.updated', data: { lineCount: 2 } });
   });
 
   it('un SOF enviado ya no se edita (InvalidTransitionError)', async () => {

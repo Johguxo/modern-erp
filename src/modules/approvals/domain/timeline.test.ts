@@ -130,6 +130,7 @@ describe('buildApprovalTimeline', () => {
       events: [
         event('e1', 'step_pending', 0),
         event('e2', 'line_corrected', 1),
+        event('e2b', 'reconfirmation_requested', 1),
         event('e3', 'approved', 2),
       ],
       openSteps: [],

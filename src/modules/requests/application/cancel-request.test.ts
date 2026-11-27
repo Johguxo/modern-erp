@@ -62,7 +62,12 @@ function setup(initial: Request, options: { assigned?: boolean; failCanceller?: 
   const updates: unknown[] = [];
   const audit: Parameters<AuditLog['record']>[0][] = [];
   const cancelled: { requestId: string; comment: string }[] = [];
+  const cleared: string[] = [];
   const requests = {
+    clearReconfirmation: (_t: string, id: string) => {
+      cleared.push(id);
+      return Promise.resolve();
+    },
     lockById: (tenantId: string, id: string) =>
       Promise.resolve(
         current.tenantId === tenantId && current.id === id ? { request: current, lines: [] } : null,
@@ -98,7 +103,7 @@ function setup(initial: Request, options: { assigned?: boolean; failCanceller?: 
     client: UNKNOWN_CLIENT,
     clock: new FixedClock(NOW),
   };
-  return { deps, updates, audit, cancelled, current: () => current };
+  return { deps, updates, audit, cancelled, cleared, current: () => current };
 }
 
 const input = (overrides: Partial<{ version: number; comment: string }> = {}) => ({
@@ -124,6 +129,8 @@ describe('cancelRequest', () => {
         version: 5,
       });
       expect(s.cancelled).toEqual([{ requestId: REQ, comment: 'Duplicada' }]);
+      // Anular deja las líneas sin marca de reconfirmación (E4-H4).
+      expect(s.cleared).toEqual([REQ]);
       expect(s.audit).toEqual([
         expect.objectContaining({
           action: 'request.cancelled',

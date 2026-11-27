@@ -19,6 +19,15 @@ export const QUANTITY_PATTERN = /^\d{1,11}(\.\d{1,3})?$/;
 /** numeric(14,2): el mayor monto que guarda la base. */
 export const MAX_AMOUNT = new Dec('999999999999.99');
 
+/** numeric(14,4): hasta 10 enteros y 4 decimales, sin signo ni notación científica. */
+export const UNIT_PRICE_PATTERN = /^\d{1,10}(\.\d{1,4})?$/;
+
+/** Precio unitario válido (cero o más, hasta 4 decimales) o null. */
+export function parseUnitPrice(raw: string): Decimal | null {
+  const text = raw.trim();
+  return UNIT_PRICE_PATTERN.test(text) ? new Dec(text) : null;
+}
+
 /** Cantidad válida y mayor que cero, o null. */
 export function parseQuantity(raw: string): Decimal | null {
   const text = raw.trim();

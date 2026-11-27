@@ -23,5 +23,9 @@ export async function getEditableDraft(
   ) {
     throw new NotFoundError({ message: 'Draft not found' });
   }
-  return toRequestView(found.request, found.lines);
+  // Las líneas quitadas en una edición anterior (E4-H4) no se vuelven a ofrecer en el editor.
+  return toRequestView(
+    found.request,
+    found.lines.filter((line) => line.status === 'active'),
+  );
 }

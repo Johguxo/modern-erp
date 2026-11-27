@@ -24,12 +24,18 @@ interface StoredInstance {
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 type StoredAssignee = Mutable<AssigneeRecord>;
-type StoredStep = Mutable<Omit<StepWithRequest, 'assignees'>> & { assignees: StoredAssignee[] };
+type StoredStep = Mutable<Omit<StepWithRequest, 'assignees'>> & {
+  assignees: StoredAssignee[];
+  kind: 'normal' | 'reconfirmation';
+  lineIds: readonly string[] | null;
+};
 
 export class InMemoryApprovals implements ApprovalInstanceRepository, ApprovalEventLog {
   readonly instances: StoredInstance[] = [];
   readonly steps: StoredStep[] = [];
   readonly events: NewApprovalEvent[] = [];
+  /** `approval_policies.settings` que devuelve `settingsOf`. */
+  settings: unknown = {};
   private seq = 0;
 
   private nextId(prefix: string): string {
@@ -76,6 +82,8 @@ export class InMemoryApprovals implements ApprovalInstanceRepository, ApprovalEv
         name: step.name,
         rule: step.rule,
         status: step.status,
+        kind: step.kind ?? 'normal',
+        lineIds: step.lineIds ?? null,
         assignees: step.assigneeIds.map((userId) => ({
           id: this.nextId('asg'),
           userId,
@@ -137,6 +145,17 @@ export class InMemoryApprovals implements ApprovalInstanceRepository, ApprovalEv
     );
     for (const step of open) step.status = 'cancelled';
     return Promise.resolve(open.length);
+  }
+
+  reopenInstance(_tenantId: string, instanceId: string): Promise<boolean> {
+    const instance = this.instances.find((i) => i.id === instanceId);
+    if (!instance || instance.status !== 'approved') return Promise.resolve(false);
+    instance.status = 'in_progress';
+    return Promise.resolve(true);
+  }
+
+  settingsOf(): Promise<unknown> {
+    return Promise.resolve(this.settings);
   }
 
   closeInstance(

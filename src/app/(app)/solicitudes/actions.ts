@@ -9,6 +9,7 @@ import { createCatalogDeps, searchProducts } from '@/modules/catalog';
 import { searchProductsContract } from '@/modules/catalog/contracts';
 import {
   cancelRequest,
+  correctLine,
   createDraft,
   createRequestsDeps,
   decideRequest,
@@ -17,6 +18,7 @@ import {
 } from '@/modules/requests';
 import {
   cancelRequestContract,
+  correctLineContract,
   createDraftContract,
   decideRequestContract,
   submitRequestContract,
@@ -72,10 +74,23 @@ export const decideRequestAction = action(
   { name: 'requests.decideRequest' },
 );
 
-// El buscador solo lee: sigue disponible en solo lectura (ADR-006).
+// Corregir una línea sin reiniciar la aprobación (E4-H4): el permiso `requests.correct_line` lo revisan
+// la acción y el caso de uso, que además revisa versión, estado y visibilidad. Escribe: no corre en
+// solo lectura.
+export const correctLineAction = action(
+  correctLineContract,
+  'requests.correct_line',
+  ({ ctx, input, tx, shared }) =>
+    correctLine(ctx, input, createRequestsDeps(tx, requestsExtras(shared, tx))),
+  { name: 'requests.correctLine' },
+);
+
+// El buscador solo lee: sigue disponible en solo lectura (ADR-006). Lo usan quien crea SOF y quien
+// corrige líneas (E4-H4): la acción solo exige sesión y el caso de uso revisa que tenga
+// `catalog.manage`, `requests.create` o `requests.correct_line`.
 export const searchCatalogAction = action(
   searchProductsContract,
-  'requests.create',
+  null,
   ({ ctx, input, tx, shared }) =>
     searchProducts(ctx, input, createCatalogDeps(tx, catalogExtras(shared))),
   { name: 'catalog.searchProducts', access: 'read' },

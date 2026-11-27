@@ -5,6 +5,7 @@ export * as updateDraftContract from './update-draft';
 export * as submitRequestContract from './submit-request';
 export * as cancelRequestContract from './cancel-request';
 export * as decideRequestContract from './decide-request';
+export * as correctLineContract from './correct-line';
 export * as getRequestContract from './get-request';
 export * as getRequestDetailContract from './get-request-detail';
 export * as listRequestsContract from './list-requests';
@@ -28,6 +29,7 @@ export {
   type InboxTab,
 } from '../domain/inbox';
 export { CANCEL_COMMENT_MAX, MAX_LINES } from '../domain/request';
+export { CORRECTION_REASON_MAX } from '../domain/line-correction';
 export {
   DECISION_COMMENT_MAX,
   DECISION_KINDS,

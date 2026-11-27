@@ -177,6 +177,18 @@ describe('decideRequest', () => {
     });
   });
 
+  it.each([
+    ['rejected', 'reject', 'No corresponde'],
+    ['changes_requested', 'request_changes', 'Falta el equipo'],
+  ] as const)(
+    'si la decisión termina en %s, limpia las marcas de reconfirmación',
+    async (outcome, decision, comment) => {
+      const s = setup(request('in_approval'), { outcome });
+      await decideRequest(APPROVER, input({ decision, comment }), s.deps);
+      expect(s.cleared).toEqual([REQ]);
+    },
+  );
+
   it('pedir cambios deja changes_requested y exige comentario', async () => {
     const s = setup(request('in_approval'), { outcome: 'changes_requested' });
     await expect(

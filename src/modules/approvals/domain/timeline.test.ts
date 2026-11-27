@@ -129,13 +129,45 @@ describe('buildApprovalTimeline', () => {
       instanceStatus: 'approved',
       events: [
         event('e1', 'step_pending', 0),
-        event('e2', 'line_corrected', 1),
-        event('e2b', 'reconfirmation_requested', 1),
+        event('e2', 'something_new', 1),
         event('e3', 'approved', 2),
       ],
       openSteps: [],
     });
     expect(shape(entries)).toEqual(['approved']);
+  });
+
+  it('dibuja las correcciones de línea con su data y el motivo; los demás eventos no la llevan', () => {
+    const entries = buildApprovalTimeline({
+      instanceStatus: 'in_progress',
+      events: [
+        event('e1', 'submitted', 0, { data: { round: 1 } }),
+        event('e2', 'line_corrected', 1, {
+          actorUserId: ANA,
+          comment: 'Equipo equivocado',
+          data: { lineNo: 3, reconfirmation: true },
+        }),
+        event('e3', 'reconfirmation_requested', 1, {
+          actorUserId: ANA,
+          stepName: 'Reconfirmación',
+          stepRule: 'any',
+          data: { lineNos: [3] },
+        }),
+      ],
+      openSteps: [],
+    });
+    expect(shape(entries)).toEqual([
+      'submitted',
+      'line_corrected',
+      'reconfirmation_requested:Reconfirmación',
+    ]);
+    expect(entries[0]?.data).toBeNull();
+    expect(entries[1]).toMatchObject({
+      actorId: ANA,
+      comment: 'Equipo equivocado',
+      data: { lineNo: 3, reconfirmation: true },
+    });
+    expect(entries[2]?.data).toEqual({ lineNos: [3] });
   });
 
   it('el paso pendiente sin asignados con usuario queda con la lista vacía', () => {

@@ -19,6 +19,28 @@ export const detailLineSchema = z.object({
   /** Texto con 2 decimales. */
   subtotal: z.string(),
   equipmentLabel: z.string().nullable(),
+  productId: z.uuid(),
+  equipmentId: z.uuid().nullable(),
+  notes: z.string().nullable(),
+  /** Texto con 4 decimales. */
+  unitPrice: z.string(),
+  revision: z.number().int(),
+  needsReconfirmation: z.boolean(),
+  highlighted: z.boolean(),
+});
+
+export const correctionNoticeSchema = z.object({
+  lineNo: z.number().int(),
+  actorName: z.string().nullable(),
+  changeType: z.enum(['update', 'add', 'remove']),
+  changes: z.array(
+    z.object({
+      field: z.enum(['productId', 'equipmentId', 'quantity', 'unitPrice', 'notes']),
+      from: z.string().nullable(),
+      to: z.string().nullable(),
+    }),
+  ),
+  reconfirmation: z.boolean(),
 });
 
 export const timelineItemSchema = z.object({
@@ -31,6 +53,7 @@ export const timelineItemSchema = z.object({
   rule: z.enum(['any', 'all']).nullable(),
   assigneeNames: z.array(z.string()),
   assigneeCount: z.number().int().nonnegative(),
+  lineNos: z.array(z.number().int()),
 });
 
 export const outputSchema = z.object({
@@ -53,5 +76,6 @@ export const outputSchema = z.object({
   pendingStepId: z.uuid().nullable(),
   lines: z.array(detailLineSchema),
   timeline: z.array(timelineItemSchema),
+  correctionNotice: correctionNoticeSchema.nullable(),
   actions: z.array(z.enum(REQUEST_ACTIONS)),
 });

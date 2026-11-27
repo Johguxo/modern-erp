@@ -44,7 +44,7 @@ const plain = (fields: {
   at: Date | null;
   actorId: string | null;
   comment: string | null;
-}) => ({ ...fields, stepName: null, rule: null, assigneeIds: [] });
+}) => ({ ...fields, stepName: null, rule: null, assigneeIds: [], data: null });
 
 const shape = (items: ReturnType<typeof deriveTimeline>) =>
   items.map((entry) => `${entry.kind}:${entry.state}`);
@@ -184,6 +184,7 @@ describe('buildTimeline', () => {
     stepName: null,
     rule: null,
     assigneeIds: [],
+    data: null,
     ...overrides,
   });
   const base = (status: RequestStatus) => ({
@@ -284,5 +285,23 @@ describe('buildTimeline', () => {
     expect(
       shape(buildTimeline(base('cancelled'), [entry('submitted'), entry('cancelled')])),
     ).toEqual(['created:done', 'submitted:done', 'cancelled:stopped']);
+  });
+
+  it('las correcciones de línea y la reconfirmación son hechos, en su sitio', () => {
+    const items = buildTimeline(base('in_approval'), [
+      entry('submitted'),
+      entry('line_corrected', { actorId: ADMIN, comment: 'Más material', data: { lineNo: 3 } }),
+      entry('reconfirmation_requested', { actorId: ADMIN, data: { lineNos: [3] } }),
+      entry('step_pending', { stepName: 'Reconfirmación', rule: 'any' }),
+    ]);
+    expect(shape(items)).toEqual([
+      'created:done',
+      'submitted:done',
+      'line_corrected:done',
+      'reconfirmation_requested:done',
+      'approval:pending',
+      'delivery:upcoming',
+    ]);
+    expect(items[2]).toMatchObject({ comment: 'Más material', data: { lineNo: 3 } });
   });
 });

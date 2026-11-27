@@ -673,6 +673,8 @@ export const messages = {
           step_approved: 'Paso aprobado',
           step_signed: 'Aprobación parcial',
           changes_requested: 'Se pidieron cambios',
+          line_corrected: 'Línea corregida',
+          reconfirmation_requested: 'Reconfirmación pedida',
           approval: 'Aprobación',
           approved: 'Aprobada',
           delivery: 'Entrega en almacén',
@@ -683,6 +685,13 @@ export const messages = {
         approvedBy: (stepName: string) => `Aprobado por ${stepName}`,
         /** Firma parcial de un paso que exige a todos: «Aprobación parcial · Almacén». */
         signedBy: (stepName: string) => `Aprobación parcial · ${stepName}`,
+        /** «Línea 3 corregida» (E4-H4). */
+        lineCorrected: (lineNo: number) => `Línea ${lineNo} corregida`,
+        /** «Reconfirmación pedida · línea 3» o «· líneas 2 y 3». */
+        reconfirmationRequested: (count: number, list: string) =>
+          `Reconfirmación pedida · ${count === 1 ? 'línea' : 'líneas'} ${list}`,
+        /** Etiqueta (solo lectores de pantalla) del texto bajo el hito; la corrección guarda su motivo. */
+        reasonLabel: 'Motivo',
         hints: {
           approvalPending: 'Esperando la decisión de los aprobadores.',
           approvalUpcoming: 'Empieza cuando se envía a aprobación.',

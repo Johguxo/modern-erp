@@ -16,6 +16,8 @@ export const TIMELINE_ENTRY_KINDS = [
   'changes_requested',
   'approved',
   'cancelled',
+  'line_corrected',
+  'reconfirmation_requested',
   'step_pending',
   'step_waiting',
 ] as const;
@@ -32,6 +34,11 @@ export interface ApprovalTimelineEntry {
   readonly rule: StepRule | null;
   /** Solo en `step_pending`: los asignados con usuario que aún no deciden. */
   readonly assigneeIds: readonly string[];
+  /**
+   * `data` del evento, solo en `line_corrected` y `reconfirmation_requested` (E4-H4): requests lo
+   * valida y lo lee. En los demás, null.
+   */
+  readonly data: Readonly<Record<string, unknown>> | null;
 }
 
 /** Un `approval_events` con el nombre y la regla de su paso (left join). */
@@ -48,6 +55,8 @@ export interface TimelineEventRow {
    * evento no lo trae (datos viejos o eventos de otro tipo), que se trata como cerrado.
    */
   readonly stepClosed: boolean | null;
+  /** `data` del evento tal como se guardó; opcional en los eventos que no lo necesitan. */
+  readonly data?: Readonly<Record<string, unknown>> | null;
 }
 
 /** Un paso `pending` o `waiting` de la ronda vigente. */
@@ -76,7 +85,12 @@ const DRAWN: ReadonlySet<string> = new Set<TimelineEntryKind>([
   'changes_requested',
   'approved',
   'cancelled',
+  'line_corrected',
+  'reconfirmation_requested',
 ]);
+
+/** Eventos cuyo `data` se entrega a requests (qué línea, antes y después). */
+const WITH_DATA: ReadonlySet<string> = new Set(['line_corrected', 'reconfirmation_requested']);
 
 const isDrawn = (type: string): type is TimelineEntryKind => DRAWN.has(type);
 
@@ -102,6 +116,7 @@ export function buildApprovalTimeline(source: ApprovalTimelineSource): ApprovalT
       stepName: event.stepName,
       rule: event.stepRule,
       assigneeIds: [],
+      data: WITH_DATA.has(event.type) ? (event.data ?? null) : null,
     });
   }
   if (source.instanceStatus !== 'in_progress') return entries;
@@ -116,6 +131,7 @@ export function buildApprovalTimeline(source: ApprovalTimelineSource): ApprovalT
       stepName: step.name,
       rule: step.rule,
       assigneeIds: step.status === 'pending' ? step.assigneeIds : [],
+      data: null,
     });
   }
   return entries;

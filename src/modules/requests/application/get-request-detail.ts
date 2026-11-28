@@ -7,6 +7,8 @@ import { displayStatus } from '../domain/inbox';
 import { availableActions } from '../domain/request-actions';
 import { buildTimeline, deriveTimeline } from '../domain/request-timeline';
 
+import { buildCorrectionNotice } from './correction-notice';
+import { lastCorrectionOfRound, parseLineCorrected } from './correction-data';
 import type { GetRequestDetailDeps } from './ports';
 import { findVisibleRequest } from './request-access';
 import { toTimelineItems, type RequestDetail } from './views';
@@ -35,6 +37,12 @@ export async function getRequestDetail(
   // legado, la línea sale de las fechas del documento.
   const entries = request.number === null ? null : await deps.timeline.getTimeline(ctx, request.id);
   const timeline = entries ? buildTimeline(request, entries) : deriveTimeline(request);
+
+  // El aviso solo existe mientras la corrección sigue vigente (en aprobación, aprobado o entregado).
+  const correction = ['in_approval', 'approved', 'delivered'].includes(request.status)
+    ? lastCorrectionOfRound(timeline)
+    : null;
+  const correctionData = correction ? parseLineCorrected(correction.data) : null;
   const [names, areas] = await Promise.all([
     deps.labels.userNames(
       ctx,
@@ -44,12 +52,30 @@ export async function getRequestDetail(
       ]),
     ),
     deps.labels.areaLabels(ctx, {
-      equipmentIds: nonNull([request.equipmentId, ...activeLines.map((line) => line.equipmentId)]),
+      equipmentIds: nonNull([
+        request.equipmentId,
+        ...activeLines.map((line) => line.equipmentId),
+        correctionData?.before?.equipmentId ?? null,
+        correctionData?.after?.equipmentId ?? null,
+      ]),
       costCenterIds: nonNull([request.costCenterId]),
     }),
   ]);
   const equipmentOf = (id: string | null): string | null =>
     id ? (areas.equipment.get(id) ?? null) : null;
+  const correctionNotice =
+    correction && correctionData
+      ? buildCorrectionNotice(
+          correctionData,
+          {
+            id: correction.actorId,
+            name: correction.actorId ? (names.get(correction.actorId) ?? null) : null,
+          },
+          areas.equipmentCodes,
+        )
+      : null;
+  // Una marca vieja no resalta fuera de la aprobación (la firma ya cubre esa línea).
+  const highlightable = request.status === 'in_approval';
 
   return {
     id: request.id,
@@ -80,8 +106,17 @@ export async function getRequestDetail(
         quantity: line.quantity,
         subtotal: line.subtotal,
         equipmentLabel: equipmentOf(line.equipmentId),
+        productId: line.productId,
+        equipmentId: line.equipmentId,
+        notes: line.notes,
+        unitPrice: line.unitPrice,
+        revision: line.revision,
+        needsReconfirmation: line.needsReconfirmation,
+        highlighted:
+          highlightable && (line.needsReconfirmation || line.lineNo === correctionNotice?.lineNo),
       })),
     timeline: toTimelineItems(timeline, names),
+    correctionNotice,
     actions: availableActions(request, ctx, { pendingForMe }),
   };
 }

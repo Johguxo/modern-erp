@@ -9,6 +9,7 @@ import { withTenant } from '@/db/with-tenant';
 import { createApprovalEngine } from '@/modules/approvals';
 import {
   cancelRequest,
+  correctLine,
   createDraft,
   createGetRequestDetailDeps,
   getRequestDetail,
@@ -30,15 +31,18 @@ import {
 } from '../helpers/approvals-fixtures';
 import { createIdentityFixtures } from '../helpers/identity-fixtures';
 import {
+  addMember,
   DEFAULT_RUN_AT,
   draftInput,
   insertRequest,
   runRequests,
+  type Member,
 } from '../helpers/requests-fixtures';
 
 const fx = createIdentityFixtures();
 let W: ApprovalWorld;
 let B: ApprovalWorld;
+let carla: Member;
 
 const STANDARD_STEPS = [
   { name: 'Almacén', role: 'warehouse' as const },
@@ -48,6 +52,10 @@ const STANDARD_STEPS = [
 beforeAll(async () => {
   W = await seedApprovalWorld(fx);
   B = await seedApprovalWorld(fx);
+  carla = await addMember(fx, W.world, {
+    fullName: 'Carla Corrección',
+    permissions: ['requests.correct_line', 'requests.read_all'],
+  });
 });
 
 afterAll(async () => {
@@ -238,6 +246,61 @@ describe('línea de tiempo con instancia', () => {
       'Ronda 2: no corresponde',
     ]);
     expect(detail.timeline.at(-1)?.actorName).toBe('Ana Almacén');
+  });
+
+  it('una corrección que pide reconfirmación deja «línea corregida» y «reconfirmación pedida» con sus datos', async () => {
+    await setPolicySteps(W.world.tenantId, STANDARD_STEPS);
+    const sent = await sendRequest(W.world);
+    const afterAna = await decideAs(W.ana, decision(sent, await stepIdOf(sent.id, 1), 'approve'));
+    const approved = await decideAs(
+      W.luis,
+      decision(afterAna, await stepIdOf(sent.id, 2), 'approve'),
+    );
+    const line = approved.lines[0];
+    if (!line) throw new Error('sin líneas');
+    const corrected = await runRequests(carla.ctx, (deps) =>
+      correctLine(
+        carla.ctx,
+        {
+          id: approved.id,
+          version: approved.version,
+          reason: 'Cantidad mal pedida',
+          change: {
+            type: 'update',
+            lineId: line.id,
+            productId: line.productId,
+            quantity: '9.000',
+            unitPrice: line.unitPrice,
+            equipmentId: line.equipmentId,
+            notes: line.notes,
+          },
+        },
+        deps,
+      ),
+    );
+    expect(corrected.reconfirmation).toBe(true);
+
+    const entries = await withTenant(W.world.ctx, (tx) =>
+      createApprovalEngine(tx, { clock: systemClock, logger: getLogger() }).timeline.getTimeline(
+        W.world.ctx,
+        sent.id,
+      ),
+    );
+    const byKind = (kind: string) => entries?.find((entry) => entry.kind === kind);
+    expect(byKind('line_corrected')?.data).toMatchObject({
+      lineNo: line.lineNo,
+      changeType: 'update',
+    });
+    expect(byKind('reconfirmation_requested')?.data).toMatchObject({ lineNos: [line.lineNo] });
+
+    const detail = await detailOf(W.world.ctx, sent.id);
+    expect(detail.timeline.find((item) => item.kind === 'line_corrected')).toMatchObject({
+      lineNos: [line.lineNo],
+      changeType: 'update',
+    });
+    expect(detail.timeline.find((item) => item.kind === 'reconfirmation_requested')).toMatchObject({
+      lineNos: [line.lineNo],
+    });
   });
 
   it('anular con cambios pedidos: la línea termina en «anulada», sin aprobación ni entrega', async () => {

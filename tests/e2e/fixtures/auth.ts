@@ -82,6 +82,8 @@ export interface Accounts {
   trackTenantSlug(slug: string): void;
   /** E2-H2: producto activo (unidad UND, sin precio) en un tenant ya creado. */
   addProduct(tenantId: string, code: string, name: string): Promise<void>;
+  /** E4-H4: equipo activo con el código y nombre que se indiquen, en un tenant ya creado. */
+  addEquipment(tenantId: string, code: string, name: string): Promise<void>;
   /**
    * E3-H2: catálogo para crear SOF en un tenant ya creado (moneda PEN): almacén PRINCIPAL;
    * productos FIL-1 (12.5000), PER-2 (3.3333) y SIN-3 (sin precio); equipos EQ-1 y EQ-2; y el
@@ -228,6 +230,12 @@ export function createAccounts(): Accounts {
       await sql`
         insert into products (tenant_id, code, name, unit)
         values (${tenantId}, ${code}, ${name}, 'UND')`;
+    },
+
+    async addEquipment(tenantId, code, name) {
+      await sql`
+        insert into equipment (tenant_id, code, name)
+        values (${tenantId}, ${code}, ${name})`;
     },
 
     async addRequestCatalog(tenantId) {

@@ -34,7 +34,7 @@ export interface EditorData {
 
 const ACTIVE_FIRST_PAGE = { q: null, status: 'active', page: 1, pageSize: 100 } as const;
 
-const toOption = (item: CostCenterView | EquipmentView): SelectOption => ({
+export const toOption = (item: CostCenterView | EquipmentView): SelectOption => ({
   id: item.id,
   label: `${item.code} · ${item.name}`,
 });

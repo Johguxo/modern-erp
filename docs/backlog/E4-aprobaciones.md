@@ -53,12 +53,12 @@ Estado: en revisión · Issue: [#23](https://github.com/Johguxo/modern-erp/issue
 **Como** almacén **quiero** corregir una línea mal registrada **para** no obligar a todos a firmar de nuevo.
 
 **Criterios de aceptación**
-- [ ] Diálogo "Corregir una línea" (permiso `requests.correct_line`) en estados `in_approval` y `approved`: equipo, producto, cantidad, precio, notas, motivo obligatorio; también agregar o quitar una línea.
-- [ ] Guarda la revisión anterior en `request_line_revisions` e incrementa `revision`.
-- [ ] Aplica la regla de reaprobación del §4 con `reapproval_tolerance_pct`: si el total no sube por encima de la tolerancia, las firmas se mantienen; si sube, crea un paso `reconfirmation` solo para las líneas cambiadas y, si estaba `approved`, vuelve a `in_approval`.
-- [ ] Aviso naranja y línea resaltada en la pantalla 3 (texto del prototipo).
-- [ ] Evento `line_corrected` con antes/después; aviso informativo a quienes ya aprobaron.
-- [ ] Pruebas unitarias de las tres ramas de la regla y una E2E del caso del prototipo (cambiar `GEN-046` por `GEN-045`).
+- [x] Diálogo "Corregir una línea" (permiso `requests.correct_line`) en estados `in_approval` y `approved`: equipo, producto, cantidad, precio, notas, motivo obligatorio; también agregar o quitar una línea.
+- [x] Guarda la revisión anterior en `request_line_revisions` e incrementa `revision`.
+- [x] Aplica la regla de reaprobación del §4 con `reapproval_tolerance_pct`: si el total no sube por encima de la tolerancia, las firmas se mantienen; si sube, crea un paso `reconfirmation` solo para las líneas cambiadas y, si estaba `approved`, vuelve a `in_approval`.
+- [x] Aviso naranja y línea resaltada en la pantalla 3 (texto del prototipo).
+- [x] Evento `line_corrected` con antes/después; aviso informativo a quienes ya aprobaron.
+- [x] Pruebas unitarias de las tres ramas de la regla y una E2E del caso del prototipo (cambiar `GEN-046` por `GEN-045`).
 
 > Nota (E3-H4): `correct_line` ya se muestra (deshabilitada) a quien tiene `requests.correct_line` en `in_approval`/`approved`. El resaltado y el aviso de línea corregida usan `revision`/`needsReconfirmation`, que ya vienen en la vista; la columna # muestra `lineNo`.
 
@@ -66,4 +66,4 @@ Estado: en revisión · Issue: [#23](https://github.com/Johguxo/modern-erp/issue
 
 > Nota (E4-H3): la línea de tiempo sale de `buildApprovalTimeline` (approvals) y `buildTimeline` (requests). Para `line_corrected` y `reconfirmation_requested`, agregar el tipo en ambos y su texto en `timeline-text.ts`; hoy se ignoran. Los pasos `kind = 'reconfirmation'` ya salen como pendientes con su nombre.
 
-Estado: en curso (A backend en revisión; B UI pendiente) · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)
+Estado: en revisión · Issue: [#24](https://github.com/Johguxo/modern-erp/issues/24)

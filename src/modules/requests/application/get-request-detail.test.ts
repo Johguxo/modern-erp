@@ -122,6 +122,10 @@ function setup(
             [EQ_HEAD, 'GEN-045 · Motor principal'],
             [EQ_LINE, 'GEN-046 · Motor auxiliar'],
           ]),
+          equipmentCodes: new Map([
+            [EQ_HEAD, 'GEN-045'],
+            [EQ_LINE, 'GEN-046'],
+          ]),
           costCenters: new Map([[CC, 'Mantenimiento']]),
         });
       },
@@ -185,6 +189,7 @@ describe('getRequestDetail', () => {
       stepName: null,
       rule: null,
       assigneeIds: [],
+      data: null,
       ...overrides,
     });
     const { deps, calls } = setup(request(), [line(1)], {
@@ -224,6 +229,146 @@ describe('getRequestDetail', () => {
     expect(calls.userNames).toHaveLength(1);
     expect(calls.userNames[0]).toEqual(expect.arrayContaining([ANA, OWNER, APPROVER]));
     expect(() => getRequestDetailContract.outputSchema.parse(detail)).not.toThrow();
+  });
+
+  describe('aviso de corrección (E4-H4)', () => {
+    const entry = (
+      overrides: Partial<ApprovalTimelineEntry> & Pick<ApprovalTimelineEntry, 'kind'>,
+    ): ApprovalTimelineEntry => ({
+      at: T,
+      actorId: OWNER,
+      comment: null,
+      stepName: null,
+      rule: null,
+      assigneeIds: [],
+      data: null,
+      ...overrides,
+    });
+    const corrected = (lineNo: number, overrides: Record<string, unknown> = {}) =>
+      entry({
+        kind: 'line_corrected',
+        comment: 'Equipo equivocado',
+        data: {
+          lineNo,
+          changeType: 'update',
+          changedFields: ['equipmentId'],
+          before: { equipmentId: EQ_LINE },
+          after: { equipmentId: EQ_HEAD },
+          reconfirmation: false,
+          ...overrides,
+        },
+      });
+    const lines = () => [line(1), line(2), line(3, { needsReconfirmation: true })];
+
+    it('describe el último cambio, con códigos de equipo, y resalta esa línea', async () => {
+      const { deps, areaIds } = setup(request(), lines(), {
+        entries: [entry({ kind: 'submitted' }), corrected(2)],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+      expect(detail.correctionNotice).toEqual({
+        lineNo: 2,
+        actorId: OWNER,
+        actorName: 'Ruby Pérez',
+        changeType: 'update',
+        changes: [{ field: 'equipmentId', from: 'GEN-046', to: 'GEN-045' }],
+        reconfirmation: false,
+      });
+      expect(areaIds[0]?.equipmentIds).toEqual(expect.arrayContaining([EQ_LINE, EQ_HEAD]));
+      // La 2 por el aviso y la 3 porque espera reconfirmación.
+      expect(detail.lines.map((l) => l.highlighted)).toEqual([false, true, true]);
+      expect(detail.timeline.find((i) => i.kind === 'line_corrected')).toMatchObject({
+        lineNos: [2],
+        comment: 'Equipo equivocado',
+      });
+      expect(() => getRequestDetailContract.outputSchema.parse(detail)).not.toThrow();
+    });
+
+    it('solo vale la última corrección de la ronda vigente', async () => {
+      const { deps } = setup(request(), lines(), {
+        entries: [
+          entry({ kind: 'submitted' }),
+          corrected(1),
+          entry({ kind: 'changes_requested' }),
+          entry({ kind: 'resubmitted' }),
+        ],
+      });
+      expect((await getRequestDetail(requesterCtx, { id: REQ }, deps)).correctionNotice).toBeNull();
+
+      const second = setup(request(), lines(), {
+        entries: [entry({ kind: 'submitted' }), corrected(1), corrected(2)],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, second.deps);
+      expect(detail.correctionNotice?.lineNo).toBe(2);
+    });
+
+    it('aprobada: el aviso sigue, pero nada se resalta (una marca vieja no cuenta)', async () => {
+      const { deps } = setup(request({ status: 'approved' }), lines(), {
+        entries: [entry({ kind: 'submitted' }), corrected(2), entry({ kind: 'approved' })],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+      expect(detail.correctionNotice?.lineNo).toBe(2);
+      expect(detail.lines.every((l) => !l.highlighted)).toBe(true);
+    });
+
+    it('sin aviso en cambios solicitados, y los datos raros se ignoran', async () => {
+      const stopped = setup(request({ status: 'changes_requested' }), lines(), {
+        entries: [entry({ kind: 'submitted' }), corrected(2), entry({ kind: 'changes_requested' })],
+      });
+      const first = await getRequestDetail(requesterCtx, { id: REQ }, stopped.deps);
+      expect(first.correctionNotice).toBeNull();
+      expect(first.lines.every((l) => !l.highlighted)).toBe(true);
+
+      const odd = setup(request(), lines(), {
+        entries: [
+          entry({ kind: 'submitted' }),
+          entry({ kind: 'line_corrected', data: { lineNo: 'dos' } }),
+        ],
+      });
+      expect(
+        (await getRequestDetail(requesterCtx, { id: REQ }, odd.deps)).correctionNotice,
+      ).toBeNull();
+    });
+
+    it('una cantidad que no es decimal ignora el aviso sin romper el detalle', async () => {
+      const { deps } = setup(request(), lines(), {
+        entries: [
+          entry({ kind: 'submitted' }),
+          corrected(2, {
+            changedFields: ['quantity'],
+            before: { quantity: 'dos' },
+            after: { quantity: '3.000' },
+          }),
+        ],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+      expect(detail.correctionNotice).toBeNull();
+    });
+
+    it('agregar y quitar no listan campos; la reconfirmación va en el aviso', async () => {
+      const { deps } = setup(request(), lines(), {
+        entries: [
+          entry({ kind: 'submitted' }),
+          corrected(3, {
+            changeType: 'add',
+            changedFields: [],
+            before: null,
+            reconfirmation: true,
+          }),
+          entry({ kind: 'reconfirmation_requested', data: { lineNos: [3] } }),
+        ],
+      });
+      const detail = await getRequestDetail(requesterCtx, { id: REQ }, deps);
+      expect(detail.correctionNotice).toMatchObject({
+        lineNo: 3,
+        changeType: 'add',
+        changes: [],
+        reconfirmation: true,
+      });
+      expect(detail.timeline.at(-2)).toMatchObject({
+        kind: 'reconfirmation_requested',
+        lineNos: [3],
+      });
+    });
   });
 
   it('un borrador no consulta la línea del motor', async () => {

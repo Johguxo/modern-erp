@@ -10,7 +10,7 @@ import { messages } from '@/ui/messages/es-PE';
 
 import { ActionButton } from './action-button';
 import { panelActions, soonNoteId } from './detail-actions';
-import { pendingHint, stepTitle } from './timeline-text';
+import { itemComment, pendingHint, stepTitle } from './timeline-text';
 
 const t = messages.requests.detail;
 
@@ -114,6 +114,7 @@ export function TimelinePanel({
         {detail.timeline.map((item, index) => {
           const last = index === detail.timeline.length - 1;
           const hint = stepHint(item, timeZone);
+          const comment = itemComment(item);
           return (
             <li
               key={`${item.kind}-${index}`}
@@ -129,10 +130,10 @@ export function TimelinePanel({
                 {stepTitle(item)}
               </p>
               {hint ? <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p> : null}
-              {item.comment ? (
+              {comment ? (
                 <p className="mt-1 text-[13px] break-words whitespace-pre-wrap text-foreground">
-                  <span className="sr-only">{t.timeline.commentLabel}: </span>
-                  {item.comment}
+                  <span className="sr-only">{comment.label}: </span>
+                  {comment.text}
                 </p>
               ) : null}
             </li>

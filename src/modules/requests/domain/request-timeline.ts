@@ -10,6 +10,8 @@ export const TIMELINE_KINDS = [
   'step_approved',
   'step_signed',
   'changes_requested',
+  'line_corrected',
+  'reconfirmation_requested',
   'approval',
   'approved',
   'delivery',
@@ -42,6 +44,8 @@ export interface TimelineItem {
   readonly rule: 'any' | 'all' | null;
   /** Solo en un paso `approval` pendiente: los asignados que aún no deciden. */
   readonly assigneeIds: readonly string[];
+  /** `data` del evento en `line_corrected` y `reconfirmation_requested` (E4-H4); si no, null. */
+  readonly data: Readonly<Record<string, unknown>> | null;
 }
 
 export type TimelineSource = Pick<
@@ -73,6 +77,7 @@ const item = (
   stepName: null,
   rule: null,
   assigneeIds: [],
+  data: null,
 });
 
 export function deriveTimeline(request: TimelineSource): TimelineItem[] {
@@ -130,6 +135,8 @@ export interface ApprovalTimelineEntry {
     | 'changes_requested'
     | 'approved'
     | 'cancelled'
+    | 'line_corrected'
+    | 'reconfirmation_requested'
     | 'step_pending'
     | 'step_waiting';
   /** Fecha del evento; en `step_pending`, desde cuándo espera; null en `step_waiting`. */
@@ -139,6 +146,8 @@ export interface ApprovalTimelineEntry {
   readonly stepName: string | null;
   readonly rule: 'any' | 'all' | null;
   readonly assigneeIds: readonly string[];
+  /** Solo en `line_corrected` y `reconfirmation_requested`; en los demás, null. */
+  readonly data: Readonly<Record<string, unknown>> | null;
 }
 
 const ENTRY_VIEW = {
@@ -150,6 +159,8 @@ const ENTRY_VIEW = {
   changes_requested: { kind: 'changes_requested', state: 'stopped' },
   approved: { kind: 'approved', state: 'done' },
   cancelled: { kind: 'cancelled', state: 'stopped' },
+  line_corrected: { kind: 'line_corrected', state: 'done' },
+  reconfirmation_requested: { kind: 'reconfirmation_requested', state: 'done' },
   step_pending: { kind: 'approval', state: 'pending' },
   step_waiting: { kind: 'approval', state: 'upcoming' },
 } as const satisfies Record<
@@ -176,6 +187,7 @@ export function buildTimeline(
       stepName: entry.stepName,
       rule: entry.rule,
       assigneeIds: entry.assigneeIds,
+      data: entry.data,
     });
   }
   switch (request.status) {

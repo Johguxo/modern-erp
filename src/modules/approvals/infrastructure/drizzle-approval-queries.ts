@@ -34,6 +34,9 @@ function parseInstanceStatus(value: string): InstanceStatus {
   return status;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
   const joined = (tenantId: string, userId: string) =>
     and(
@@ -108,6 +111,7 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
           comment: approvalEvents.comment,
           createdAt: approvalEvents.createdAt,
           stepClosed: sql<string | null>`${approvalEvents.data}->>'stepClosed'`,
+          data: approvalEvents.data,
           stepName: approvalSteps.name,
           stepRule: approvalSteps.rule,
         })
@@ -118,11 +122,14 @@ export function createDrizzleApprovalQueries(db: DbExecutor): ApprovalQueries {
         )
         .where(and(eq(approvalEvents.tenantId, tenantId), eq(approvalEvents.requestId, requestId)))
         .orderBy(asc(approvalEvents.createdAt), asc(approvalEvents.id));
-      const events: TimelineEventRow[] = eventRows.map(({ stepClosed, stepRule, ...row }) => ({
-        ...row,
-        stepRule: stepRule === null ? null : parseStepRule(stepRule),
-        stepClosed: stepClosed === null ? null : stepClosed !== 'false',
-      }));
+      const events: TimelineEventRow[] = eventRows.map(
+        ({ stepClosed, stepRule, data, ...row }) => ({
+          ...row,
+          data: isRecord(data) ? data : null,
+          stepRule: stepRule === null ? null : parseStepRule(stepRule),
+          stepClosed: stepClosed === null ? null : stepClosed !== 'false',
+        }),
+      );
 
       const stepRows = await db
         .select({

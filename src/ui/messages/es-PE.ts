@@ -567,6 +567,10 @@ export const messages = {
       empty: 'No encontramos productos con esa búsqueda.',
       error: 'No pudimos buscar en el catálogo. Inténtalo de nuevo.',
       results: 'Resultados del catálogo',
+      /** Al elegir un producto para corregir una línea (E4-H4). */
+      pick: 'Elegir',
+      pickItem: (code: string, name: string) => `Elegir ${code} ${name}`,
+      cannotPick: (code: string) => `${code} no se puede elegir: otra moneda`,
     },
     items: {
       title: 'Ítems de la solicitud',
@@ -656,8 +660,70 @@ export const messages = {
           subtotal: 'Subtotal',
         },
         empty: 'Esta solicitud no tiene ítems.',
+        /** Solo lectores de pantalla: por qué la fila va resaltada. */
+        corrected: '(corregida)',
+        awaitingReconfirmation: '(por reconfirmar)',
         quantityWithUnit: (quantity: string, unit: string) => `${quantity} ${unit}`,
         total: 'Total estimado',
+      },
+      /** Diálogo «Corregir una línea» (E4-H4). */
+      correctLine: {
+        title: (number: string | null) => `Corregir una línea de ${number ?? 'la solicitud'}`,
+        description:
+          'La corrección queda en la línea de tiempo con tu motivo. Si sube el monto, esa línea se vuelve a aprobar; si no, las firmas se mantienen.',
+        modeLabel: 'Qué quieres hacer',
+        modes: { update: 'Corregir', add: 'Agregar', remove: 'Quitar' },
+        lineLabel: 'Línea',
+        lineOption: (lineNo: number, code: string, description: string) =>
+          `#${lineNo} · ${code} · ${description}`,
+        productLabel: 'Producto',
+        changeProduct: 'Cambiar producto',
+        cancelChangeProduct: 'Mantener producto',
+        noProduct: 'Sin producto elegido',
+        pickProduct: 'Elegir producto',
+        productRequired: 'Elige un producto.',
+        equipmentLabel: 'Equipo',
+        quantityLabel: 'Cantidad',
+        priceLabel: 'Precio unitario',
+        notesLabel: 'Notas (opcional)',
+        notesTooLong: (max: number) => `Las notas pueden tener hasta ${max} caracteres.`,
+        reasonLabel: 'Motivo (obligatorio)',
+        reasonPlaceholder: 'Cuenta por qué se corrige esta línea',
+        removeWarning:
+          'La línea se quita de la solicitud. Su historial queda guardado en la línea de tiempo.',
+        counter: (used: number, max: number) => `${used} / ${max}`,
+        submit: { update: 'Guardar corrección', add: 'Agregar línea', remove: 'Quitar línea' },
+        submitting: 'Guardando…',
+        back: 'Volver',
+        reload: 'Recargar',
+        savedNotice: (number: string | null) =>
+          `Guardaste la corrección en ${number ?? 'la solicitud'}.`,
+      },
+      /** Aviso naranja de la última corrección (E4-H4, prototipo pantalla 3). */
+      correction: {
+        headline: (lineNo: number, actor: string | null) =>
+          actor ? `Línea ${lineNo} corregida por ${actor}.` : `Línea ${lineNo} corregida.`,
+        added: 'Se agregó la línea.',
+        removed: 'Se quitó la línea.',
+        /** Cambios por campo; `from` y `to` ya vienen formateados, o null si no había valor. */
+        changed: {
+          productId: (from: string | null, to: string | null) =>
+            `Se cambió el producto${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          equipmentId: (from: string | null, to: string | null) =>
+            from && to
+              ? `Se cambió el equipo de ${from} a ${to}.`
+              : to
+                ? `Se asignó el equipo ${to}.`
+                : `Se quitó el equipo${from ? ` ${from}` : ''}.`,
+          quantity: (from: string | null, to: string | null) =>
+            `Se cambió la cantidad${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          unitPrice: (from: string | null, to: string | null) =>
+            `Se cambió el precio${from ? ` de ${from}` : ''}${to ? ` a ${to}` : ''}.`,
+          notes: 'Se cambiaron las notas.',
+        },
+        reconfirmation: 'Solo esa línea vuelve a aprobación; las demás conservan sus firmas.',
+        reconfirmed: 'La reconfirmación de esta línea ya fue aprobada.',
+        signaturesKept: 'Las firmas se mantienen.',
       },
       document: {
         title: 'Documento',
@@ -673,6 +739,8 @@ export const messages = {
           step_approved: 'Paso aprobado',
           step_signed: 'Aprobación parcial',
           changes_requested: 'Se pidieron cambios',
+          line_corrected: 'Línea corregida',
+          reconfirmation_requested: 'Reconfirmación pedida',
           approval: 'Aprobación',
           approved: 'Aprobada',
           delivery: 'Entrega en almacén',
@@ -683,6 +751,15 @@ export const messages = {
         approvedBy: (stepName: string) => `Aprobado por ${stepName}`,
         /** Firma parcial de un paso que exige a todos: «Aprobación parcial · Almacén». */
         signedBy: (stepName: string) => `Aprobación parcial · ${stepName}`,
+        /** «Línea 3 corregida» (E4-H4). */
+        lineCorrected: (lineNo: number) => `Línea ${lineNo} corregida`,
+        lineAdded: (lineNo: number) => `Línea ${lineNo} agregada`,
+        lineRemoved: (lineNo: number) => `Línea ${lineNo} quitada`,
+        /** «Reconfirmación pedida · línea 3» o «· líneas 2 y 3». */
+        reconfirmationRequested: (count: number, list: string) =>
+          `Reconfirmación pedida · ${count === 1 ? 'línea' : 'líneas'} ${list}`,
+        /** Etiqueta (solo lectores de pantalla) del texto bajo el hito; la corrección guarda su motivo. */
+        reasonLabel: 'Motivo',
         hints: {
           approvalPending: 'Esperando la decisión de los aprobadores.',
           approvalUpcoming: 'Empieza cuando se envía a aprobación.',

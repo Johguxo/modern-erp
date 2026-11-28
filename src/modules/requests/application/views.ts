@@ -5,6 +5,8 @@ import type { Request, RequestLine } from '../domain/request';
 import type { RequestAction } from '../domain/request-actions';
 import type { TimelineItem, TimelineKind, TimelineState } from '../domain/request-timeline';
 
+import { changeTypeOf, lineNosOf } from './correction-data';
+
 export type RequestLineView = RequestLine;
 
 export interface RequestView {
@@ -97,6 +99,36 @@ export interface RequestDetailLine {
   readonly subtotal: string;
   /** «CODE · Nombre» del equipo de la línea; null si no tiene. */
   readonly equipmentLabel: string | null;
+  /** Lo que necesita el diálogo «Corregir una línea» (E4-H4). */
+  readonly productId: string;
+  readonly equipmentId: string | null;
+  readonly notes: string | null;
+  /** Texto con 4 decimales. */
+  readonly unitPrice: string;
+  readonly revision: number;
+  readonly needsReconfirmation: boolean;
+  /** La fila va resaltada: la línea del aviso o la que espera reconfirmación (solo en aprobación). */
+  readonly highlighted: boolean;
+}
+
+export interface CorrectionChange {
+  readonly field: 'productId' | 'equipmentId' | 'quantity' | 'unitPrice' | 'notes';
+  /** Valor para mostrar: código del producto o del equipo, o el texto tal cual; null si no había. */
+  readonly from: string | null;
+  readonly to: string | null;
+}
+
+/** El aviso de la última corrección de la ronda vigente (prototipo, pantalla 3). */
+export interface CorrectionNotice {
+  readonly lineNo: number;
+  /** Quién corrigió; el detalle lo usa para saber si quien mira fue él. */
+  readonly actorId: string | null;
+  readonly actorName: string | null;
+  readonly changeType: 'update' | 'add' | 'remove';
+  /** Vacío al agregar o quitar una línea. */
+  readonly changes: CorrectionChange[];
+  /** La corrección pidió que otros aprobadores la reconfirmen. */
+  readonly reconfirmation: boolean;
 }
 
 export interface TimelineItemView {
@@ -115,6 +147,10 @@ export interface TimelineItemView {
   readonly assigneeNames: string[];
   /** Cuántos asignados aún no deciden, tengan nombre o no (0: el paso no tiene aprobadores). */
   readonly assigneeCount: number;
+  /** Líneas que nombra la corrección o la reconfirmación (E4-H4); vacío en los demás hitos. */
+  readonly lineNos: number[];
+  /** Solo en `line_corrected`: si la línea se actualizó, se agregó o se quitó. */
+  readonly changeType: 'update' | 'add' | 'remove' | null;
 }
 
 export interface RequestDetail {
@@ -141,6 +177,8 @@ export interface RequestDetail {
   /** Solo líneas activas, por número de línea. Mutable para encajar con los contratos Zod. */
   readonly lines: RequestDetailLine[];
   readonly timeline: TimelineItemView[];
+  /** La última corrección de la ronda vigente, mientras el SOF sigue en aprobación, aprobado o entregado. */
+  readonly correctionNotice: CorrectionNotice | null;
   readonly actions: RequestAction[];
 }
 
@@ -163,5 +201,7 @@ export function toTimelineItems(
       })
       .sort((a, b) => a.localeCompare(b, 'es-PE')),
     assigneeCount: item.assigneeIds.length,
+    lineNos: lineNosOf(item),
+    changeType: changeTypeOf(item),
   }));
 }

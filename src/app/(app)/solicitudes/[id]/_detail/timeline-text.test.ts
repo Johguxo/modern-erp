@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assigneeList, pendingHint, stepTitle } from './timeline-text';
+import { assigneeList, itemComment, pendingHint, stepTitle } from './timeline-text';
 
 describe('stepTitle', () => {
   it('el paso aprobado lleva el nombre del paso tal como se escribió', () => {
@@ -27,6 +27,55 @@ describe('stepTitle', () => {
 
   it('los hitos que no son de un paso ignoran el nombre', () => {
     expect(stepTitle({ kind: 'rejected', stepName: 'Almacén' })).toBe('Rechazada');
+  });
+});
+
+describe('stepTitle · correcciones de línea (E4-H4)', () => {
+  it('«Línea 3 corregida» y «Reconfirmación pedida · línea 3»', () => {
+    expect(stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [3] })).toBe(
+      'Línea 3 corregida',
+    );
+    expect(
+      stepTitle({ kind: 'reconfirmation_requested', stepName: 'Reconfirmación', lineNos: [3] }),
+    ).toBe('Reconfirmación pedida · línea 3');
+    expect(
+      stepTitle({ kind: 'reconfirmation_requested', stepName: 'Reconfirmación', lineNos: [2, 3] }),
+    ).toBe('Reconfirmación pedida · líneas 2 y 3');
+  });
+
+  it('agregar o quitar una línea no dice «corregida»', () => {
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [4], changeType: 'add' }),
+    ).toBe('Línea 4 agregada');
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [2], changeType: 'remove' }),
+    ).toBe('Línea 2 quitada');
+    expect(
+      stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [2], changeType: 'update' }),
+    ).toBe('Línea 2 corregida');
+  });
+
+  it('sin número de línea usa el título genérico', () => {
+    expect(stepTitle({ kind: 'line_corrected', stepName: null, lineNos: [] })).toBe(
+      'Línea corregida',
+    );
+  });
+});
+
+describe('itemComment', () => {
+  it('la corrección muestra su motivo; la reconfirmación no lo repite', () => {
+    expect(itemComment({ kind: 'line_corrected', comment: 'Equipo equivocado' })).toEqual({
+      label: 'Motivo',
+      text: 'Equipo equivocado',
+    });
+    expect(
+      itemComment({ kind: 'reconfirmation_requested', comment: 'Equipo equivocado' }),
+    ).toBeNull();
+    expect(itemComment({ kind: 'rejected', comment: 'No' })).toEqual({
+      label: 'Comentario',
+      text: 'No',
+    });
+    expect(itemComment({ kind: 'approved', comment: null })).toBeNull();
   });
 });
 

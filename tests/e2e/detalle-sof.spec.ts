@@ -236,11 +236,11 @@ test('almacén ve sus botones deshabilitados, lee lo enviado y no ve borradores 
 
   await signIn(page, warehouse, /\/bandeja$/);
 
-  // En aprobación: puede corregir una línea (sin conectar); no decide (sin motor) ni anula.
+  // En aprobación: puede corregir una línea (E4-H4); no decide (sin motor) ni anula.
   await page.goto(`/solicitudes/${sentId}`);
   await expect(page.getByRole('heading', { level: 1, name: /SOF-0201/ })).toBeVisible();
   const items = page.getByRole('region', { name: t.items.title });
-  await expect(items.getByRole('button', { name: t.actions.correct_line })).toBeDisabled();
+  await expect(items.getByRole('button', { name: t.actions.correct_line })).toBeEnabled();
   await expect(items.locator('tbody tr')).toHaveCount(1);
   await expect(items).toContainText('EQ-2 · Montacargas');
   await expect(page.getByRole('button', { name: t.actions.cancel })).toHaveCount(0);
@@ -254,7 +254,7 @@ test('almacén ve sus botones deshabilitados, lee lo enviado y no ve borradores 
   await expect(deliver).toBeDisabled();
   expect((await deliver.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await expect(page.getByText(t.actions.soon)).toHaveCount(1);
-  await expect(page.getByRole('button', { name: t.actions.correct_line })).toBeDisabled();
+  await expect(page.getByRole('button', { name: t.actions.correct_line })).toBeEnabled();
   await expect(page.getByRole('button', { name: t.actions.cancel })).toHaveCount(0);
   await expect(page.getByRole('link', { name: t.actions.edit_draft })).toHaveCount(0);
   await expectNoPageOverflow(page);

@@ -5,7 +5,8 @@ import { messages } from '@/ui/messages/es-PE';
 
 const t = messages.requests.detail.timeline;
 
-type TitleSource = Pick<TimelineItemView, 'kind' | 'stepName'>;
+type TitleSource = Pick<TimelineItemView, 'kind' | 'stepName'> &
+  Partial<Pick<TimelineItemView, 'lineNos' | 'changeType'>>;
 type PendingSource = Pick<
   TimelineItemView,
   'stepName' | 'assigneeCount' | 'assigneeNames' | 'rule' | 'at'
@@ -21,6 +22,20 @@ export function stepTitle(item: TitleSource): string {
     if (item.kind === 'step_approved') return t.approvedBy(item.stepName);
     if (item.kind === 'step_signed') return t.signedBy(item.stepName);
     if (item.kind === 'approval') return item.stepName;
+  }
+  const lineNos = item.lineNos ?? [];
+  if (item.kind === 'line_corrected' && lineNos[0] !== undefined) {
+    if (item.changeType === 'add') return t.lineAdded(lineNos[0]);
+    if (item.changeType === 'remove') return t.lineRemoved(lineNos[0]);
+    return t.lineCorrected(lineNos[0]);
+  }
+  if (item.kind === 'reconfirmation_requested' && lineNos.length > 0) {
+    return t.reconfirmationRequested(
+      lineNos.length,
+      new Intl.ListFormat('es-PE', { style: 'long', type: 'conjunction' }).format(
+        lineNos.map(String),
+      ),
+    );
   }
   return t.steps[item.kind];
 }
@@ -55,5 +70,19 @@ export function pendingHint(item: PendingSource): PendingHint {
     kind: 'assignees',
     who: assigneeList(item.assigneeNames, item.rule),
     since: item.at,
+  };
+}
+
+/**
+ * El texto bajo el hito y su etiqueta para lectores de pantalla. La corrección muestra su motivo; la
+ * reconfirmación pedida repite el mismo motivo y por eso no lo vuelve a mostrar.
+ */
+export function itemComment(
+  item: Pick<TimelineItemView, 'kind' | 'comment'>,
+): { readonly label: string; readonly text: string } | null {
+  if (!item.comment || item.kind === 'reconfirmation_requested') return null;
+  return {
+    label: item.kind === 'line_corrected' ? t.reasonLabel : t.commentLabel,
+    text: item.comment,
   };
 }
